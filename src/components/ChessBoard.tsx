@@ -83,9 +83,10 @@ interface ChessBoardProps {
   customImage: string | null;
   flipped: boolean;
   invalidPieceId: string | null;
+  hintPieceIds: Set<string>;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds }: ChessBoardProps) {
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘">
       <BoardLines />
@@ -98,7 +99,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
       )}
       {pieces.map((piece) => (
         <button
-          className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""}`}
+          className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""}`}
           key={piece.id}
           type="button"
           style={{

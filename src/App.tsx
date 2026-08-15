@@ -41,6 +41,12 @@ function App() {
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
   const [invalidPieceId, setInvalidPieceId] = useState<string | null>(null);
   const [invalidNotice, setInvalidNotice] = useState(false);
+  const [invalidAttempts, setInvalidAttempts] = useState(0);
+  const checkRestricted = !winner && !draw && isInCheck(turn, pieces);
+  const hintPieceIds = useMemo(() => {
+    if (!checkRestricted || invalidAttempts < 3) return new Set<string>();
+    return new Set(pieces.filter((piece) => piece.color === turn && getLegalMoves(piece, pieces).length > 0).map((piece) => piece.id));
+  }, [checkRestricted, invalidAttempts, pieces, turn]);
 
   function handlePieceClick(piece: ChessPiece) {
     if (mode === "ai" && piece.color === aiColor) return;
@@ -48,11 +54,13 @@ function App() {
     if (isInCheck(turn, pieces) && getLegalMoves(piece, pieces).length === 0) {
       setInvalidPieceId(piece.id);
       setInvalidNotice(true);
+      setInvalidAttempts((current) => current + 1);
       window.setTimeout(() => setInvalidPieceId(null), 520);
       return;
     }
     setInvalidNotice(false);
     setInvalidPieceId(null);
+    setInvalidAttempts(0);
     setSelectedId(piece.id === selectedId ? null : piece.id);
   }
 
@@ -75,6 +83,7 @@ function App() {
     setSelectedId(null);
     setInvalidPieceId(null);
     setInvalidNotice(false);
+    setInvalidAttempts(0);
   }
 
   function handleMove(position: Position) {
@@ -104,6 +113,7 @@ function App() {
     setLastMove(null);
     setInvalidPieceId(null);
     setInvalidNotice(false);
+    setInvalidAttempts(0);
   }
 
   function resetGame() {
@@ -116,6 +126,7 @@ function App() {
     setLastMove(null);
     setHistory([]);
     setMoveHistory([]);
+    setInvalidAttempts(0);
   }
 
   function startAiGame(color: PieceColor) {
@@ -128,6 +139,7 @@ function App() {
     setDraw(false);
     setHistory([]);
     setMoveHistory([]);
+    setInvalidAttempts(0);
     setLastMove(null);
     setAiThinking(false);
   }
@@ -189,7 +201,7 @@ function App() {
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} />
           {(winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
