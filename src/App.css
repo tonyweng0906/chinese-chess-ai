@@ -61,7 +61,7 @@
 @keyframes result-in { from { opacity: 0; transform: translateY(9px) scale(.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes spark-pulse { from { opacity: .55; transform: scale(.82) rotate(-8deg); } to { opacity: 1; transform: scale(1.18) rotate(8deg); } }
 
-.board-shell { 
+.board-shell {
   width: 100%;
   aspect-ratio: 800 / 890;
   position: relative;
@@ -70,7 +70,11 @@
     linear-gradient(90deg, rgba(83, 48, 17, 0.08), transparent 12%, rgba(255,255,255,0.07) 48%, transparent 74%),
     #c89958;
   box-shadow: 0 28px 65px rgba(0,0,0,0.48), inset 0 0 50px rgba(77, 42, 10, 0.22);
+  isolation: isolate;
 }
+
+.board-shell::after { content: ""; position: absolute; inset: -12% -35%; z-index: 0; pointer-events: none; background: linear-gradient(112deg, transparent 38%, rgba(255, 241, 195, 0.16) 48%, transparent 58%); transform: translateX(-65%) rotate(8deg); animation: board-sheen 8s ease-in-out infinite; }
+@keyframes board-sheen { 0%, 35% { transform: translateX(-65%) rotate(8deg); opacity: 0; } 48% { opacity: 1; } 65%, 100% { transform: translateX(65%) rotate(8deg); opacity: 0; } }
 
 .board-shell--flipped { transform: rotate(180deg); }
 .board-shell--flipped .piece { transform: translate(-50%, -50%) rotate(180deg); }
@@ -175,6 +179,8 @@
 .upload-button, .export-button { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; text-align: center; font-size: 10px; letter-spacing: 0.08em; }
 .upload-button:hover, .export-button:hover { border-color: #806748; color: #d6bd91; }
 .upload-button input { display: none; }
+.settings-reset { width: 100%; margin-top: 16px; padding: 8px 10px; border: 1px solid #302a23; border-radius: 3px; color: #6e665b; background: transparent; cursor: pointer; font-size: 10px; letter-spacing: 0.08em; }
+.settings-reset:hover { border-color: #7e4b41; color: #c68b7b; background: rgba(126, 75, 65, 0.1); }
 
 .panel-kicker { margin: 0; color: #756a5a; font-size: 11px; letter-spacing: 0.28em; }
 .game-panel h2 { margin: 10px 0 25px; font-size: 28px; font-weight: 500; letter-spacing: 0.08em; color: #e7d8bf; }
