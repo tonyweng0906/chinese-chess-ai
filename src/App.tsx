@@ -36,6 +36,7 @@ function App() {
   const turnName = turn === "red" ? t.red : t.black;
   const aiColor = playerColor === "red" ? "black" : "red";
   const depth = difficulty === "easy" ? 1 : difficulty === "normal" ? 2 : 3;
+  const flipped = mode === "ai" && playerColor === "black";
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
 
@@ -172,12 +173,12 @@ function App() {
         <div className="board-area">
           <div className="player-label player-label--black">
             <span className="player-dot" />
-            黑方
+            {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} />
           <div className="player-label player-label--red">
             <span className="player-dot" />
-            红方
+            {flipped ? t.black : t.red}
           </div>
         </div>
 

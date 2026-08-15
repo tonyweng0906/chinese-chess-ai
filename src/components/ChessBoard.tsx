@@ -81,11 +81,12 @@ interface ChessBoardProps {
   lastMove: { from: Position; to: Position } | null;
   pieceTheme: PieceTheme;
   customImage: string | null;
+  flipped: boolean;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped }: ChessBoardProps) {
   return (
-    <div className={`board-shell board-shell--${pieceTheme}`} aria-label="中国象棋初始棋盘">
+    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘">
       <BoardLines />
       {lastMove && (
         <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">

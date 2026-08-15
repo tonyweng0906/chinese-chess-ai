@@ -53,7 +53,7 @@
 
 .board-area { min-width: 0; }
 
-.board-shell {
+.board-shell { 
   width: 100%;
   aspect-ratio: 800 / 890;
   position: relative;
@@ -63,6 +63,13 @@
     #c89958;
   box-shadow: 0 28px 65px rgba(0,0,0,0.48), inset 0 0 50px rgba(77, 42, 10, 0.22);
 }
+
+.board-shell--flipped { transform: rotate(180deg); }
+.board-shell--flipped .piece { transform: translate(-50%, -50%) rotate(180deg); }
+.board-shell--flipped .piece:hover { transform: translate(-50%, -50%) rotate(180deg) scale(1.08); }
+.board-shell--flipped .piece--selected { transform: translate(-50%, -50%) rotate(180deg) scale(1.1); }
+.board-shell--flipped .move-target { transform: translate(-50%, -50%) rotate(180deg); }
+.board-shell--flipped .move-trail { transform: rotate(180deg); }
 
 .board-lines { width: 100%; height: 100%; display: block; }
 
