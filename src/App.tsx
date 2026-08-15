@@ -39,6 +39,8 @@ function App() {
   const flipped = mode === "ai" && playerColor === "black";
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
+  const checkRestricted = !winner && !draw && isInCheck(turn, pieces);
+  const forcedMoveIds = useMemo(() => new Set(pieces.filter((piece) => piece.color === turn && getLegalMoves(piece, pieces).length > 0).map((piece) => piece.id)), [pieces, turn]);
 
   function handlePieceClick(piece: ChessPiece) {
     if (mode === "ai" && piece.color === aiColor) return;
@@ -175,7 +177,7 @@ function App() {
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} forcedMoveIds={forcedMoveIds} checkRestricted={checkRestricted} activeColor={turn} />
           {(winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
