@@ -103,6 +103,20 @@ function App() {
     setMoveHistory([]);
   }
 
+  function startAiGame(color: PieceColor) {
+    setMode("ai");
+    setPlayerColor(color);
+    setPieces(initialPieces);
+    setTurn("red");
+    setSelectedId(null);
+    setWinner(null);
+    setDraw(false);
+    setHistory([]);
+    setMoveHistory([]);
+    setLastMove(null);
+    setAiThinking(false);
+  }
+
   function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !["image/png", "image/svg+xml", "image/jpeg"].includes(file.type)) return;
@@ -171,7 +185,7 @@ function App() {
           <div className="settings-row">
             <span>{t.mode}</span>
             <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => setMode("local")}>{t.local}</button>
-            <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => setMode("ai")}>{t.ai}</button>
+            <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => startAiGame(playerColor)}>{t.ai}</button>
           </div>
           {mode === "ai" && <>
             <div className="settings-row">
@@ -182,8 +196,8 @@ function App() {
             </div>
             <div className="settings-row">
               <span>{t.player}</span>
-              <button className={playerColor === "red" ? "is-active" : ""} type="button" onClick={() => setPlayerColor("red")}>{t.redSide}</button>
-              <button className={playerColor === "black" ? "is-active" : ""} type="button" onClick={() => setPlayerColor("black")}>{t.blackSide}</button>
+              <button className={playerColor === "red" ? "is-active" : ""} type="button" onClick={() => startAiGame("red")}>{t.redSide}</button>
+              <button className={playerColor === "black" ? "is-active" : ""} type="button" onClick={() => startAiGame("black")}>{t.blackSide}</button>
             </div>
           </>}
           <div className="settings-row">
