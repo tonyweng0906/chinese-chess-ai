@@ -1,13 +1,14 @@
 import "./App.css";
 import { ChessBoard } from "./components/ChessBoard";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAllLegalMoves, getLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
+import { chooseBestMove } from "./game/ai";
 import type { ChessPiece, PieceColor, Language, PieceStyle } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", thinking: "AI 思考中..." },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", thinking: "AI is thinking..." },
 } as const;
 
 function symbolsForTurn(turn: PieceColor) {
@@ -22,6 +23,8 @@ function App() {
   const [draw, setDraw] = useState(false);
   const [language, setLanguage] = useState<Language>("zh");
   const [pieceStyle, setPieceStyle] = useState<PieceStyle>("hanzi");
+  const [mode, setMode] = useState<"local" | "ai">("local");
+  const [aiThinking, setAiThinking] = useState(false);
   const t = copy[language];
   const [history, setHistory] = useState<ChessPiece[][]>([]);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
@@ -29,17 +32,17 @@ function App() {
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
 
   function handlePieceClick(piece: ChessPiece) {
-    if (winner || draw || piece.color !== turn) return;
+    if (mode === "ai" && piece.color === "black") return;
+    if (winner || draw || aiThinking || piece.color !== turn) return;
     setSelectedId(piece.id === selectedId ? null : piece.id);
   }
 
-  function handleMove(position: Position) {
-    if (winner || draw || !selectedPiece || !legalMoves.some((move) => move.row === position.row && move.col === position.col)) return;
+  function applyMove(piece: ChessPiece, position: Position) {
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
-      .map((piece) => piece.id === selectedPiece.id ? { ...piece, ...position } : piece);
+      .map((item) => item.id === piece.id ? { ...item, ...position } : item);
     setHistory((current) => [...current, pieces]);
-    setMoveHistory((current) => [...current, `${turnName}：(${selectedPiece.row},${selectedPiece.col}) → (${position.row},${position.col})`]);
+    setMoveHistory((current) => [...current, `${turnName}：(${piece.row},${piece.col}) → (${position.row},${position.col})`]);
     setPieces(nextPieces);
     const nextTurn = turn === "red" ? "black" : "red";
     const opponentGeneralExists = nextPieces.some((piece) => piece.type === "general" && piece.color === nextTurn);
@@ -51,6 +54,22 @@ function App() {
     setTurn(nextTurn);
     setSelectedId(null);
   }
+
+  function handleMove(position: Position) {
+    if (winner || draw || aiThinking || !selectedPiece || !legalMoves.some((move) => move.row === position.row && move.col === position.col)) return;
+    applyMove(selectedPiece, position);
+  }
+
+  useEffect(() => {
+    if (mode !== "ai" || turn !== "black" || winner || draw) return;
+    setAiThinking(true);
+    const timer = window.setTimeout(() => {
+      const choice = chooseBestMove(pieces, "black", 2);
+      if (choice) applyMove(choice.piece, choice.move);
+      setAiThinking(false);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [mode, turn, pieces, winner, draw]);
 
   function undoMove() {
     const previous = history.at(-1);
@@ -68,6 +87,7 @@ function App() {
     setSelectedId(null);
     setWinner(null);
     setDraw(false);
+    setAiThinking(false);
     setHistory([]);
     setMoveHistory([]);
   }
@@ -98,6 +118,11 @@ function App() {
 
         <aside className="game-panel">
           <div className="settings-row">
+            <span>{t.mode}</span>
+            <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => setMode("local")}>{t.local}</button>
+            <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => setMode("ai")}>{t.ai}</button>
+          </div>
+          <div className="settings-row">
             <span>{t.language}</span>
             <button className={language === "zh" ? "is-active" : ""} type="button" onClick={() => setLanguage("zh")}>中文</button>
             <button className={language === "en" ? "is-active" : ""} type="button" onClick={() => setLanguage("en")}>EN</button>
@@ -112,7 +137,7 @@ function App() {
           <div className="turn-card">
             <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? symbolsForTurn(turn) : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
-              <strong>{winner || draw ? t.finished : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
+              <strong>{winner || draw ? t.finished : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
               <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
             </div>
           </div>
