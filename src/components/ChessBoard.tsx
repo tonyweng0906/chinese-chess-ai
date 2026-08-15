@@ -84,11 +84,12 @@ interface ChessBoardProps {
   flipped: boolean;
   invalidPieceId: string | null;
   hintPieceIds: Set<string>;
+  onInvalidAction: () => void;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds, onInvalidAction }: ChessBoardProps) {
   return (
-    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘">
+    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘" onClick={onInvalidAction}>
       <BoardLines />
       {lastMove && (
         <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">
@@ -107,7 +108,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
             top: `${(y(piece.row) / 890) * 100}%`,
           }}
           aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
-          onClick={() => onPieceClick(piece)}
+          onClick={(event) => { event.stopPropagation(); onPieceClick(piece); }}
         >
           {customImage && <img className="piece-image" src={customImage} alt="" aria-hidden="true" />}
           <span>{pieceText(piece, language, pieceStyle)}</span>
@@ -122,7 +123,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
             type="button"
             style={{ left: `${(x(position.col) / 800) * 100}%`, top: `${(y(position.row) / 890) * 100}%` }}
             aria-label={occupied ? "吃子" : "移动到此处"}
-            onClick={() => onMove(position)}
+            onClick={(event) => { event.stopPropagation(); onMove(position); }}
           />
         );
       })}

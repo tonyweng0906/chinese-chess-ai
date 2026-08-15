@@ -48,9 +48,16 @@ function App() {
     return new Set(pieces.filter((piece) => piece.color === turn && getLegalMoves(piece, pieces).length > 0).map((piece) => piece.id));
   }, [checkRestricted, invalidAttempts, pieces, turn]);
 
+  function registerInvalidAction() {
+    if (!checkRestricted || winner || draw || aiThinking) return;
+    setInvalidNotice(true);
+    setInvalidAttempts((current) => current + 1);
+  }
+
   function handlePieceClick(piece: ChessPiece) {
-    if (mode === "ai" && piece.color === aiColor) return;
-    if (winner || draw || aiThinking || piece.color !== turn) return;
+    if (winner || draw || aiThinking) return;
+    if (mode === "ai" && piece.color === aiColor) { registerInvalidAction(); return; }
+    if (piece.color !== turn) { registerInvalidAction(); return; }
     if (isInCheck(turn, pieces) && getLegalMoves(piece, pieces).length === 0) {
       setInvalidPieceId(piece.id);
       setInvalidNotice(true);
@@ -201,7 +208,7 @@ function App() {
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} />
           {(winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
