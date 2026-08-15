@@ -106,9 +106,16 @@
 
 .piece:hover { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.08); z-index: 2; }
 .piece:focus-visible { outline: 3px solid #f1d291; outline-offset: 4px; z-index: 3; }
+.piece--selected { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 4px rgba(246, 211, 132, 0.8), 0 6px 12px rgba(43, 24, 8, 0.48), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; z-index: 4; }
 .piece span { transform: translateY(-2%); font-size: clamp(17px, 3.1vw, 34px); font-weight: 700; line-height: 1; }
 .piece--red { color: #a52c25; }
 .piece--black { color: #24211d; }
+
+.move-target { position: absolute; width: 8.7%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 5; padding: 0; border: 0; border-radius: 50%; background: rgba(248, 219, 135, 0.52); box-shadow: inset 0 0 0 3px rgba(107, 69, 26, 0.45); cursor: pointer; }
+.move-target::after { content: ""; display: block; width: 21%; aspect-ratio: 1; margin: auto; border-radius: 50%; background: #6e421e; }
+.move-target--capture { background: rgba(178, 44, 32, 0.18); box-shadow: inset 0 0 0 3px rgba(153, 46, 32, 0.75); }
+.move-target--capture::after { width: 31%; background: #a52c25; }
+.move-target:hover { filter: brightness(1.15); }
 
 .player-label {
   display: flex;

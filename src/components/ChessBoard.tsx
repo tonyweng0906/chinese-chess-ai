@@ -1,5 +1,5 @@
-import { initialPieces } from "../data/initialPieces";
 import type { ChessPiece, PieceType } from "../types";
+import type { Position } from "../game/rules";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
   black: {
@@ -54,13 +54,21 @@ function BoardLines() {
   );
 }
 
-export function ChessBoard() {
+interface ChessBoardProps {
+  pieces: ChessPiece[];
+  selectedId: string | null;
+  legalMoves: Position[];
+  onPieceClick: (piece: ChessPiece) => void;
+  onMove: (position: Position) => void;
+}
+
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove }: ChessBoardProps) {
   return (
     <div className="board-shell" aria-label="中国象棋初始棋盘">
       <BoardLines />
-      {initialPieces.map((piece) => (
+      {pieces.map((piece) => (
         <button
-          className={`piece piece--${piece.color}`}
+          className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""}`}
           key={piece.id}
           type="button"
           style={{
@@ -68,10 +76,24 @@ export function ChessBoard() {
             top: `${(y(piece.row) / 890) * 100}%`,
           }}
           aria-label={`${piece.color === "red" ? "红方" : "黑方"}${labels[piece.color][piece.type]}`}
+          onClick={() => onPieceClick(piece)}
         >
           <span>{labels[piece.color][piece.type]}</span>
         </button>
       ))}
+      {legalMoves.map((position) => {
+        const occupied = pieces.some((piece) => piece.row === position.row && piece.col === position.col);
+        return (
+          <button
+            className={`move-target ${occupied ? "move-target--capture" : ""}`}
+            key={`${position.row},${position.col}`}
+            type="button"
+            style={{ left: `${(x(position.col) / 800) * 100}%`, top: `${(y(position.row) / 890) * 100}%` }}
+            aria-label={occupied ? "吃子" : "移动到此处"}
+            onClick={() => onMove(position)}
+          />
+        );
+      })}
     </div>
   );
 }
