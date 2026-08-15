@@ -25,6 +25,7 @@ function App() {
   const [pieceStyle, setPieceStyle] = useState<PieceStyle>("hanzi");
   const [mode, setMode] = useState<"local" | "ai">("local");
   const [aiThinking, setAiThinking] = useState(false);
+  const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
   const [history, setHistory] = useState<ChessPiece[][]>([]);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
@@ -43,6 +44,7 @@ function App() {
       .map((item) => item.id === piece.id ? { ...item, ...position } : item);
     setHistory((current) => [...current, pieces]);
     setMoveHistory((current) => [...current, `${turnName}：(${piece.row},${piece.col}) → (${position.row},${position.col})`]);
+    setLastMove({ from: { row: piece.row, col: piece.col }, to: position });
     setPieces(nextPieces);
     const nextTurn = turn === "red" ? "black" : "red";
     const opponentGeneralExists = nextPieces.some((piece) => piece.type === "general" && piece.color === nextTurn);
@@ -79,6 +81,7 @@ function App() {
     setMoveHistory((current) => current.slice(0, -1));
     setTurn((current) => current === "red" ? "black" : "red");
     setSelectedId(null);
+    setLastMove(null);
   }
 
   function resetGame() {
@@ -88,6 +91,7 @@ function App() {
     setWinner(null);
     setDraw(false);
     setAiThinking(false);
+    setLastMove(null);
     setHistory([]);
     setMoveHistory([]);
   }
@@ -109,7 +113,7 @@ function App() {
             <span className="player-dot" />
             黑方
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} />
           <div className="player-label player-label--red">
             <span className="player-dot" />
             红方

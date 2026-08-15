@@ -78,12 +78,20 @@ interface ChessBoardProps {
   onMove: (position: Position) => void;
   language: Language;
   pieceStyle: PieceStyle;
+  lastMove: { from: Position; to: Position } | null;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove }: ChessBoardProps) {
   return (
     <div className="board-shell" aria-label="中国象棋初始棋盘">
       <BoardLines />
+      {lastMove && (
+        <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">
+          <line x1={x(lastMove.from.col)} y1={y(lastMove.from.row)} x2={x(lastMove.to.col)} y2={y(lastMove.to.row)} />
+          <circle cx={x(lastMove.from.col)} cy={y(lastMove.from.row)} r="10" className="trail-origin" />
+          <circle cx={x(lastMove.to.col)} cy={y(lastMove.to.row)} r="17" className="trail-destination" />
+        </svg>
+      )}
       {pieces.map((piece) => (
         <button
           className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""}`}
