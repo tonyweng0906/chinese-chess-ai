@@ -1,14 +1,14 @@
 import "./App.css";
 import { ChessBoard } from "./components/ChessBoard";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { getAllLegalMoves, getLegalMoves, isInCheck, type Position } from "./game/rules";
+import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general" },
 } as const;
 
 function symbolsForTurn(turn: PieceColor) {
@@ -41,6 +41,7 @@ function App() {
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
   const [invalidPieceId, setInvalidPieceId] = useState<string | null>(null);
   const [invalidNotice, setInvalidNotice] = useState(false);
+  const [selfCheckWarning, setSelfCheckWarning] = useState(false);
   const [invalidAttempts, setInvalidAttempts] = useState(0);
   const checkRestricted = !winner && !draw && isInCheck(turn, pieces);
   const hintPieceIds = useMemo(() => {
@@ -65,7 +66,10 @@ function App() {
       window.setTimeout(() => setInvalidPieceId(null), 520);
       return;
     }
+    const hasDangerousMoves = getPseudoLegalMoves(piece, pieces).length > getLegalMoves(piece, pieces).length;
+    setSelfCheckWarning(hasDangerousMoves);
     setInvalidNotice(false);
+    setSelfCheckWarning(false);
     setInvalidPieceId(null);
     setInvalidAttempts(0);
     setSelectedId(piece.id === selectedId ? null : piece.id);
@@ -90,6 +94,7 @@ function App() {
     setSelectedId(null);
     setInvalidPieceId(null);
     setInvalidNotice(false);
+    setSelfCheckWarning(false);
     setInvalidAttempts(0);
   }
 
@@ -133,6 +138,7 @@ function App() {
     setLastMove(null);
     setHistory([]);
     setMoveHistory([]);
+    setSelfCheckWarning(false);
     setInvalidAttempts(0);
   }
 
@@ -161,6 +167,7 @@ function App() {
     setInvalidAttempts(0);
     setLastMove(null);
     setAiThinking(false);
+    setSelfCheckWarning(false);
   }
 
   function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -278,7 +285,7 @@ function App() {
           <div className="turn-card">
             <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? symbolsForTurn(turn) : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
-              <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
+              <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : selfCheckWarning ? t.selfCheck : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
               <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
             </div>
           </div>

@@ -73,8 +73,6 @@
   isolation: isolate;
 }
 
-.board-shell::after { content: ""; position: absolute; inset: -12% -35%; z-index: 0; pointer-events: none; background: linear-gradient(112deg, transparent 38%, rgba(255, 241, 195, 0.16) 48%, transparent 58%); transform: translateX(-65%) rotate(8deg); animation: board-sheen 8s ease-in-out infinite; }
-@keyframes board-sheen { 0%, 35% { transform: translateX(-65%) rotate(8deg); opacity: 0; } 48% { opacity: 1; } 65%, 100% { transform: translateX(65%) rotate(8deg); opacity: 0; } }
 
 .board-shell--flipped { transform: rotate(180deg); }
 .board-shell--flipped .piece { transform: translate(-50%, -50%) rotate(180deg); }
