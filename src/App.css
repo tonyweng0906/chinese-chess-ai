@@ -131,7 +131,7 @@
 .piece:focus-visible { outline: 3px solid #f1d291; outline-offset: 4px; z-index: 3; }
 .piece--selected { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 4px rgba(246, 211, 132, 0.8), 0 6px 12px rgba(43, 24, 8, 0.48), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; z-index: 4; }
 .piece--invalid { animation: invalid-shake 480ms ease-in-out; box-shadow: 0 0 0 4px rgba(201, 57, 43, 0.8), 0 4px 7px rgba(43, 24, 8, 0.48), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; }
-.piece--escape-hint { animation: escape-hint 1.15s ease-in-out infinite; }
+.piece--escape-hint { outline: 4px solid rgba(255, 218, 122, 0.95); outline-offset: 4px; animation: escape-hint 1.15s ease-in-out infinite; }
 @keyframes invalid-shake { 0%, 100% { transform: translate(-50%, -50%); } 20% { transform: translate(calc(-50% - 7px), -50%); } 40% { transform: translate(calc(-50% + 7px), -50%); } 60% { transform: translate(calc(-50% - 5px), -50%); } 80% { transform: translate(calc(-50% + 5px), -50%); } }
 @keyframes escape-hint { 0%, 100% { box-shadow: 0 0 0 2px rgba(244, 204, 111, 0.38), 0 4px 7px rgba(43, 24, 8, 0.48), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; } 50% { box-shadow: 0 0 0 8px rgba(244, 204, 111, 0.15), 0 4px 7px rgba(43, 24, 8, 0.48), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; } }
 .piece span { transform: translateY(-2%); font-size: clamp(17px, 3.1vw, 34px); font-weight: 700; line-height: 1; }

@@ -44,9 +44,9 @@ function App() {
   const [invalidAttempts, setInvalidAttempts] = useState(0);
   const checkRestricted = !winner && !draw && isInCheck(turn, pieces);
   const hintPieceIds = useMemo(() => {
-    if (!checkRestricted || invalidAttempts < 3) return new Set<string>();
+    if (invalidAttempts < 3) return new Set<string>();
     return new Set(pieces.filter((piece) => piece.color === turn && getLegalMoves(piece, pieces).length > 0).map((piece) => piece.id));
-  }, [checkRestricted, invalidAttempts, pieces, turn]);
+  }, [invalidAttempts, pieces, turn]);
 
   function registerInvalidAction() {
     if (!checkRestricted || winner || draw || aiThinking) return;
@@ -266,7 +266,7 @@ function App() {
           <div className="turn-card">
             <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? symbolsForTurn(turn) : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
-              <strong>{winner || draw ? t.finished : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
+              <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
               <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
             </div>
           </div>
