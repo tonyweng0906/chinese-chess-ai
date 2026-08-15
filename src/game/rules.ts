@@ -52,7 +52,7 @@ function cannon(piece: ChessPiece, board: Map<string, ChessPiece>) {
   return moves;
 }
 
-export function getLegalMoves(piece: ChessPiece, pieces: ChessPiece[]): Position[] {
+export function getPseudoLegalMoves(piece: ChessPiece, pieces: ChessPiece[]): Position[] {
   const board = new Map(pieces.map((item) => [at(item.row, item.col), item]));
   const moves: Position[] = [];
   switch (piece.type) {
@@ -94,4 +94,29 @@ export function getLegalMoves(piece: ChessPiece, pieces: ChessPiece[]): Position
       return moves;
     }
   }
+}
+
+function generalsFace(pieces: ChessPiece[]) {
+  const red = pieces.find((piece) => piece.type === "general" && piece.color === "red");
+  const black = pieces.find((piece) => piece.type === "general" && piece.color === "black");
+  if (!red || !black || red.col !== black.col) return false;
+  const minRow = Math.min(red.row, black.row);
+  const maxRow = Math.max(red.row, black.row);
+  return pieces.every((piece) => piece.col !== red.col || piece.row <= minRow || piece.row >= maxRow);
+}
+
+export function isInCheck(color: ChessPiece["color"], pieces: ChessPiece[]) {
+  const general = pieces.find((piece) => piece.type === "general" && piece.color === color);
+  if (!general) return true;
+  if (generalsFace(pieces)) return true;
+  return pieces.some((piece) => piece.color !== color && getPseudoLegalMoves(piece, pieces).some((move) => move.row === general.row && move.col === general.col));
+}
+
+export function getLegalMoves(piece: ChessPiece, pieces: ChessPiece[]): Position[] {
+  return getPseudoLegalMoves(piece, pieces).filter((move) => {
+    const next = pieces
+      .filter((item) => !(item.row === move.row && item.col === move.col))
+      .map((item) => item.id === piece.id ? { ...item, ...move } : item);
+    return !isInCheck(piece.color, next);
+  });
 }
