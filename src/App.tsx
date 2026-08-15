@@ -10,6 +10,8 @@ function App() {
   const [turn, setTurn] = useState<PieceColor>("red");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [winner, setWinner] = useState<PieceColor | null>(null);
+  const [history, setHistory] = useState<ChessPiece[][]>([]);
+  const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
 
@@ -23,8 +25,20 @@ function App() {
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
       .map((piece) => piece.id === selectedPiece.id ? { ...piece, ...position } : piece);
+    setHistory((current) => [...current, pieces]);
+    setMoveHistory((current) => [...current, `${turnName}：(${selectedPiece.row},${selectedPiece.col}) → (${position.row},${position.col})`]);
     setPieces(nextPieces);
     if (!nextPieces.some((piece) => piece.type === "general" && piece.color !== turn)) setWinner(turn);
+    setTurn((current) => current === "red" ? "black" : "red");
+    setSelectedId(null);
+  }
+
+  function undoMove() {
+    const previous = history.at(-1);
+    if (!previous || winner) return;
+    setPieces(previous);
+    setHistory((current) => current.slice(0, -1));
+    setMoveHistory((current) => current.slice(0, -1));
     setTurn((current) => current === "red" ? "black" : "red");
     setSelectedId(null);
   }
@@ -34,6 +48,8 @@ function App() {
     setTurn("red");
     setSelectedId(null);
     setWinner(null);
+    setHistory([]);
+    setMoveHistory([]);
   }
 
   const turnName = turn === "red" ? "红方" : "黑方";
@@ -77,6 +93,11 @@ function App() {
             <div><dt>状态</dt><dd>{winner ? "已结束" : isInCheck(turn, pieces) ? "将军" : "进行中"}</dd></div>
           </dl>
           <button className="reset-button" type="button" onClick={resetGame}>重新开始</button>
+          <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0 || Boolean(winner)}>悔棋</button>
+          <div className="move-log" aria-label="走棋记录">
+            <p>走棋记录</p>
+            {moveHistory.length === 0 ? <span>暂无记录</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
+          </div>
           <p className="coming-soon">已支持基础走法与将军限制</p>
         </aside>
       </section>
