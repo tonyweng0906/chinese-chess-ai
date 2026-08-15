@@ -1,4 +1,4 @@
-import type { ChessPiece, Language, PieceStyle, PieceType } from "../types";
+import type { ChessPiece, Language, PieceStyle, PieceTheme, PieceType } from "../types";
 import type { Position } from "../game/rules";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
@@ -79,11 +79,13 @@ interface ChessBoardProps {
   language: Language;
   pieceStyle: PieceStyle;
   lastMove: { from: Position; to: Position } | null;
+  pieceTheme: PieceTheme;
+  customImage: string | null;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage }: ChessBoardProps) {
   return (
-    <div className="board-shell" aria-label="中国象棋初始棋盘">
+    <div className={`board-shell board-shell--${pieceTheme}`} aria-label="中国象棋初始棋盘">
       <BoardLines />
       {lastMove && (
         <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">
@@ -104,6 +106,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
           aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
           onClick={() => onPieceClick(piece)}
         >
+          {customImage && <img className="piece-image" src={customImage} alt="" aria-hidden="true" />}
           <span>{pieceText(piece, language, pieceStyle)}</span>
         </button>
       ))}

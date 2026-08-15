@@ -118,6 +118,12 @@
 .piece span { transform: translateY(-2%); font-size: clamp(17px, 3.1vw, 34px); font-weight: 700; line-height: 1; }
 .piece--red { color: #a52c25; }
 .piece--black { color: #24211d; }
+.board-shell--jade { background: linear-gradient(135deg, #9eb9a1, #d4dec7 48%, #789681); }
+.board-shell--jade .piece { background: #d8e5d0; box-shadow: 0 4px 7px rgba(20, 48, 34, 0.38), inset 0 0 0 3px #aec5ad, inset 0 0 0 5px currentColor; }
+.board-shell--flat { background: #e4d6bf; box-shadow: 0 22px 48px rgba(0,0,0,0.36); }
+.board-shell--flat .piece { border-width: 3px; background: #f1e8d8; box-shadow: 0 3px 4px rgba(43, 24, 8, 0.24); }
+.piece-image { position: absolute; inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); border-radius: 50%; object-fit: cover; opacity: 0.28; pointer-events: none; }
+.piece-image + span { position: relative; z-index: 1; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
 
 .move-target { position: absolute; width: 8.7%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 5; padding: 0; border: 0; border-radius: 50%; background: rgba(248, 219, 135, 0.52); box-shadow: inset 0 0 0 3px rgba(107, 69, 26, 0.45); cursor: pointer; }
 .move-target::after { content: ""; display: block; width: 21%; aspect-ratio: 1; margin: auto; border-radius: 50%; background: #6e421e; }
@@ -147,6 +153,9 @@
 .settings-row > span { min-width: 42px; letter-spacing: 0.08em; }
 .settings-row button { padding: 4px 8px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
 .settings-row button:hover, .settings-row button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
+.upload-button, .export-button { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; text-align: center; font-size: 10px; letter-spacing: 0.08em; }
+.upload-button:hover, .export-button:hover { border-color: #806748; color: #d6bd91; }
+.upload-button input { display: none; }
 
 .panel-kicker { margin: 0; color: #756a5a; font-size: 11px; letter-spacing: 0.28em; }
 .game-panel h2 { margin: 10px 0 25px; font-size: 28px; font-weight: 500; letter-spacing: 0.08em; color: #e7d8bf; }
