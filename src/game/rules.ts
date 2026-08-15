@@ -120,3 +120,9 @@ export function getLegalMoves(piece: ChessPiece, pieces: ChessPiece[]): Position
     return !isInCheck(piece.color, next);
   });
 }
+
+export function getAllLegalMoves(color: ChessPiece["color"], pieces: ChessPiece[]) {
+  return pieces
+    .filter((piece) => piece.color === color)
+    .flatMap((piece) => getLegalMoves(piece, pieces).map((move) => ({ piece, move })));
+}
