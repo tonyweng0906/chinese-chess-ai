@@ -1,4 +1,6 @@
 export type PieceColor = "red" | "black";
+export type Language = "zh" | "en";
+export type PieceStyle = "hanzi" | "symbols";
 
 export type PieceType =
   | "general"

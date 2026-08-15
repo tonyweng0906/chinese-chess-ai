@@ -3,7 +3,16 @@ import { ChessBoard } from "./components/ChessBoard";
 import { useMemo, useState } from "react";
 import { getAllLegalMoves, getLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
-import type { ChessPiece, PieceColor } from "./types";
+import type { ChessPiece, PieceColor, Language, PieceStyle } from "./types";
+
+const copy = {
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw" },
+} as const;
+
+function symbolsForTurn(turn: PieceColor) {
+  return turn === "red" ? "♔" : "♚";
+}
 
 function App() {
   const [pieces, setPieces] = useState<ChessPiece[]>(initialPieces);
@@ -11,6 +20,9 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [winner, setWinner] = useState<PieceColor | null>(null);
   const [draw, setDraw] = useState(false);
+  const [language, setLanguage] = useState<Language>("zh");
+  const [pieceStyle, setPieceStyle] = useState<PieceStyle>("hanzi");
+  const t = copy[language];
   const [history, setHistory] = useState<ChessPiece[][]>([]);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
@@ -60,7 +72,7 @@ function App() {
     setMoveHistory([]);
   }
 
-  const turnName = turn === "red" ? "红方" : "黑方";
+  const turnName = turn === "red" ? t.red : t.black;
   const moveCount = 32 - pieces.length;
 
   return (
@@ -77,7 +89,7 @@ function App() {
             <span className="player-dot" />
             黑方
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} />
           <div className="player-label player-label--red">
             <span className="player-dot" />
             红方
@@ -85,26 +97,36 @@ function App() {
         </div>
 
         <aside className="game-panel">
-          <p className="panel-kicker">当前对局</p>
-          <h2>{winner ? `${winner === "red" ? "红方" : "黑方"}获胜` : draw ? "和棋" : `${turnName}回合`}</h2>
+          <div className="settings-row">
+            <span>{t.language}</span>
+            <button className={language === "zh" ? "is-active" : ""} type="button" onClick={() => setLanguage("zh")}>中文</button>
+            <button className={language === "en" ? "is-active" : ""} type="button" onClick={() => setLanguage("en")}>EN</button>
+          </div>
+          <div className="settings-row">
+            <span>{language === "zh" ? "棋子" : "Pieces"}</span>
+            <button className={pieceStyle === "hanzi" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("hanzi")}>{t.chinese}</button>
+            <button className={pieceStyle === "symbols" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("symbols")}>{t.symbols}</button>
+          </div>
+          <p className="panel-kicker">{t.current}</p>
+          <h2>{winner ? (winner === "red" ? t.redWin : t.blackWin) : draw ? t.drawTitle : `${turnName} ${t.turn}`}</h2>
           <div className="turn-card">
-            <span className={`turn-piece turn-piece--${turn}`}>{turn === "red" ? "帥" : "將"}</span>
+            <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? symbolsForTurn(turn) : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
-              <strong>{winner || draw ? "对局结束" : selectedPiece ? "请选择落点" : isInCheck(turn, pieces) ? "正在被将军" : "等待落子"}</strong>
-              <p>{winner ? "对方已无合法应对" : draw ? "当前局面无合法着法" : selectedPiece ? "棋盘上的金色标记是可走位置" : `请选择一枚${turnName}棋子`}</p>
+              <strong>{winner || draw ? t.finished : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
+              <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
             </div>
           </div>
           <div className="divider" />
           <dl className="game-stats">
-            <div><dt>回合</dt><dd>{String(Math.floor(moveCount / 2) + 1).padStart(2, "0")}</dd></div>
-            <div><dt>已行棋</dt><dd>{moveCount} 步</dd></div>
-            <div><dt>状态</dt><dd>{winner || draw ? "已结束" : isInCheck(turn, pieces) ? "将军" : "进行中"}</dd></div>
+            <div><dt>{t.turn}</dt><dd>{String(Math.floor(moveCount / 2) + 1).padStart(2, "0")}</dd></div>
+            <div><dt>{t.moves}</dt><dd>{moveCount}</dd></div>
+            <div><dt>{t.status}</dt><dd>{winner || draw ? t.ended : isInCheck(turn, pieces) ? t.checkShort : t.playing}</dd></div>
           </dl>
-          <button className="reset-button" type="button" onClick={resetGame}>重新开始</button>
-          <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0 || Boolean(winner) || draw}>悔棋</button>
+          <button className="reset-button" type="button" onClick={resetGame}>{t.reset}</button>
+          <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0 || Boolean(winner) || draw}>{t.undo}</button>
           <div className="move-log" aria-label="走棋记录">
-            <p>走棋记录</p>
-            {moveHistory.length === 0 ? <span>暂无记录</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
+            <p>{t.log}</p>
+            {moveHistory.length === 0 ? <span>{t.noLog}</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
           </div>
           <p className="coming-soon">已支持基础走法与将军限制</p>
         </aside>

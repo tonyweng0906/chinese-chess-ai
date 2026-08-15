@@ -1,4 +1,4 @@
-import type { ChessPiece, PieceType } from "../types";
+import type { ChessPiece, Language, PieceStyle, PieceType } from "../types";
 import type { Position } from "../game/rules";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
@@ -21,6 +21,22 @@ const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
     soldier: "兵",
   },
 };
+
+const englishLabels: Record<PieceType, string> = {
+  general: "General", advisor: "Advisor", elephant: "Elephant", horse: "Horse", rook: "Rook", cannon: "Cannon", soldier: "Soldier",
+};
+
+const symbols: Record<PieceType, string> = {
+  general: "♔", advisor: "◇", elephant: "△", horse: "♞", rook: "♜", cannon: "◉", soldier: "●",
+};
+
+function pieceText(piece: ChessPiece, language: Language, style: PieceStyle) {
+  return style === "symbols" ? symbols[piece.type] : language === "zh" ? labels[piece.color][piece.type] : piece.type.slice(0, 1).toUpperCase();
+}
+
+function pieceName(piece: ChessPiece, language: Language) {
+  return language === "zh" ? labels[piece.color][piece.type] : englishLabels[piece.type];
+}
 
 const x = (col: number) => 40 + col * 90;
 const y = (row: number) => 40 + row * 90;
@@ -60,9 +76,11 @@ interface ChessBoardProps {
   legalMoves: Position[];
   onPieceClick: (piece: ChessPiece) => void;
   onMove: (position: Position) => void;
+  language: Language;
+  pieceStyle: PieceStyle;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle }: ChessBoardProps) {
   return (
     <div className="board-shell" aria-label="中国象棋初始棋盘">
       <BoardLines />
@@ -75,10 +93,10 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
             left: `${(x(piece.col) / 800) * 100}%`,
             top: `${(y(piece.row) / 890) * 100}%`,
           }}
-          aria-label={`${piece.color === "red" ? "红方" : "黑方"}${labels[piece.color][piece.type]}`}
+          aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
           onClick={() => onPieceClick(piece)}
         >
-          <span>{labels[piece.color][piece.type]}</span>
+          <span>{pieceText(piece, language, pieceStyle)}</span>
         </button>
       ))}
       {legalMoves.map((position) => {
