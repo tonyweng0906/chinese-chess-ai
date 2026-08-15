@@ -176,6 +176,13 @@ function App() {
             {flipped ? t.red : t.black}
           </div>
           <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} />
+          {(winner || draw) && (
+            <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
+              <span className="result-spark">{winner ? "✦" : "—"}</span>
+              <strong>{winner ? (winner === "red" ? t.redWin : t.blackWin) : t.drawTitle}</strong>
+              <span>{winner ? t.finished : t.draw}</span>
+            </div>
+          )}
           <div className="player-label player-label--red">
             <span className="player-dot" />
             {flipped ? t.black : t.red}
