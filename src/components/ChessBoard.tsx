@@ -82,12 +82,10 @@ interface ChessBoardProps {
   pieceTheme: PieceTheme;
   customImage: string | null;
   flipped: boolean;
-  forcedMoveIds: Set<string>;
-  checkRestricted: boolean;
-  activeColor: ChessPiece["color"];
+  invalidPieceId: string | null;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, forcedMoveIds, checkRestricted, activeColor }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId }: ChessBoardProps) {
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘">
       <BoardLines />
@@ -100,7 +98,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
       )}
       {pieces.map((piece) => (
         <button
-          className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""} ${checkRestricted && piece.color === activeColor && forcedMoveIds.has(piece.id) ? "piece--forced" : ""} ${checkRestricted && piece.color === activeColor && !forcedMoveIds.has(piece.id) ? "piece--locked" : ""}`}
+          className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""}`}
           key={piece.id}
           type="button"
           style={{

@@ -39,12 +39,20 @@ function App() {
   const flipped = mode === "ai" && playerColor === "black";
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
-  const checkRestricted = !winner && !draw && isInCheck(turn, pieces);
-  const forcedMoveIds = useMemo(() => new Set(pieces.filter((piece) => piece.color === turn && getLegalMoves(piece, pieces).length > 0).map((piece) => piece.id)), [pieces, turn]);
+  const [invalidPieceId, setInvalidPieceId] = useState<string | null>(null);
+  const [invalidNotice, setInvalidNotice] = useState(false);
 
   function handlePieceClick(piece: ChessPiece) {
     if (mode === "ai" && piece.color === aiColor) return;
     if (winner || draw || aiThinking || piece.color !== turn) return;
+    if (isInCheck(turn, pieces) && getLegalMoves(piece, pieces).length === 0) {
+      setInvalidPieceId(piece.id);
+      setInvalidNotice(true);
+      window.setTimeout(() => setInvalidPieceId(null), 520);
+      return;
+    }
+    setInvalidNotice(false);
+    setInvalidPieceId(null);
     setSelectedId(piece.id === selectedId ? null : piece.id);
   }
 
@@ -65,6 +73,8 @@ function App() {
     }
     setTurn(nextTurn);
     setSelectedId(null);
+    setInvalidPieceId(null);
+    setInvalidNotice(false);
   }
 
   function handleMove(position: Position) {
@@ -92,6 +102,8 @@ function App() {
     setTurn((current) => current === "red" ? "black" : "red");
     setSelectedId(null);
     setLastMove(null);
+    setInvalidPieceId(null);
+    setInvalidNotice(false);
   }
 
   function resetGame() {
@@ -177,7 +189,7 @@ function App() {
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} forcedMoveIds={forcedMoveIds} checkRestricted={checkRestricted} activeColor={turn} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} />
           {(winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
@@ -235,7 +247,7 @@ function App() {
           <div className="turn-card">
             <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? symbolsForTurn(turn) : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
-              <strong>{winner || draw ? t.finished : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
+              <strong>{winner || draw ? t.finished : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
               <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
             </div>
           </div>
