@@ -1,14 +1,14 @@
 import "./App.css";
 import { ChessBoard } from "./components/ChessBoard";
-import { useEffect, useMemo, useState, type ChangeEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type MouseEvent } from "react";
 import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "选择棋子后点击棋盘放置；点击已有棋子移除" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Select a piece then click the board to place it; click a piece to remove it" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "拖动棋子到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces" },
 } as const;
 
 function symbolsForTurn(turn: PieceColor) {
@@ -113,16 +113,57 @@ function App() {
     applyMove(selectedPiece, position);
   }
 
+  function setupPositionAllowed(type: PieceType, color: PieceColor, row: number, col: number) {
+    if ((type === "general" || type === "advisor") && (col < 3 || col > 5 || (color === "red" ? row < 7 : row > 2))) return false;
+    if (type === "elephant" && (color === "red" ? row < 5 : row > 4)) return false;
+    if (type === "soldier" && (color === "red" ? row > 6 : row < 3)) return false;
+    return true;
+  }
+
+  function placeSetupPiece(type: PieceType, color: PieceColor, row: number, col: number) {
+    if (!setupPositionAllowed(type, color, row, col) || pieces.some((piece) => piece.row === row && piece.col === col)) return;
+    const limits: Record<PieceType, number> = { general: 1, advisor: 2, elephant: 2, horse: 2, rook: 2, cannon: 2, soldier: 5 };
+    if (pieces.filter((piece) => piece.color === color && piece.type === type).length >= limits[type]) return;
+    setPieces((current) => [...current, { id: `setup-${Date.now()}-${Math.random()}`, type, color, row, col }]);
+  }
+
   function handleBoardClick(event: MouseEvent<HTMLDivElement>) {
     if (mode !== "setup") { registerInvalidAction(); return; }
     const rect = event.currentTarget.getBoundingClientRect();
     const col = Math.round((((event.clientX - rect.left) / rect.width) * 800 - 40) / 90);
     const row = Math.round((((event.clientY - rect.top) / rect.height) * 890 - 40) / 90);
     if (row < 0 || row > 9 || col < 0 || col > 8) return;
-    if (pieces.some((piece) => piece.row === row && piece.col === col)) return;
-    const limits: Record<PieceType, number> = { general: 1, advisor: 2, elephant: 2, horse: 2, rook: 2, cannon: 2, soldier: 5 };
-    if (pieces.filter((piece) => piece.color === setupColor && piece.type === setupType).length >= limits[setupType]) return;
-    setPieces((current) => [...current, { id: `setup-${Date.now()}-${Math.random()}`, type: setupType, color: setupColor, row, col }]);
+    placeSetupPiece(setupType, setupColor, row, col);
+  }
+
+  function handleBoardDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (mode !== "setup") return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const col = Math.round((((event.clientX - rect.left) / rect.width) * 800 - 40) / 90);
+    const row = Math.round((((event.clientY - rect.top) / rect.height) * 890 - 40) / 90);
+    if (row < 0 || row > 9 || col < 0 || col > 8) return;
+    try {
+      const payload = JSON.parse(event.dataTransfer.getData("application/x-chess-piece"));
+      if (payload.id) {
+        const moving = pieces.find((piece) => piece.id === payload.id);
+        if (!moving || !setupPositionAllowed(moving.type, moving.color, row, col)) return;
+        if (pieces.some((piece) => piece.id !== moving.id && piece.row === row && piece.col === col)) return;
+        setPieces((current) => current.map((piece) => piece.id === moving.id ? { ...piece, row, col } : piece));
+      } else if (payload.type && payload.color) {
+        placeSetupPiece(payload.type as PieceType, payload.color as PieceColor, row, col);
+      }
+    } catch { return; }
+  }
+
+  function clearSetupBoard() {
+    setPieces([]);
+    setHistory([]);
+    setMoveHistory([]);
+    setSelectedId(null);
+    setWinner(null);
+    setDraw(false);
+    setLastMove(null);
   }
 
   useEffect(() => {
@@ -249,7 +290,7 @@ function App() {
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup"} />
           {(winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
@@ -291,8 +332,9 @@ function App() {
               <button className={setupColor === "black" ? "is-active" : ""} type="button" onClick={() => setSetupColor("black")}>{t.blackSide}</button>
             </div>
             <div className="setup-piece-grid">
-              {(Object.keys(setupNames) as PieceType[]).map((type) => <button key={type} className={setupType === type ? "is-active" : ""} type="button" onClick={() => setSetupType(type)}>{setupNames[type]}</button>)}
+              {(Object.keys(setupNames) as PieceType[]).map((type) => <button key={type} className={setupType === type ? "is-active" : ""} type="button" draggable onClick={() => setSetupType(type)} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color: setupColor }))}>{setupNames[type]}</button>)}
             </div>
+            <button className="clear-board-button" type="button" onClick={clearSetupBoard}>{t.clearAll}</button>
           </div>}
           <div className="settings-row">
             <span>{t.language}</span>

@@ -1,5 +1,5 @@
 import type { ChessPiece, Language, PieceStyle, PieceTheme, PieceType } from "../types";
-import type { MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import type { Position } from "../game/rules";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
@@ -87,11 +87,13 @@ interface ChessBoardProps {
   hintPieceIds: Set<string>;
   onInvalidAction: () => void;
   onBoardClick: (event: MouseEvent<HTMLDivElement>) => void;
+  onBoardDrop: (event: DragEvent<HTMLDivElement>) => void;
+  setupMode: boolean;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode }: ChessBoardProps) {
   return (
-    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick}>
+    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick} onDragOver={(event) => event.preventDefault()} onDrop={onBoardDrop}>
       <BoardLines />
       {lastMove && (
         <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">
@@ -111,6 +113,8 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
           }}
           aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
           onClick={(event) => { event.stopPropagation(); onPieceClick(piece); }}
+          draggable={setupMode}
+          onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}
         >
           {customImage && <img className="piece-image" src={customImage} alt="" aria-hidden="true" />}
           <span>{pieceText(piece, language, pieceStyle)}</span>
