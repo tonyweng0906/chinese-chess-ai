@@ -364,7 +364,7 @@ function App() {
               <div className="setup-piece-tray">
                 {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={`${color}-${type}`}>
                   <button className={`setup-token setup-token--${color} ${setupColor === color && setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => { setSetupColor(color); setSetupType(type); }} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color }))} aria-label={`${color === "red" ? t.red : t.black} ${setupNames[type]}`}>
-                    {pieceStyle === "symbols" ? <PieceIcon type={type} /> : setupGlyphs[color][type]}
+                    {pieceStyle === "symbols" ? <PieceIcon type={type} /> : language === "en" ? englishBoardMarks[type] : setupGlyphs[color][type]}
                   </button>
                   <span>{setupNames[type]}</span>
                 </div>)}
