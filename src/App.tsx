@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type DragEvent, type MouseEvent } from "r
 import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
+import { PieceIcon } from "./components/PieceIcon";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
 
 const copy = {
@@ -11,16 +12,11 @@ const copy = {
   en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first" },
 } as const;
 
-function symbolsForTurn(turn: PieceColor) {
-  return turn === "red" ? "♔" : "♚";
-}
-
 const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
   red: { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" },
   black: { general: "将", advisor: "士", elephant: "象", horse: "马", rook: "车", cannon: "炮", soldier: "卒" },
 };
 
-const setupSymbols: Record<PieceType, string> = { general: "♔", advisor: "◇", elephant: "△", horse: "♞", rook: "♜", cannon: "◉", soldier: "●" };
 const englishBoardMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
 
 function App() {
@@ -368,7 +364,7 @@ function App() {
               <div className="setup-piece-tray">
                 {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={`${color}-${type}`}>
                   <button className={`setup-token setup-token--${color} ${setupColor === color && setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => { setSetupColor(color); setSetupType(type); }} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color }))} aria-label={`${color === "red" ? t.red : t.black} ${setupNames[type]}`}>
-                    {pieceStyle === "symbols" ? setupSymbols[type] : setupGlyphs[color][type]}
+                    {pieceStyle === "symbols" ? <PieceIcon type={type} /> : setupGlyphs[color][type]}
                   </button>
                   <span>{setupNames[type]}</span>
                 </div>)}
@@ -406,7 +402,7 @@ function App() {
           <p className="panel-kicker">{t.current}</p>
           <h2>{winner ? (winner === "red" ? t.redWin : t.blackWin) : draw ? t.drawTitle : `${turnName} ${t.turn}`}</h2>
           <div className="turn-card">
-            <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? symbolsForTurn(turn) : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
+            <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? <PieceIcon type="general" /> : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
               <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : selfCheckWarning ? t.selfCheck : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
               <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>

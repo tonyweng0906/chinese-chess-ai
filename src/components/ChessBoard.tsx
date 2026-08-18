@@ -1,6 +1,7 @@
 import type { ChessPiece, Language, PieceStyle, PieceTheme, PieceType } from "../types";
 import type { DragEvent, MouseEvent } from "react";
 import type { Position } from "../game/rules";
+import { PieceIcon } from "./PieceIcon";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
   black: {
@@ -31,12 +32,8 @@ const englishMarks: Record<PieceType, string> = {
   general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P",
 };
 
-const symbols: Record<PieceType, string> = {
-  general: "♔", advisor: "◇", elephant: "△", horse: "♞", rook: "♜", cannon: "◉", soldier: "●",
-};
-
-function pieceText(piece: ChessPiece, language: Language, style: PieceStyle) {
-  return style === "symbols" ? symbols[piece.type] : language === "zh" ? labels[piece.color][piece.type] : englishMarks[piece.type];
+function pieceText(piece: ChessPiece, language: Language) {
+  return language === "zh" ? labels[piece.color][piece.type] : englishMarks[piece.type];
 }
 
 function pieceName(piece: ChessPiece, language: Language) {
@@ -119,7 +116,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
           draggable={setupMode}
           onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}
         >
-          <span>{pieceText(piece, language, pieceStyle)}</span>
+          {pieceStyle === "symbols" ? <PieceIcon type={piece.type} /> : <span>{pieceText(piece, language)}</span>}
         </button>
       ))}
       {legalMoves.map((position) => {
