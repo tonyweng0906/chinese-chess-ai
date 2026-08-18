@@ -1,4 +1,5 @@
 import type { ChessPiece, Language, PieceStyle, PieceTheme, PieceType } from "../types";
+import type { MouseEvent } from "react";
 import type { Position } from "../game/rules";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
@@ -85,11 +86,12 @@ interface ChessBoardProps {
   invalidPieceId: string | null;
   hintPieceIds: Set<string>;
   onInvalidAction: () => void;
+  onBoardClick: (event: MouseEvent<HTMLDivElement>) => void;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds, onInvalidAction }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick }: ChessBoardProps) {
   return (
-    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘" onClick={onInvalidAction}>
+    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick}>
       <BoardLines />
       {lastMove && (
         <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">

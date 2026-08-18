@@ -174,6 +174,10 @@
 .settings-row > span { min-width: 42px; letter-spacing: 0.08em; }
 .settings-row button { padding: 4px 8px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
 .settings-row button:hover, .settings-row button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
+.editor-help { margin: 9px 0 12px; color: #8d806c; font-size: 10px; line-height: 1.55; }
+.setup-piece-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 9px 0 12px; }
+.setup-piece-grid button { padding: 6px 5px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
+.setup-piece-grid button:hover, .setup-piece-grid button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
 .upload-button, .export-button { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; text-align: center; font-size: 10px; letter-spacing: 0.08em; }
 .upload-button:hover, .export-button:hover { border-color: #806748; color: #d6bd91; }
 .upload-button input { display: none; }
