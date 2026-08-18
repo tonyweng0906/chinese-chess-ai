@@ -147,23 +147,12 @@
 .board-shell--flat .piece { border-width: 3px; background: #f1e8d8; box-shadow: 0 3px 4px rgba(43, 24, 8, 0.24); }
 
 /* International pictogram pieces */
-.piece--symbols {
-  color: #f7f0e3;
-  border-color: rgba(255, 246, 225, 0.5);
-  box-shadow: 0 2px 4px rgba(31, 20, 13, 0.34);
-}
-.piece--symbols.piece--red { --piece-icon-cutout: #b34c47; background: #b34c47; }
-.piece--symbols.piece--black { --piece-icon-cutout: #3b3f46; background: #3b3f46; }
-.board-shell--jade .piece--symbols { border-color: rgba(239, 251, 242, 0.5); box-shadow: 0 2px 4px rgba(20, 48, 34, 0.3); }
-.board-shell--jade .piece--symbols.piece--red { --piece-icon-cutout: #a85e57; background: #a85e57; }
-.board-shell--jade .piece--symbols.piece--black { --piece-icon-cutout: #42665b; background: #42665b; }
-.board-shell--flat .piece--symbols { border-color: rgba(255,255,255,0.4); box-shadow: 0 2px 3px rgba(43, 24, 8, 0.22); }
-.board-shell--flat .piece--symbols.piece--red { --piece-icon-cutout: #b84a47; background: #b84a47; }
-.board-shell--flat .piece--symbols.piece--black { --piece-icon-cutout: #3b4048; background: #3b4048; }
-.piece--symbols.piece--selected { box-shadow: 0 0 0 4px rgba(245, 211, 133, 0.8), 0 3px 6px rgba(33, 17, 8, 0.38); }
-.piece--symbols.piece--invalid { box-shadow: 0 0 0 4px rgba(226, 91, 76, 0.82), 0 2px 4px rgba(31, 16, 11, 0.35); }
-.piece--symbols.piece--escape-hint { animation-name: escape-hint-symbols; }
-@keyframes escape-hint-symbols { 0%, 100% { box-shadow: 0 0 0 2px rgba(247, 215, 139, 0.48), 0 2px 4px rgba(31, 16, 11, 0.34); } 50% { box-shadow: 0 0 0 8px rgba(247, 215, 139, 0.12), 0 2px 4px rgba(31, 16, 11, 0.34); } }
+.piece--symbols.piece--red,
+.piece--symbols.piece--black { --piece-icon-cutout: #e6c384; }
+.board-shell--jade .piece--symbols.piece--red,
+.board-shell--jade .piece--symbols.piece--black { --piece-icon-cutout: #d8e5d0; }
+.board-shell--flat .piece--symbols.piece--red,
+.board-shell--flat .piece--symbols.piece--black { --piece-icon-cutout: #f1e8d8; }
 
 .move-target { position: absolute; width: 8.7%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 5; padding: 0; border: 0; border-radius: 50%; background: rgba(248, 219, 135, 0.52); box-shadow: inset 0 0 0 3px rgba(107, 69, 26, 0.45); cursor: pointer; }
 .move-target::after { content: ""; display: block; width: 21%; aspect-ratio: 1; margin: auto; border-radius: 50%; background: #6e421e; }
@@ -210,11 +199,9 @@
 .setup-token .piece-icon { width: 23px; height: 23px; }
 .setup-token--red { color: #a52c25; }
 .setup-token--black { color: #24211d; }
-.setup-token--symbols { color: #f7f0e3; border-color: rgba(255, 246, 225, 0.48); box-shadow: 0 2px 3px rgba(31, 19, 8, 0.32); }
-.setup-token--symbols.setup-token--red { --piece-icon-cutout: #b34c47; background: #b34c47; }
-.setup-token--symbols.setup-token--black { --piece-icon-cutout: #3b3f46; background: #3b3f46; }
+.setup-token--symbols.setup-token--red,
+.setup-token--symbols.setup-token--black { --piece-icon-cutout: #e6c384; }
 .setup-token:hover, .setup-token.is-active { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 0 3px rgba(240, 202, 115, 0.42), 0 5px 9px rgba(31, 19, 8, 0.42), inset 0 0 0 3px #d2a75f; }
-.setup-token--symbols:hover, .setup-token--symbols.is-active { box-shadow: 0 0 0 3px rgba(242, 207, 127, 0.55), 0 3px 5px rgba(31, 19, 8, 0.34); }
 .setup-token:active { cursor: grabbing; }
 .board-shell--setup { outline: 2px dashed rgba(210, 169, 98, 0.38); outline-offset: 7px; }
 .board-shell--setup .piece { cursor: grab; }
@@ -257,9 +244,9 @@
 .turn-piece .piece-icon { width: 28px; height: 28px; }
 .turn-piece--red { color: #bf4d41; border-color: #8f312a; }
 .turn-piece--black { color: #b8bec7; border-color: #525967; }
-.turn-piece--symbols { color: #f7f0e3; border-color: rgba(255, 246, 225, 0.48); box-shadow: 0 2px 4px rgba(0,0,0,0.22); }
-.turn-piece--symbols.turn-piece--red { --piece-icon-cutout: #b34c47; background: #b34c47; }
-.turn-piece--symbols.turn-piece--black { --piece-icon-cutout: #3b3f46; background: #3b3f46; }
+.turn-piece--symbols { border-width: 2px; background: #e6c384; box-shadow: 0 3px 6px rgba(31, 19, 8, 0.34), inset 0 0 0 2px #d2a75f; }
+.turn-piece--symbols.turn-piece--red,
+.turn-piece--symbols.turn-piece--black { --piece-icon-cutout: #e6c384; }
 
 .turn-card strong { display: block; color: #d8c9b2; font-size: 14px; font-weight: 600; }
 .turn-card p { margin: 4px 0 0; color: #6f665a; font-size: 11px; }
