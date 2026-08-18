@@ -6,11 +6,12 @@ import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
 import { Tutorial } from "./components/Tutorial";
+import { playGameSound, type GameSound } from "./audio/gameSounds";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate" },
 } as const;
 
 const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
@@ -33,6 +34,8 @@ function App() {
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [playerColor, setPlayerColor] = useState<PieceColor>("red");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("wood");
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundVolume, setSoundVolume] = useState(0.58);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
@@ -92,6 +95,7 @@ function App() {
   }
 
   function applyMove(piece: ChessPiece, position: Position) {
+    const capturedPiece = pieces.find((item) => item.row === position.row && item.col === position.col);
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
       .map((item) => item.id === piece.id ? { ...item, ...position } : item);
@@ -101,11 +105,19 @@ function App() {
     setPieces(nextPieces);
     const nextTurn = turn === "red" ? "black" : "red";
     const opponentGeneralExists = nextPieces.some((piece) => piece.type === "general" && piece.color === nextTurn);
-    if (!opponentGeneralExists) setWinner(turn);
-    else if (getAllLegalMoves(nextTurn, nextPieces).length === 0) {
-      if (isInCheck(nextTurn, nextPieces)) setWinner(turn);
-      else setDraw(true);
+    const opponentInCheck = opponentGeneralExists && isInCheck(nextTurn, nextPieces);
+    const opponentHasMoves = opponentGeneralExists && getAllLegalMoves(nextTurn, nextPieces).length > 0;
+    let sound: GameSound = capturedPiece ? "capture" : "move";
+    if (!opponentGeneralExists || (opponentInCheck && !opponentHasMoves)) {
+      setWinner(turn);
+      sound = "win";
+    } else if (!opponentHasMoves) {
+      setDraw(true);
+      sound = "draw";
+    } else if (opponentInCheck) {
+      sound = "check";
     }
+    if (soundEnabled) playGameSound(sound, soundVolume);
     setTurn(nextTurn);
     setSelectedId(null);
     setInvalidPieceId(null);
@@ -250,6 +262,12 @@ function App() {
     setInvalidAttempts(0);
   }
 
+  function toggleSound() {
+    const nextEnabled = !soundEnabled;
+    setSoundEnabled(nextEnabled);
+    if (nextEnabled) playGameSound("move", soundVolume);
+  }
+
   function resetAllSettings() {
     localStorage.removeItem("chinese-chess-ai-game");
     setLanguage("zh");
@@ -258,6 +276,8 @@ function App() {
     setDifficulty("normal");
     setPlayerColor("red");
     setPieceTheme("wood");
+    setSoundEnabled(true);
+    setSoundVolume(0.58);
     resetGame();
   }
 
@@ -304,12 +324,14 @@ function App() {
       if (["easy", "normal", "hard"].includes(data.difficulty)) setDifficulty(data.difficulty);
       if (data.playerColor === "red" || data.playerColor === "black") setPlayerColor(data.playerColor);
       if (["wood", "jade", "flat"].includes(data.pieceTheme)) setPieceTheme(data.pieceTheme);
+      if (typeof data.soundEnabled === "boolean") setSoundEnabled(data.soundEnabled);
+      if (typeof data.soundVolume === "number" && data.soundVolume >= 0 && data.soundVolume <= 1) setSoundVolume(data.soundVolume);
     } catch { localStorage.removeItem("chinese-chess-ai-game"); }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme }));
-  }, [pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme]);
+    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume }));
+  }, [pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume]);
 
   return (
     <main className={`app ${tutorialOpen ? "app--tutorial" : ""}`}>
@@ -317,7 +339,10 @@ function App() {
         <p className="eyebrow">AI CHINESE CHESS</p>
         <h1>弈境</h1>
         <p className="subtitle">方寸棋盘，推演千秋</p>
-        {!tutorialOpen && <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : "Beginner guide"}</button>}
+        {!tutorialOpen && <div className="hero-mobile-actions">
+          <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : "Beginner guide"}</button>
+          <button className={`sound-mobile-toggle ${soundEnabled ? "is-active" : ""}`} type="button" aria-label={`${t.sound}：${soundEnabled ? t.soundOn : t.soundOff}`} aria-pressed={soundEnabled} onClick={toggleSound}><span aria-hidden="true">♪</span>{soundEnabled ? t.soundOn : t.soundOff}</button>
+        </div>}
       </header>
 
       {tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
@@ -402,6 +427,20 @@ function App() {
             <span>{language === "zh" ? "棋子" : "Pieces"}</span>
             <button className={pieceStyle === "hanzi" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("hanzi")}>{t.chinese}</button>
             <button className={pieceStyle === "symbols" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("symbols")}>{t.symbols}</button>
+          </div>
+          <div className={`sound-control ${soundEnabled ? "sound-control--active" : ""}`}>
+            <div className="sound-control__header">
+              <span>{t.sound}</span>
+              <button className={soundEnabled ? "is-active" : ""} type="button" aria-pressed={soundEnabled} onClick={toggleSound}>
+                <i aria-hidden="true">♪</i>{soundEnabled ? t.soundOn : t.soundOff}
+              </button>
+            </div>
+            <label className="sound-volume">
+              <span>{t.volume}</span>
+              <input type="range" min="0" max="100" step="1" value={Math.round(soundVolume * 100)} disabled={!soundEnabled} aria-label={t.volume} onChange={(event) => setSoundVolume(Number(event.target.value) / 100)} />
+              <output>{Math.round(soundVolume * 100)}%</output>
+            </label>
+            <small>{t.soundHint}</small>
           </div>
           {language === "en" && pieceStyle === "hanzi" && <div className="piece-legend">
             {(Object.keys(setupNames) as PieceType[]).map((type) => <span key={type}><b>{englishBoardMarks[type]}</b> {setupNames[type]}</span>)}

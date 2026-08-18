@@ -186,6 +186,17 @@
 .settings-row > span { min-width: 42px; letter-spacing: 0.08em; }
 .settings-row button { padding: 4px 8px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
 .settings-row button:hover, .settings-row button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
+.sound-control { margin: 13px 0 19px; padding: 11px 12px; border: 1px solid #342d25; border-radius: 4px; color: #756a5a; background: rgba(255,255,255,.015); transition: border-color 180ms ease, background 180ms ease; }
+.sound-control--active { border-color: #4d3e2e; background: rgba(185,132,61,.035); }
+.sound-control__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 10px; letter-spacing: .08em; }
+.sound-control__header button { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border: 1px solid #3a3128; border-radius: 999px; color: #786e60; background: transparent; cursor: pointer; font-size: 9px; }
+.sound-control__header button i { color: #a88b5f; font-size: 11px; font-style: normal; }
+.sound-control__header button.is-active { border-color: #8f7049; color: #e0c79b; background: rgba(185,132,61,.12); }
+.sound-volume { display: grid; grid-template-columns: 34px minmax(0,1fr) 31px; align-items: center; gap: 8px; margin-top: 10px; color: #665d52; font-size: 9px; }
+.sound-volume input { width: 100%; height: 3px; accent-color: #b58a52; cursor: pointer; }
+.sound-volume input:disabled { cursor: not-allowed; opacity: .32; }
+.sound-volume output { color: #99856a; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
+.sound-control small { display: block; margin-top: 8px; color: #554f47; font-size: 8px; line-height: 1.5; letter-spacing: .02em; }
 .piece-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 9px; margin: 7px 0 14px; color: #766c5f; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 9px; }
 .piece-legend b { display: inline-block; width: 13px; color: #c3a877; }
 .editor-help { margin: 9px 0 12px; color: #8d806c; font-size: 10px; line-height: 1.55; }
@@ -289,7 +300,7 @@
 .tutorial-open-button b { font-size: 11px; letter-spacing: .14em; }
 .tutorial-open-button small { color: #6f6557; font-size: 9px; }
 .tutorial-open-button i { font-size: 18px; font-style: normal; }
-.tutorial-mobile-entry { display: none; }
+.hero-mobile-actions, .tutorial-mobile-entry, .sound-mobile-toggle { display: none; }
 
 .tutorial-shell {
   width: min(1060px, 100%);
@@ -480,7 +491,10 @@
   .game-layout { grid-template-columns: minmax(0, 680px); }
   .game-panel { display: none; }
   .hero { margin-bottom: 24px; }
-  .tutorial-mobile-entry { display: inline-block; margin-top: 15px; padding: 7px 12px; border: 1px solid #55432f; border-radius: 3px; color: #a98f68; background: rgba(185,132,61,.07); }
+  .hero-mobile-actions { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 15px; }
+  .tutorial-mobile-entry, .sound-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 31px; padding: 7px 12px; border: 1px solid #55432f; border-radius: 3px; color: #a98f68; background: rgba(185,132,61,.07); font-size: 10px; }
+  .sound-mobile-toggle { gap: 5px; border-color: #3c3329; color: #756b5d; }
+  .sound-mobile-toggle.is-active { border-color: #806342; color: #d3b57f; background: rgba(185,132,61,.12); }
   .tutorial-intro { grid-template-columns: 1fr; }
   .tutorial-emblem { display: none; }
   .tutorial-path { grid-template-columns: 1fr; }
