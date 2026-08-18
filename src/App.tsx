@@ -7,12 +7,45 @@ import { chooseBestMove } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
 import { Tutorial } from "./components/Tutorial";
 import { playGameSound, type GameSound } from "./audio/gameSounds";
+import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
 
 const copy = {
   zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音" },
   en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate" },
 } as const;
+
+const ruleCopy = {
+  zh: {
+    noCapture: "未吃子着数", repeatWarning: "当前局面已重复两次，再次重复将触发规则裁定", noCaptureWarning: "自然限着即将到达，需尽快完成吃子",
+    reasons: {
+      "general-captured": "将帅被吃，对局结束", checkmate: "将死：被将军方没有合法应对", stalemate: "困毙：无合法着法的一方判负",
+      repetition: "同一局面出现三次，双方均无违规，判为和棋", "perpetual-check": "长将违规：连续将军方判负",
+      "perpetual-chase": "长捉违规：连续追捉同一无根棋子的一方判负", "no-capture-limit": "连续50回合没有吃子，按自然限着判和",
+    },
+  },
+  en: {
+    noCapture: "Moves without capture", repeatWarning: "This position has appeared twice; another repetition triggers adjudication", noCaptureWarning: "The no-capture limit is near; a capture is required",
+    reasons: {
+      "general-captured": "The general was captured", checkmate: "Checkmate: the checked side has no legal reply", stalemate: "Stalemate: the side with no legal move loses",
+      repetition: "The same position occurred three times with no sole offender", "perpetual-check": "Perpetual check: the checking side loses",
+      "perpetual-chase": "Perpetual chase: the side repeatedly chasing the same loose piece loses", "no-capture-limit": "No capture for 50 full moves; the game is drawn",
+    },
+  },
+} as const;
+
+type EndReason = keyof typeof ruleCopy.zh.reasons;
+const endReasons: EndReason[] = ["general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit"];
+
+interface GameSnapshot {
+  pieces: ChessPiece[];
+  turn: PieceColor;
+  moveHistory: string[];
+  positionHistory: string[];
+  ruleMoves: RuleMoveRecord[];
+  noCapturePlyCount: number;
+  lastMove: { from: Position; to: Position } | null;
+}
 
 const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
   red: { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" },
@@ -39,8 +72,14 @@ function App() {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
-  const [history, setHistory] = useState<ChessPiece[][]>([]);
+  const rulesText = ruleCopy[language];
+  const [history, setHistory] = useState<GameSnapshot[]>([]);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
+  const [positionHistory, setPositionHistory] = useState<string[]>(() => [getPositionKey(initialPieces, "red")]);
+  const [ruleMoves, setRuleMoves] = useState<RuleMoveRecord[]>([]);
+  const [noCapturePlyCount, setNoCapturePlyCount] = useState(0);
+  const [endReason, setEndReason] = useState<EndReason | null>(null);
+  const [saveReady, setSaveReady] = useState(false);
   const turnName = turn === "red" ? t.red : t.black;
   const aiColor = playerColor === "red" ? "black" : "red";
   const depth = difficulty === "easy" ? 1 : difficulty === "normal" ? 2 : 3;
@@ -58,6 +97,10 @@ function App() {
     if (invalidAttempts < 3) return new Set<string>();
     return new Set(pieces.filter((piece) => piece.color === turn && getLegalMoves(piece, pieces).length > 0).map((piece) => piece.id));
   }, [invalidAttempts, pieces, turn]);
+  const currentPositionKey = positionHistory.at(-1);
+  const currentPositionOccurrences = currentPositionKey ? positionHistory.filter((position) => position === currentPositionKey).length : 0;
+  const ruleWarning = noCapturePlyCount >= 80 ? rulesText.noCaptureWarning : currentPositionOccurrences >= 2 ? rulesText.repeatWarning : null;
+  const endReasonText = endReason ? rulesText.reasons[endReason] : null;
 
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
@@ -99,20 +142,43 @@ function App() {
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
       .map((item) => item.id === piece.id ? { ...item, ...position } : item);
-    setHistory((current) => [...current, pieces]);
+    setHistory((current) => [...current, { pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, lastMove }]);
     setMoveHistory((current) => [...current, `${turnName}：(${piece.row},${piece.col}) → (${position.row},${position.col})`]);
     setLastMove({ from: { row: piece.row, col: piece.col }, to: position });
     setPieces(nextPieces);
     const nextTurn = turn === "red" ? "black" : "red";
+    const nextNoCapturePlyCount = capturedPiece ? 0 : noCapturePlyCount + 1;
+    const nextRuleMoves = [...ruleMoves, describeMoveForRules(piece.id, turn, nextPieces)];
+    const nextPositionHistory = [...positionHistory, getPositionKey(nextPieces, nextTurn)];
+    setNoCapturePlyCount(nextNoCapturePlyCount);
+    setRuleMoves(nextRuleMoves);
+    setPositionHistory(nextPositionHistory);
     const opponentGeneralExists = nextPieces.some((piece) => piece.type === "general" && piece.color === nextTurn);
     const opponentInCheck = opponentGeneralExists && isInCheck(nextTurn, nextPieces);
     const opponentHasMoves = opponentGeneralExists && getAllLegalMoves(nextTurn, nextPieces).length > 0;
+    const repetitionDecision = adjudicateRepetition(nextPositionHistory, nextRuleMoves);
     let sound: GameSound = capturedPiece ? "capture" : "move";
-    if (!opponentGeneralExists || (opponentInCheck && !opponentHasMoves)) {
+    if (!opponentGeneralExists) {
       setWinner(turn);
+      setEndReason("general-captured");
       sound = "win";
     } else if (!opponentHasMoves) {
+      setWinner(turn);
+      setEndReason(opponentInCheck ? "checkmate" : "stalemate");
+      sound = "win";
+    } else if (repetitionDecision) {
+      if (repetitionDecision.result === "loss") {
+        setWinner(repetitionDecision.offender === "red" ? "black" : "red");
+        setEndReason(repetitionDecision.reason);
+        sound = "win";
+      } else {
+        setDraw(true);
+        setEndReason(repetitionDecision.reason);
+        sound = "draw";
+      }
+    } else if (nextNoCapturePlyCount >= NO_CAPTURE_DRAW_LIMIT) {
       setDraw(true);
+      setEndReason("no-capture-limit");
       sound = "draw";
     } else if (opponentInCheck) {
       sound = "check";
@@ -189,12 +255,17 @@ function App() {
   }
 
   function clearSetupBoard() {
-    setPieces([
+    const clearedPieces: ChessPiece[] = [
       { id: "setup-black-general", type: "general", color: "black", row: 0, col: 4 },
       { id: "setup-red-general", type: "general", color: "red", row: 9, col: 4 },
-    ]);
+    ];
+    setPieces(clearedPieces);
     setHistory([]);
     setMoveHistory([]);
+    setPositionHistory([getPositionKey(clearedPieces, turn)]);
+    setRuleMoves([]);
+    setNoCapturePlyCount(0);
+    setEndReason(null);
     setSelectedId(null);
     setWinner(null);
     setDraw(false);
@@ -209,6 +280,10 @@ function App() {
     setSelectedId(null);
     setHistory([]);
     setMoveHistory([]);
+    setPositionHistory([]);
+    setRuleMoves([]);
+    setNoCapturePlyCount(0);
+    setEndReason(null);
     setLastMove(null);
   }
 
@@ -220,6 +295,10 @@ function App() {
     setDraw(false);
     setHistory([]);
     setMoveHistory([]);
+    setPositionHistory([getPositionKey(pieces, turn)]);
+    setRuleMoves([]);
+    setNoCapturePlyCount(0);
+    setEndReason(null);
     setLastMove(null);
   }
 
@@ -236,13 +315,19 @@ function App() {
 
   function undoMove() {
     const previous = history.at(-1);
-    if (!previous || winner) return;
-    setPieces(previous);
+    if (!previous) return;
+    setPieces(previous.pieces);
     setHistory((current) => current.slice(0, -1));
-    setMoveHistory((current) => current.slice(0, -1));
-    setTurn((current) => current === "red" ? "black" : "red");
+    setMoveHistory(previous.moveHistory);
+    setPositionHistory(previous.positionHistory);
+    setRuleMoves(previous.ruleMoves);
+    setNoCapturePlyCount(previous.noCapturePlyCount);
+    setTurn(previous.turn);
+    setWinner(null);
+    setDraw(false);
+    setEndReason(null);
     setSelectedId(null);
-    setLastMove(null);
+    setLastMove(previous.lastMove);
     setInvalidPieceId(null);
     setInvalidNotice(false);
     setInvalidAttempts(0);
@@ -258,6 +343,10 @@ function App() {
     setLastMove(null);
     setHistory([]);
     setMoveHistory([]);
+    setPositionHistory([getPositionKey(initialPieces, "red")]);
+    setRuleMoves([]);
+    setNoCapturePlyCount(0);
+    setEndReason(null);
     setSelfCheckWarning(false);
     setInvalidAttempts(0);
   }
@@ -291,6 +380,10 @@ function App() {
     setDraw(false);
     setHistory([]);
     setMoveHistory([]);
+    setPositionHistory([getPositionKey(initialPieces, "red")]);
+    setRuleMoves([]);
+    setNoCapturePlyCount(0);
+    setEndReason(null);
     setInvalidAttempts(0);
     setLastMove(null);
     setAiThinking(false);
@@ -299,7 +392,8 @@ function App() {
 
   function exportRecord() {
     const body = moveHistory.map((move, index) => `${index + 1}. ${move}`).join("\n");
-    const blob = new Blob([`AI Chinese Chess\n\n${body || "No moves"}\n`], { type: "text/plain;charset=utf-8" });
+    const conclusion = endReasonText ? `\n${language === "zh" ? "结束原因" : "Result"}：${endReasonText}\n` : "";
+    const blob = new Blob([`AI Chinese Chess\n\n${body || "No moves"}\n${conclusion}`], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -308,16 +402,24 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  const moveCount = 32 - pieces.length;
+  const moveCount = moveHistory.length;
 
   useEffect(() => {
     const saved = localStorage.getItem("chinese-chess-ai-game");
-    if (!saved) return;
+    if (!saved) { setSaveReady(true); return; }
     try {
       const data = JSON.parse(saved);
-      if (Array.isArray(data.pieces)) setPieces(data.pieces.filter((piece: ChessPiece) => setupPositionAllowed(piece.type, piece.color, piece.row, piece.col)));
-      if (data.turn === "red" || data.turn === "black") setTurn(data.turn);
+      const restoredPieces = Array.isArray(data.pieces) ? data.pieces.filter((piece: ChessPiece) => setupPositionAllowed(piece.type, piece.color, piece.row, piece.col)) : initialPieces;
+      const restoredTurn: PieceColor = data.turn === "black" ? "black" : "red";
+      setPieces(restoredPieces);
+      setTurn(restoredTurn);
       if (Array.isArray(data.moveHistory)) setMoveHistory(data.moveHistory);
+      setPositionHistory(Array.isArray(data.positionHistory) && data.positionHistory.length > 0 ? data.positionHistory : [getPositionKey(restoredPieces, restoredTurn)]);
+      if (Array.isArray(data.ruleMoves)) setRuleMoves(data.ruleMoves);
+      if (Number.isInteger(data.noCapturePlyCount) && data.noCapturePlyCount >= 0) setNoCapturePlyCount(data.noCapturePlyCount);
+      if (data.winner === "red" || data.winner === "black") setWinner(data.winner);
+      if (typeof data.draw === "boolean") setDraw(data.draw);
+      if (endReasons.includes(data.endReason)) setEndReason(data.endReason);
       if (data.language === "zh" || data.language === "en") setLanguage(data.language);
       if (data.pieceStyle === "hanzi" || data.pieceStyle === "symbols") setPieceStyle(data.pieceStyle);
       if (data.mode === "local" || data.mode === "ai" || data.mode === "setup") setMode(data.mode);
@@ -327,11 +429,13 @@ function App() {
       if (typeof data.soundEnabled === "boolean") setSoundEnabled(data.soundEnabled);
       if (typeof data.soundVolume === "number" && data.soundVolume >= 0 && data.soundVolume <= 1) setSoundVolume(data.soundVolume);
     } catch { localStorage.removeItem("chinese-chess-ai-game"); }
+    setSaveReady(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume }));
-  }, [pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume]);
+    if (!saveReady) return;
+    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume }));
+  }, [saveReady, pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume]);
 
   return (
     <main className={`app ${tutorialOpen ? "app--tutorial" : ""}`}>
@@ -356,7 +460,7 @@ function App() {
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
               <strong>{winner ? (winner === "red" ? t.redWin : t.blackWin) : t.drawTitle}</strong>
-              <span>{winner ? t.finished : t.draw}</span>
+              <span>{endReasonText ?? (winner ? t.finished : t.draw)}</span>
             </div>
           )}
           <div className="player-label player-label--red">
@@ -450,8 +554,8 @@ function App() {
           <div className="turn-card">
             <span className={`turn-piece turn-piece--${turn} ${pieceStyle === "symbols" ? "turn-piece--symbols" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type="general" /> : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
-              <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : selfCheckWarning ? t.selfCheck : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
-              <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
+              <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : selfCheckWarning ? t.selfCheck : isInCheck(turn, pieces) ? t.check : ruleWarning ?? (aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : t.waiting)}</strong>
+              <p>{winner || draw ? endReasonText ?? t.finished : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
             </div>
           </div>
           <div className="divider" />
@@ -459,9 +563,10 @@ function App() {
             <div><dt>{t.turn}</dt><dd>{String(Math.floor(moveCount / 2) + 1).padStart(2, "0")}</dd></div>
             <div><dt>{t.moves}</dt><dd>{moveCount}</dd></div>
             <div><dt>{t.status}</dt><dd>{winner || draw ? t.ended : isInCheck(turn, pieces) ? t.checkShort : t.playing}</dd></div>
+            <div><dt>{rulesText.noCapture}</dt><dd>{noCapturePlyCount} / {NO_CAPTURE_DRAW_LIMIT}</dd></div>
           </dl>
           <button className="reset-button" type="button" onClick={resetGame}>{t.reset}</button>
-          <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0 || Boolean(winner) || draw}>{t.undo}</button>
+          <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0}>{t.undo}</button>
           <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
           <button className="settings-reset" type="button" onClick={resetAllSettings}>{t.resetSettings}</button>
           <div className="move-log" aria-label="走棋记录">
