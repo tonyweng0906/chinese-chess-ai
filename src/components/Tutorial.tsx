@@ -31,6 +31,9 @@ const tutorialCopy = {
     piecesIntro: "依次点击金色落点，练习七类棋子的代表走法。这里使用简化棋盘帮助记忆。", tapTarget: "点击一个金色落点", practiced: "很好，这一步走对了", nextPiece: "下一个棋子", finishPieces: "完成棋子练习",
     pieceNames: { general: "帅", advisor: "仕", elephant: "相", horse: "马", rook: "车", cannon: "炮", soldier: "兵" },
     pieceTips: { general: "帅每次只能走一格，并且不能离开九宫。", advisor: "仕沿斜线走一格，只能守在九宫内。", elephant: "相走“田”字，不能过河，象眼被堵时不能走。", horse: "马走“日”字；马腿被挡住时不能跳过去。", rook: "车沿横线或竖线直走，路上不能越过棋子。", cannon: "炮不吃子时像车一样走；吃子时必须隔着一个炮架。", soldier: "兵只能向前；过河以后还可以左右走，但不能后退。" },
+    pieceGoals: { general: "在高亮九宫内走一格", advisor: "沿九宫斜线走一步", elephant: "避开被堵住的象眼", horse: "避开被挡住的马腿", rook: "在阻挡棋子之前停下", cannon: "隔着炮架吃掉黑卒", soldier: "体验过河后的三个方向" },
+    pieceNotes: { general: "棋盘上的浅色区域就是九宫。帅不能走出这九个点。", advisor: "仕只能沿九宫里的斜线移动，不能直走。", elephant: "灰色阻挡物占住了象眼，因此带 × 的落点不能到达。", horse: "马先直走一格再斜走；第一步被堵住时，对应的两个日字落点都会失效。", rook: "车不能跳过任何棋子。灰色阻挡物后方都不可到达。", cannon: "注意三者必须在同一直线上：炮 → 恰好一个炮架 → 敌棋。炮会跳过炮架完成吃子。", soldier: "这里的兵已经过河，所以除了向前，也可以向左或向右一步。" },
+    ruleFocus: "本节重点", legendMove: "可走落点", legendBlocked: "阻挡/禁区", legendEnemy: "可以吃的敌棋", screen: "炮架", captureTarget: "点击黑卒，隔炮架完成吃子", captureDone: "漂亮！炮跳过炮架吃掉了黑卒", cannonSteps: ["炮与目标在同一直线", "中间恰好隔着一个炮架", "点击敌棋，炮跳过炮架完成吃子"],
     captureIntro: "选择红车，再点击唯一的金色落点。红车会吃掉黑卒，并沿直线攻击黑将。", captureGoal: "目标：吃掉黑卒并形成将军", captureSuccess: "完成！黑卒被吃掉，黑将正处于将军。", selectRook: "先选择红车",
     mateIntro: "这是一个一步将死局面。红兵封住两侧，红马保护进攻位置。找到红车的制胜落点。", mateGoal: "目标：一步将死并赢下对局", mateSuccess: "将死！黑方没有任何合法应对，你赢下了第一局。",
   },
@@ -53,6 +56,9 @@ const tutorialCopy = {
     piecesIntro: "Tap a gold destination for each of the seven pieces. This simplified board makes their movement patterns easy to remember.", tapTarget: "Tap a gold destination", practiced: "Nice—this move is correct", nextPiece: "Next piece", finishPieces: "Finish piece practice",
     pieceNames: { general: "King", advisor: "Guard", elephant: "Bishop", horse: "Knight", rook: "Rook", cannon: "Cannon", soldier: "Pawn" },
     pieceTips: { general: "The king moves one point at a time and must remain inside the palace.", advisor: "The guard moves one point diagonally and stays inside the palace.", elephant: "The bishop moves exactly two points diagonally, cannot cross the river, and can be blocked at its midpoint.", horse: "The knight moves in an L shape and can be blocked at the first orthogonal step.", rook: "The rook moves any distance horizontally or vertically without jumping pieces.", cannon: "The cannon moves like a rook, but must jump exactly one screen when capturing.", soldier: "The pawn moves forward; after crossing the river it may also move sideways, but never backward." },
+    pieceGoals: { general: "Move one point inside the highlighted palace", advisor: "Move one step diagonally in the palace", elephant: "Avoid the blocked elephant eye", horse: "Avoid the blocked horse leg", rook: "Stop before a blocking piece", cannon: "Capture the black pawn over one screen", soldier: "Try all three directions after crossing" },
+    pieceNotes: { general: "The softly highlighted area is the palace. The king may not leave these nine points.", advisor: "The guard follows the diagonal palace lines and never moves orthogonally.", elephant: "The gray blocker occupies the elephant eye, so the destination marked × cannot be reached.", horse: "A knight first steps orthogonally, then diagonally. A blocked first step removes two L-shaped destinations.", rook: "The rook cannot jump any piece. Every point beyond a gray blocker is unavailable.", cannon: "All three must share one line: cannon → exactly one screen → enemy. The cannon jumps the screen to capture.", soldier: "This pawn has crossed the river, so it may move forward, left, or right by one point." },
+    ruleFocus: "RULE FOCUS", legendMove: "Legal move", legendBlocked: "Blocker / forbidden", legendEnemy: "Capturable enemy", screen: "SCREEN", captureTarget: "Tap the black pawn to capture over the screen", captureDone: "Great! The cannon jumped the screen and captured the pawn", cannonSteps: ["Align cannon and target on one line", "Leave exactly one screen between them", "Tap the enemy—the cannon jumps the screen to capture"],
     captureIntro: "Select the red rook, then tap the only gold destination. It captures the black pawn and attacks the black king along the file.", captureGoal: "Goal: capture the pawn and give check", captureSuccess: "Done! The pawn is captured and the black king is in check.", selectRook: "Select the red rook first",
     mateIntro: "This is mate in one. The red pawns cover both sides and the knight protects the attacking square. Find the rook's winning move.", mateGoal: "Goal: deliver checkmate in one move", mateSuccess: "Checkmate! Black has no legal reply—you won your first game.",
   },
@@ -60,16 +66,28 @@ const tutorialCopy = {
 
 type TutorialText = (typeof tutorialCopy)[Language];
 const pieceOrder: PieceType[] = ["general", "advisor", "elephant", "horse", "rook", "cannon", "soldier"];
-const origin: Position = { row: 5, col: 4 };
-const movementTargets: Record<PieceType, Position[]> = {
-  general: [{ row: 4, col: 4 }, { row: 6, col: 4 }, { row: 5, col: 3 }, { row: 5, col: 5 }],
-  advisor: [{ row: 4, col: 3 }, { row: 4, col: 5 }, { row: 6, col: 3 }, { row: 6, col: 5 }],
-  elephant: [{ row: 3, col: 2 }, { row: 3, col: 6 }, { row: 7, col: 2 }, { row: 7, col: 6 }],
-  horse: [{ row: 3, col: 3 }, { row: 3, col: 5 }, { row: 4, col: 2 }, { row: 4, col: 6 }, { row: 6, col: 2 }, { row: 6, col: 6 }, { row: 7, col: 3 }, { row: 7, col: 5 }],
-  rook: [{ row: 1, col: 4 }, { row: 9, col: 4 }, { row: 5, col: 0 }, { row: 5, col: 8 }],
-  cannon: [{ row: 2, col: 4 }, { row: 8, col: 4 }, { row: 5, col: 1 }, { row: 5, col: 7 }],
-  soldier: [{ row: 4, col: 4 }, { row: 5, col: 3 }, { row: 5, col: 5 }],
+interface PieceExercise {
+  origin: Position;
+  targets: Position[];
+  blockers?: Position[];
+  blockedTargets?: Position[];
+  enemy?: { position: Position; type: PieceType };
+  palace?: boolean;
+  river?: boolean;
+  path?: Position[];
+}
+
+const pieceExercises: Record<PieceType, PieceExercise> = {
+  general: { origin: { row: 8, col: 4 }, targets: [{ row: 7, col: 4 }, { row: 9, col: 4 }, { row: 8, col: 3 }, { row: 8, col: 5 }], palace: true },
+  advisor: { origin: { row: 8, col: 4 }, targets: [{ row: 7, col: 3 }, { row: 7, col: 5 }, { row: 9, col: 3 }, { row: 9, col: 5 }], palace: true },
+  elephant: { origin: { row: 7, col: 4 }, targets: [{ row: 5, col: 6 }, { row: 9, col: 2 }, { row: 9, col: 6 }], blockers: [{ row: 6, col: 3 }], blockedTargets: [{ row: 5, col: 2 }], river: true },
+  horse: { origin: { row: 7, col: 4 }, targets: [{ row: 6, col: 2 }, { row: 6, col: 6 }, { row: 8, col: 2 }, { row: 8, col: 6 }, { row: 9, col: 3 }, { row: 9, col: 5 }], blockers: [{ row: 6, col: 4 }], blockedTargets: [{ row: 5, col: 3 }, { row: 5, col: 5 }] },
+  rook: { origin: { row: 5, col: 4 }, targets: [{ row: 2, col: 4 }, { row: 8, col: 4 }, { row: 5, col: 2 }, { row: 5, col: 6 }], blockers: [{ row: 1, col: 4 }, { row: 9, col: 4 }, { row: 5, col: 1 }, { row: 5, col: 7 }] },
+  cannon: { origin: { row: 5, col: 1 }, targets: [{ row: 5, col: 7 }], blockers: [{ row: 5, col: 4 }], enemy: { position: { row: 5, col: 7 }, type: "soldier" }, path: [2, 3, 4, 5, 6].map((col) => ({ row: 5, col })) },
+  soldier: { origin: { row: 5, col: 4 }, targets: [{ row: 4, col: 4 }, { row: 5, col: 3 }, { row: 5, col: 5 }], river: true },
 };
+
+const samePosition = (first: Position, row: number, col: number) => first.row === row && first.col === col;
 
 function LessonTopbar({ label, t, onOverview, onClose }: { label: string; t: TutorialText; onOverview: () => void; onClose: () => void }) {
   return <div className="tutorial-topbar"><button type="button" onClick={onOverview}>← {t.overview}</button><span>{label}</span><button type="button" onClick={onClose}>{t.backGame}</button></div>;
@@ -91,27 +109,43 @@ function BoardLesson({ t, onComplete }: { t: TutorialText; onComplete: () => voi
 
 function PieceLesson({ t, onComplete }: { t: TutorialText; onComplete: () => void }) {
   const [pieceIndex, setPieceIndex] = useState(0);
-  const [position, setPosition] = useState<Position>(origin);
+  const [position, setPosition] = useState<Position>(pieceExercises.general.origin);
   const [practiced, setPracticed] = useState(false);
   const type = pieceOrder[pieceIndex];
-  const targets = movementTargets[type];
-  function chooseTarget(target: Position) { if (!targets.some((item) => item.row === target.row && item.col === target.col)) return; setPosition(target); setPracticed(true); }
-  function next() { if (pieceIndex === pieceOrder.length - 1) { onComplete(); return; } setPieceIndex((current) => current + 1); setPosition(origin); setPracticed(false); }
+  const exercise = pieceExercises[type];
+  function chooseTarget(target: Position) { if (!exercise.targets.some((item) => samePosition(item, target.row, target.col))) return; setPosition(target); setPracticed(true); }
+  function next() { if (pieceIndex === pieceOrder.length - 1) { onComplete(); return; } const nextIndex = pieceIndex + 1; setPieceIndex(nextIndex); setPosition(pieceExercises[pieceOrder[nextIndex]].origin); setPracticed(false); }
   return <>
     <LessonHeading number={2} title={t.lessons[1][0]} intro={t.piecesIntro} label={t.lessonLabels[1]} />
     <div className="piece-lesson-layout">
-      <div className="move-practice-board" aria-label={t.pieceNames[type]}>
-        {Array.from({ length: 10 }, (_, row) => Array.from({ length: 9 }, (_, col) => {
-          const isPiece = position.row === row && position.col === col;
-          const isTarget = !practiced && targets.some((target) => target.row === row && target.col === col);
-          return <button className={isTarget ? "is-target" : ""} type="button" key={`${row}-${col}`} onClick={() => chooseTarget({ row, col })} aria-label={isTarget ? t.tapTarget : undefined}>{isPiece && <span className="practice-piece"><PieceIcon type={type} /></span>}</button>;
-        }))}
+      <div className="piece-board-column">
+        <div className="move-practice-board" aria-label={t.pieceNames[type]}>
+          {Array.from({ length: 10 }, (_, row) => Array.from({ length: 9 }, (_, col) => {
+            const isPiece = samePosition(position, row, col);
+            const isTarget = !practiced && exercise.targets.some((target) => samePosition(target, row, col));
+            const isBlocker = exercise.blockers?.some((blocker) => samePosition(blocker, row, col)) ?? false;
+            const isBlockedTarget = exercise.blockedTargets?.some((target) => samePosition(target, row, col)) ?? false;
+            const isEnemy = !practiced && exercise.enemy ? samePosition(exercise.enemy.position, row, col) : false;
+            const isPalace = exercise.palace && row >= 7 && row <= 9 && col >= 3 && col <= 5;
+            const isPath = exercise.path?.some((pathPoint) => samePosition(pathPoint, row, col)) ?? false;
+            const classes = [isTarget ? "is-target" : "", isEnemy ? "is-capture-target" : "", isBlocker ? "has-blocker" : "", isBlockedTarget ? "is-blocked-target" : "", isPalace ? "is-palace" : "", exercise.river && row === 4 ? "is-river-edge" : "", isPath ? "is-rule-path" : ""].filter(Boolean).join(" ");
+            return <button className={classes} type="button" key={`${row}-${col}`} onClick={() => chooseTarget({ row, col })} aria-label={isTarget ? (isEnemy ? t.captureTarget : t.tapTarget) : undefined}>
+              {isPiece && <span className="practice-piece"><PieceIcon type={type} /></span>}
+              {isBlocker && <span className={`practice-blocker ${type === "cannon" ? "is-screen" : ""}`}>{type === "cannon" ? t.screen : "■"}</span>}
+              {isEnemy && <span className="practice-enemy"><PieceIcon type={exercise.enemy?.type ?? "soldier"} /></span>}
+              {isBlockedTarget && <span className="practice-blocked-mark">×</span>}
+            </button>;
+          }))}
+        </div>
+        <div className="practice-legend"><span><i className="legend-move" />{t.legendMove}</span><span><i className="legend-blocked" />{t.legendBlocked}</span><span><i className="legend-enemy" />{t.legendEnemy}</span></div>
       </div>
       <div className="piece-lesson-copy">
         <span className="piece-lesson-count">{String(pieceIndex + 1).padStart(2, "0")} / 07</span>
         <div className="piece-lesson-icon"><PieceIcon type={type} /></div>
-        <h3>{t.pieceNames[type]}</h3><p>{t.pieceTips[type]}</p>
-        <strong className={practiced ? "is-done" : ""}>{practiced ? `✓ ${t.practiced}` : t.tapTarget}</strong>
+        <h3>{t.pieceNames[type]}</h3><span className="piece-practice-goal">{t.pieceGoals[type]}</span><p>{t.pieceTips[type]}</p>
+        <div className="piece-rule-focus"><b>{t.ruleFocus}</b><p>{t.pieceNotes[type]}</p></div>
+        {type === "cannon" && <ol className="cannon-rule-steps">{t.cannonSteps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>}
+        <strong className={practiced ? "is-done" : ""}>{practiced ? `✓ ${type === "cannon" ? t.captureDone : t.practiced}` : type === "cannon" ? t.captureTarget : t.tapTarget}</strong>
         <button type="button" onClick={next} disabled={!practiced}>{pieceIndex === pieceOrder.length - 1 ? t.finishPieces : t.nextPiece} →</button>
       </div>
     </div>
