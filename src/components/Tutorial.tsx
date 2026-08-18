@@ -37,7 +37,7 @@ const tutorialCopy = {
     pieceNotes: { general: "棋盘上的浅色区域就是九宫。帅不能走出这九个点。", advisor: "仕只能沿九宫里的斜线移动，不能直走。", elephant: "灰色阻挡物占住了象眼，因此带 × 的落点不能到达。", horse: "马先直走一格再斜走；第一步被堵住时，对应的两个日字落点都会失效。", rook: "车不能跳过任何棋子。灰色阻挡物后方都不可到达。", cannon: "注意三者必须在同一直线上：炮 → 恰好一个炮架 → 敌棋。炮会跳过炮架完成吃子。", soldier: "这里的兵已经过河，所以除了向前，也可以向左或向右一步。" },
     ruleFocus: "本节重点", legendMove: "可走落点", legendBlocked: "阻挡/禁区", legendEnemy: "可以吃的敌棋", screen: "炮架", captureTarget: "点击黑卒，隔炮架完成吃子", captureDone: "漂亮！炮跳过炮架吃掉了黑卒", cannonSteps: ["炮与目标在同一直线", "中间恰好隔着一个炮架", "点击敌棋，炮跳过炮架完成吃子"],
     moveExample: "示例 1 · 基本移动", captureExample: "示例 2 · 实际吃子", tapMoveExample: "点击棋盘上的金色落点", tapCaptureExample: "点击带红色标记的敌方棋子", moveComplete: "移动示例完成", captureComplete: "吃子示例完成", nextCapture: "进入吃子示例", exampleProgress: "本棋子进度",
-    displaySettings: "教程棋子设置", pieceForm: "棋子形态", hanziStyle: "汉字", symbolStyle: "图形", pieceThemeLabel: "棋子主题", themeNames: { wood: "木质", jade: "玉石", flat: "扁平" }, choosePiece: "选择想学习的棋子", choosePieceHint: "每枚棋子包含 3—4 个案例，可以按任意顺序查看。", movementTab: "移动示例", captureTab: "吃子示例", viewed: "已练习",
+    displaySettings: "教程棋子设置", pieceForm: "棋子形态", hanziStyle: "汉字", symbolStyle: "图形", pieceThemeLabel: "棋子主题", themeNames: { wood: "木质", jade: "玉石", flat: "扁平" }, choosePiece: "选择想学习的棋子", choosePieceHint: "每枚棋子包含 3—4 个案例，可以按任意顺序查看。", movementTab: "移动示例", captureTab: "吃子示例", viewed: "已练习", freePractice: "自由练习已开启：继续点击任意金色落点", movesMade: "连续行棋", moveUnit: "步", restartExample: "重新摆放",
     moveExamples: { general: "帅在九宫内向前移动一格。观察棋盘上的米字格边界。", advisor: "仕从九宫角点沿斜线走到中心，不能横走或直走。", elephant: "相从底线走一个完整的“田”字，落点仍在己方河界内。", horse: "马从底线走“日”字；这一步的马腿没有被挡住。", rook: "车沿同一竖线直走多格，中间没有任何棋子。", cannon: "没有吃子时，炮和车一样沿直线移动，不能越过棋子。", soldier: "未过河的兵只能向前走一格，不能左右移动。" },
     captureExamples: { general: "帅吃掉九宫内相邻的黑卒，但不能走出九宫。", advisor: "仕沿九宫斜线前进一步，吃掉中心的黑卒。", elephant: "相沿“田”字斜走两格，象眼畅通，因此可以吃掉目标。", horse: "马走“日”字吃掉黑卒；马腿位置必须保持空置。", rook: "车沿竖线直进，吃掉路径尽头的黑卒。", cannon: "红炮与黑卒之间恰好隔着一枚炮架，因此可以跳过炮架吃子。", soldier: "兵已经过河，可以向右横走一步并吃掉黑卒。" },
     captureIntro: "选择红车，再点击唯一的金色落点。红车会吃掉黑卒，并沿直线攻击黑将。", captureGoal: "目标：吃掉黑卒并形成将军", captureSuccess: "完成！黑卒被吃掉，黑将正处于将军。", selectRook: "先选择红车",
@@ -66,7 +66,7 @@ const tutorialCopy = {
     pieceNotes: { general: "The softly highlighted area is the palace. The king may not leave these nine points.", advisor: "The guard follows the diagonal palace lines and never moves orthogonally.", elephant: "The gray blocker occupies the elephant eye, so the destination marked × cannot be reached.", horse: "A knight first steps orthogonally, then diagonally. A blocked first step removes two L-shaped destinations.", rook: "The rook cannot jump any piece. Every point beyond a gray blocker is unavailable.", cannon: "All three must share one line: cannon → exactly one screen → enemy. The cannon jumps the screen to capture.", soldier: "This pawn has crossed the river, so it may move forward, left, or right by one point." },
     ruleFocus: "RULE FOCUS", legendMove: "Legal move", legendBlocked: "Blocker / forbidden", legendEnemy: "Capturable enemy", screen: "SCREEN", captureTarget: "Tap the black pawn to capture over the screen", captureDone: "Great! The cannon jumped the screen and captured the pawn", cannonSteps: ["Align cannon and target on one line", "Leave exactly one screen between them", "Tap the enemy—the cannon jumps the screen to capture"],
     moveExample: "EXAMPLE 1 · MOVEMENT", captureExample: "EXAMPLE 2 · CAPTURE", tapMoveExample: "Tap the gold destination on the board", tapCaptureExample: "Tap the enemy marked in red", moveComplete: "Movement example complete", captureComplete: "Capture example complete", nextCapture: "Continue to capture", exampleProgress: "PIECE PROGRESS",
-    displaySettings: "TUTORIAL PIECE SETTINGS", pieceForm: "Piece form", hanziStyle: "Characters", symbolStyle: "Symbols", pieceThemeLabel: "Piece theme", themeNames: { wood: "Wood", jade: "Jade", flat: "Flat" }, choosePiece: "Choose a piece to learn", choosePieceHint: "Each piece has 3–4 examples; view them in any order.", movementTab: "Movement", captureTab: "Capture", viewed: "Practiced",
+    displaySettings: "TUTORIAL PIECE SETTINGS", pieceForm: "Piece form", hanziStyle: "Characters", symbolStyle: "Symbols", pieceThemeLabel: "Piece theme", themeNames: { wood: "Wood", jade: "Jade", flat: "Flat" }, choosePiece: "Choose a piece to learn", choosePieceHint: "Each piece has 3–4 examples; view them in any order.", movementTab: "Movement", captureTab: "Capture", viewed: "Practiced", freePractice: "Free practice is active: choose any gold destination", movesMade: "Moves made", moveUnit: "moves", restartExample: "Reset position",
     moveExamples: { general: "Move the king one point forward inside the palace. Notice the crossed palace boundary.", advisor: "Move the guard diagonally from a palace corner to its center; it cannot move straight.", elephant: "Move the bishop a full two-point diagonal while remaining on its own side of the river.", horse: "Move the knight in an L shape; its first orthogonal step is clear.", rook: "Move the rook several points along an open file with no piece in its path.", cannon: "Without capturing, the cannon moves along an open line exactly like a rook.", soldier: "Before crossing the river, a pawn may only move one point forward." },
     captureExamples: { general: "Capture the adjacent black pawn while keeping the king inside the palace.", advisor: "Move diagonally through the palace and capture the pawn at its center.", elephant: "Move two points diagonally and capture the target because the elephant eye is clear.", horse: "Use an L-shaped move to capture the pawn; the horse-leg point must remain empty.", rook: "Advance along the file and capture the pawn at the end of the clear path.", cannon: "Exactly one screen stands between the red cannon and black pawn, allowing the cannon to jump and capture.", soldier: "This pawn has crossed the river, so it may step sideways and capture the black pawn." },
     captureIntro: "Select the red rook, then tap the only gold destination. It captures the black pawn and attacks the black king along the file.", captureGoal: "Goal: capture the pawn and give check", captureSuccess: "Done! The pawn is captured and the black king is in check.", selectRook: "Select the red rook first",
@@ -78,7 +78,7 @@ type TutorialText = (typeof tutorialCopy)[Language];
 const pieceOrder: PieceType[] = ["general", "advisor", "elephant", "horse", "rook", "cannon", "soldier"];
 const tutorialGlyphs: Record<PieceType, string> = { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" };
 const tutorialEnglishMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
-interface PieceScenario { id: string; valid: boolean; pieces: ChessPiece[]; actorId: string; target: Position; }
+interface PieceScenario { id: string; valid: boolean; freeMove?: boolean; pieces: ChessPiece[]; actorId: string; target: Position; }
 interface ScenarioText { tab: string; description: string; focus: string; instruction: string; success: string; }
 const blackGeneral = (): ChessPiece => ({ id: "lesson-black-general", type: "general", color: "black", row: 0, col: 3 });
 const redGeneral = (row = 9, col = 5): ChessPiece => ({ id: "lesson-red-general", type: "general", color: "red", row, col });
@@ -88,39 +88,39 @@ const blocker = (id: string, row: number, col: number, type: PieceType = "soldie
 
 const pieceScenarios: Record<PieceType, PieceScenario[]> = {
   general: [
-    { id: "general-step", valid: true, pieces: [blackGeneral(), redGeneral(9, 4)], actorId: "lesson-red-general", target: { row: 8, col: 4 } },
+    { id: "general-step", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(9, 4)], actorId: "lesson-red-general", target: { row: 8, col: 4 } },
     { id: "general-capture", valid: true, pieces: [blackGeneral(), redGeneral(8, 4), enemy(7, 4)], actorId: "lesson-red-general", target: { row: 7, col: 4 } },
     { id: "general-facing", valid: false, pieces: [{ ...blackGeneral(), col: 4 }, redGeneral(9, 3)], actorId: "lesson-red-general", target: { row: 9, col: 4 } },
   ],
   advisor: [
-    { id: "advisor-step", valid: true, pieces: [blackGeneral(), redGeneral(), actor("advisor", 9, 3)], actorId: "lesson-actor", target: { row: 8, col: 4 } },
+    { id: "advisor-step", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(), actor("advisor", 9, 3)], actorId: "lesson-actor", target: { row: 8, col: 4 } },
     { id: "advisor-capture", valid: true, pieces: [blackGeneral(), redGeneral(), actor("advisor", 7, 3), enemy(8, 4)], actorId: "lesson-actor", target: { row: 8, col: 4 } },
     { id: "advisor-palace", valid: false, pieces: [blackGeneral(), redGeneral(), actor("advisor", 7, 3)], actorId: "lesson-actor", target: { row: 6, col: 2 } },
   ],
   elephant: [
-    { id: "elephant-step", valid: true, pieces: [blackGeneral(), redGeneral(), actor("elephant", 9, 2)], actorId: "lesson-actor", target: { row: 7, col: 4 } },
+    { id: "elephant-step", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(), actor("elephant", 9, 2)], actorId: "lesson-actor", target: { row: 7, col: 4 } },
     { id: "elephant-capture", valid: true, pieces: [blackGeneral(), redGeneral(), actor("elephant", 9, 2), enemy(7, 4)], actorId: "lesson-actor", target: { row: 7, col: 4 } },
     { id: "elephant-eye", valid: false, pieces: [blackGeneral(), redGeneral(), actor("elephant", 9, 2), blocker("lesson-eye", 8, 3)], actorId: "lesson-actor", target: { row: 7, col: 4 } },
     { id: "elephant-river", valid: false, pieces: [blackGeneral(), redGeneral(), actor("elephant", 5, 2)], actorId: "lesson-actor", target: { row: 3, col: 4 } },
   ],
   horse: [
-    { id: "horse-step", valid: true, pieces: [blackGeneral(), redGeneral(), actor("horse", 9, 1)], actorId: "lesson-actor", target: { row: 7, col: 2 } },
+    { id: "horse-step", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(), actor("horse", 9, 1)], actorId: "lesson-actor", target: { row: 7, col: 2 } },
     { id: "horse-capture", valid: true, pieces: [blackGeneral(), redGeneral(), actor("horse", 9, 1), enemy(7, 2)], actorId: "lesson-actor", target: { row: 7, col: 2 } },
     { id: "horse-leg", valid: false, pieces: [blackGeneral(), redGeneral(), actor("horse", 9, 1), blocker("lesson-leg", 8, 1)], actorId: "lesson-actor", target: { row: 7, col: 2 } },
   ],
   rook: [
-    { id: "rook-step", valid: true, pieces: [blackGeneral(), redGeneral(), actor("rook", 9, 0)], actorId: "lesson-actor", target: { row: 5, col: 0 } },
+    { id: "rook-step", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(), actor("rook", 9, 0)], actorId: "lesson-actor", target: { row: 5, col: 0 } },
     { id: "rook-capture", valid: true, pieces: [blackGeneral(), redGeneral(), actor("rook", 9, 0), enemy(5, 0)], actorId: "lesson-actor", target: { row: 5, col: 0 } },
     { id: "rook-blocked", valid: false, pieces: [blackGeneral(), redGeneral(), actor("rook", 9, 0), blocker("lesson-rook-block", 7, 0)], actorId: "lesson-actor", target: { row: 5, col: 0 } },
   ],
   cannon: [
-    { id: "cannon-step", valid: true, pieces: [blackGeneral(), redGeneral(), actor("cannon", 7, 1)], actorId: "lesson-actor", target: { row: 7, col: 4 } },
+    { id: "cannon-step", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(), actor("cannon", 7, 1)], actorId: "lesson-actor", target: { row: 7, col: 4 } },
     { id: "cannon-screen", valid: true, pieces: [blackGeneral(), redGeneral(), actor("cannon", 7, 1), blocker("lesson-screen", 7, 4, "horse"), enemy(7, 7)], actorId: "lesson-actor", target: { row: 7, col: 7 } },
     { id: "cannon-no-screen", valid: false, pieces: [blackGeneral(), redGeneral(), actor("cannon", 7, 1), enemy(7, 7)], actorId: "lesson-actor", target: { row: 7, col: 7 } },
     { id: "cannon-two-screens", valid: false, pieces: [blackGeneral(), redGeneral(), actor("cannon", 7, 1), blocker("lesson-screen-one", 7, 3), blocker("lesson-screen-two", 7, 5), enemy(7, 7)], actorId: "lesson-actor", target: { row: 7, col: 7 } },
   ],
   soldier: [
-    { id: "soldier-forward", valid: true, pieces: [blackGeneral(), redGeneral(), actor("soldier", 6, 4)], actorId: "lesson-actor", target: { row: 5, col: 4 } },
+    { id: "soldier-forward", valid: true, freeMove: true, pieces: [blackGeneral(), redGeneral(), actor("soldier", 6, 4)], actorId: "lesson-actor", target: { row: 5, col: 4 } },
     { id: "soldier-sideways", valid: true, pieces: [blackGeneral(), redGeneral(), actor("soldier", 4, 4)], actorId: "lesson-actor", target: { row: 4, col: 3 } },
     { id: "soldier-capture", valid: true, pieces: [blackGeneral(), redGeneral(), actor("soldier", 4, 4), enemy(4, 5)], actorId: "lesson-actor", target: { row: 4, col: 5 } },
     { id: "soldier-backward", valid: false, pieces: [blackGeneral(), redGeneral(), actor("soldier", 4, 4)], actorId: "lesson-actor", target: { row: 5, col: 4 } },
@@ -189,22 +189,27 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: T
   const [practiced, setPracticed] = useState(false);
   const [completedExamples, setCompletedExamples] = useState<Set<string>>(() => new Set());
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
+  const [freeMoveCount, setFreeMoveCount] = useState(0);
   const pieceIndex = pieceOrder.indexOf(type);
   const scenario = pieceScenarios[type][exampleIndex];
   const scenarioText = pieceScenarioCopy[scenario.id][language];
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
-  const targetIsLegal = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces).some((move) => move.row === scenario.target.row && move.col === scenario.target.col) : false, [selectedPiece, pieces, scenario.target.row, scenario.target.col]);
-  const guidedMoves = selectedPiece && !practiced && scenario.valid && targetIsLegal ? [scenario.target] : [];
+  const availableMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces).filter((move) => !pieces.some((piece) => piece.row === move.row && piece.col === move.col && piece.type === "general")) : [], [selectedPiece, pieces]);
+  const targetIsLegal = availableMoves.some((move) => move.row === scenario.target.row && move.col === scenario.target.col);
+  const guidedMoves = selectedPiece && scenario.freeMove && practiced ? availableMoves : selectedPiece && !practiced && scenario.valid && targetIsLegal ? [scenario.target] : [];
   const guidedInvalidMoves = selectedPiece && !practiced && !scenario.valid && !targetIsLegal ? [scenario.target] : [];
   const detailHintIds = useMemo(() => new Set(pieces.filter((piece) => piece.id.startsWith("lesson-eye") || piece.id.startsWith("lesson-leg") || piece.id.startsWith("lesson-rook-block") || piece.id.startsWith("lesson-screen")).map((piece) => piece.id)), [pieces]);
   const lessonGlyph = language === "zh" ? tutorialGlyphs[type] : tutorialEnglishMarks[type];
   const totalExamples = pieceOrder.reduce((total, pieceType) => total + pieceScenarios[pieceType].length, 0);
-  function loadScenario(nextType: PieceType, nextExampleIndex: number) { const nextScenario = pieceScenarios[nextType][nextExampleIndex]; if (!nextScenario) return; setType(nextType); setExampleIndex(nextExampleIndex); setPieces(nextScenario.pieces); setSelectedId(nextScenario.actorId); setPracticed(false); setLastMove(null); }
+  function loadScenario(nextType: PieceType, nextExampleIndex: number) { const nextScenario = pieceScenarios[nextType][nextExampleIndex]; if (!nextScenario) return; setType(nextType); setExampleIndex(nextExampleIndex); setPieces(nextScenario.pieces); setSelectedId(nextScenario.actorId); setPracticed(false); setLastMove(null); setFreeMoveCount(0); }
   function markPracticed() { setPracticed(true); setCompletedExamples((current) => new Set(current).add(scenario.id)); }
   function move(position: Position) {
-    if (!scenario.valid || !selectedPiece || position.row !== scenario.target.row || position.col !== scenario.target.col || !targetIsLegal) return;
+    if (!scenario.valid || !selectedPiece) return;
+    const isGuidedMove = !practiced && position.row === scenario.target.row && position.col === scenario.target.col && targetIsLegal;
+    const isFreeMove = practiced && scenario.freeMove && availableMoves.some((legal) => legal.row === position.row && legal.col === position.col);
+    if (!isGuidedMove && !isFreeMove) return;
     const next = pieces.filter((piece) => !(piece.row === position.row && piece.col === position.col)).map((piece) => piece.id === selectedPiece.id ? { ...piece, ...position } : piece);
-    setPieces(next); setLastMove({ from: { row: selectedPiece.row, col: selectedPiece.col }, to: position }); setSelectedId(null); markPracticed();
+    setPieces(next); setLastMove({ from: { row: selectedPiece.row, col: selectedPiece.col }, to: position }); setSelectedId(scenario.freeMove ? selectedPiece.id : null); setFreeMoveCount((count) => count + 1); if (!practiced) markPracticed();
   }
   function tryInvalidMove(position: Position) {
     if (scenario.valid || !selectedPiece || position.row !== scenario.target.row || position.col !== scenario.target.col || targetIsLegal) return;
@@ -224,7 +229,7 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: T
       })}</div>
     </section>
     <div className="piece-lesson-layout">
-      <div className="piece-example-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={guidedMoves} invalidMoves={guidedInvalidMoves} onPieceClick={(piece) => { if (!practiced && piece.id === scenario.actorId) setSelectedId(piece.id); }} onMove={move} onInvalidMove={tryInvalidMove} invalidMoveLabel={scenarioText.instruction} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={practiced && !scenario.valid ? scenario.actorId : null} hintPieceIds={detailHintIds} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
+      <div className="piece-example-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={guidedMoves} invalidMoves={guidedInvalidMoves} onPieceClick={(piece) => { if ((!practiced || scenario.freeMove) && piece.id === scenario.actorId) setSelectedId(piece.id); }} onMove={move} onInvalidMove={tryInvalidMove} invalidMoveLabel={scenarioText.instruction} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={practiced && !scenario.valid ? scenario.actorId : null} hintPieceIds={detailHintIds} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
       <div className="piece-lesson-copy">
         <span className="piece-lesson-count">{String(pieceIndex + 1).padStart(2, "0")} / 07</span>
         <div className={`piece-lesson-icon piece-lesson-icon--${pieceTheme} ${pieceStyle === "symbols" ? "is-symbol" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type={type} /> : <span>{lessonGlyph}</span>}</div>
@@ -233,8 +238,8 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: T
         <span className={`piece-practice-goal ${scenario.valid ? "" : "is-rule-test"}`}>{scenario.valid ? (language === "zh" ? "可行走法" : "LEGAL MOVE") : (language === "zh" ? "规则辨析" : "RULE CHECK")}</span><p>{scenarioText.description}</p>
         <div className="piece-rule-focus"><b>{t.ruleFocus}</b><p>{scenarioText.focus}</p></div>
         {scenario.id === "cannon-screen" && <ol className="cannon-rule-steps">{t.cannonSteps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>}
-        <strong className={practiced ? "is-done" : scenario.valid ? "" : "is-warning"}>{practiced ? `✓ ${scenarioText.success}` : scenarioText.instruction}</strong>
-        <button type="button" onClick={onComplete}>{t.finish} →</button>
+        <strong className={practiced ? "is-done" : scenario.valid ? "" : "is-warning"}>{practiced && scenario.freeMove ? <><span>✓ {t.freePractice}</span><small>{t.movesMade}: {freeMoveCount} {t.moveUnit}</small></> : practiced ? `✓ ${scenarioText.success}` : scenarioText.instruction}</strong>
+        <div className="piece-lesson-actions"><button type="button" onClick={() => loadScenario(type, exampleIndex)}>{t.restartExample}</button><button type="button" onClick={onComplete}>{t.finish} →</button></div>
       </div>
     </div>
   </>;

@@ -446,9 +446,12 @@
 .piece-lesson-copy strong { display: block; margin: 22px 0 14px; color: #826f55; font-size: 10px; font-weight: 500; letter-spacing: .08em; }
 .piece-lesson-copy strong.is-warning { color: #a96d63; }
 .piece-lesson-copy strong.is-done { color: #87a476; }
-.piece-lesson-copy > button { width: 100%; padding: 12px; border: 1px solid #7e6240; border-radius: 3px; color: #dec08b; background: rgba(185,132,61,.1); cursor: pointer; }
-.piece-lesson-copy > button:disabled { opacity: .3; cursor: not-allowed; }
-.piece-lesson-copy > button:hover:not(:disabled) { border-color: #b68c53; background: rgba(185,132,61,.18); }
+.piece-lesson-copy strong > span { display: block; }
+.piece-lesson-copy strong > small { display: block; margin-top: 7px; color: #6f8464; font-family: ui-monospace, monospace; font-size: 8px; font-weight: 400; }
+.piece-lesson-actions { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8px; }
+.piece-lesson-actions button { width: 100%; padding: 12px; border: 1px solid #7e6240; border-radius: 3px; color: #dec08b; background: rgba(185,132,61,.1); cursor: pointer; }
+.piece-lesson-actions button:first-child { border-color: #4d4337; color: #93826a; background: rgba(255,255,255,.018); }
+.piece-lesson-actions button:hover { border-color: #b68c53; color: #e9ca91; background: rgba(185,132,61,.18); }
 
 .puzzle-lesson-layout { grid-template-columns: minmax(340px, 520px) minmax(270px, 1fr); }
 .tutorial-puzzle-board { width: min(100%, 520px); }
