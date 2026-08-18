@@ -5,6 +5,7 @@ import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type P
 import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
+import { Tutorial } from "./components/Tutorial";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
 
 const copy = {
@@ -32,6 +33,7 @@ function App() {
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [playerColor, setPlayerColor] = useState<PieceColor>("red");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("wood");
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
   const [history, setHistory] = useState<ChessPiece[][]>([]);
@@ -310,14 +312,15 @@ function App() {
   }, [pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme]);
 
   return (
-    <main className="app">
+    <main className={`app ${tutorialOpen ? "app--tutorial" : ""}`}>
       <header className="hero">
         <p className="eyebrow">AI CHINESE CHESS</p>
         <h1>弈境</h1>
         <p className="subtitle">方寸棋盘，推演千秋</p>
+        {!tutorialOpen && <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : "Beginner guide"}</button>}
       </header>
 
-      <section className="game-layout">
+      {tutorialOpen ? <Tutorial language={language} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
         <div className="board-area">
           <div className="player-label player-label--black">
             <span className="player-dot" />
@@ -344,6 +347,10 @@ function App() {
             <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => startAiGame(playerColor)}>{t.ai}</button>
             <button className={mode === "setup" ? "is-active" : ""} type="button" onClick={startSetupMode}>{t.setup}</button>
           </div>
+          <button className="tutorial-open-button" type="button" onClick={() => setTutorialOpen(true)}>
+            <span><b>{language === "zh" ? "新手教程" : "Beginner guide"}</b><small>{language === "zh" ? "从认识棋盘开始" : "Start with the board"}</small></span>
+            <i>→</i>
+          </button>
           {mode === "ai" && <>
             <div className="settings-row">
               <span>{t.difficulty}</span>
@@ -425,7 +432,7 @@ function App() {
           <p className="coming-soon">已支持基础走法与将军限制</p>
           </>}
         </aside>
-      </section>
+      </section>}
     </main>
   );
 }
