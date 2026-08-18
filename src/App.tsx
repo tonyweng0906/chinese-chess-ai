@@ -443,7 +443,7 @@ function App() {
       setPieces(restoredPieces);
       setTurn(restoredTurn);
       if (Array.isArray(data.moveHistory)) setMoveHistory(data.moveHistory);
-      if (Array.isArray(data.gameStartPieces)) setGameStartPieces(data.gameStartPieces);
+      setGameStartPieces(Array.isArray(data.gameStartPieces) ? data.gameStartPieces : restoredPieces);
       if (Array.isArray(data.gameMoves)) setGameMoves(data.gameMoves);
       setPositionHistory(Array.isArray(data.positionHistory) && data.positionHistory.length > 0 ? data.positionHistory : [getPositionKey(restoredPieces, restoredTurn)]);
       if (Array.isArray(data.ruleMoves)) setRuleMoves(data.ruleMoves);
