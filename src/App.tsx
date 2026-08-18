@@ -363,7 +363,7 @@ function App() {
               <h3>{color === "red" ? (language === "zh" ? "红方棋子" : "Red pieces") : (language === "zh" ? "黑方棋子" : "Black pieces")}</h3>
               <div className="setup-piece-tray">
                 {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={`${color}-${type}`}>
-                  <button className={`setup-token setup-token--${color} ${setupColor === color && setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => { setSetupColor(color); setSetupType(type); }} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color }))} aria-label={`${color === "red" ? t.red : t.black} ${setupNames[type]}`}>
+                  <button className={`setup-token setup-token--${color} ${pieceStyle === "symbols" ? "setup-token--symbols" : ""} ${setupColor === color && setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => { setSetupColor(color); setSetupType(type); }} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color }))} aria-label={`${color === "red" ? t.red : t.black} ${setupNames[type]}`}>
                     {pieceStyle === "symbols" ? <PieceIcon type={type} /> : language === "en" ? englishBoardMarks[type] : setupGlyphs[color][type]}
                   </button>
                   <span>{setupNames[type]}</span>
@@ -402,7 +402,7 @@ function App() {
           <p className="panel-kicker">{t.current}</p>
           <h2>{winner ? (winner === "red" ? t.redWin : t.blackWin) : draw ? t.drawTitle : `${turnName} ${t.turn}`}</h2>
           <div className="turn-card">
-            <span className={`turn-piece turn-piece--${turn}`}>{pieceStyle === "symbols" ? <PieceIcon type="general" /> : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
+            <span className={`turn-piece turn-piece--${turn} ${pieceStyle === "symbols" ? "turn-piece--symbols" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type="general" /> : turn === "red" ? (language === "zh" ? "帅" : "K") : (language === "zh" ? "将" : "K")}</span>
             <div>
               <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : "This piece cannot answer check") : selfCheckWarning ? t.selfCheck : aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : isInCheck(turn, pieces) ? t.check : t.waiting}</strong>
               <p>{winner ? t.captured : draw ? t.draw : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>

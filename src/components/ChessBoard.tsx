@@ -104,7 +104,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
       )}
       {pieces.map((piece) => (
         <button
-          className={`piece piece--${piece.color} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""}`}
+          className={`piece piece--${piece.color} ${pieceStyle === "symbols" ? "piece--symbols" : ""} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""}`}
           key={piece.id}
           type="button"
           style={{
