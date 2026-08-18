@@ -320,7 +320,7 @@ function App() {
         {!tutorialOpen && <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : "Beginner guide"}</button>}
       </header>
 
-      {tutorialOpen ? <Tutorial language={language} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
+      {tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
         <div className="board-area">
           <div className="player-label player-label--black">
             <span className="player-dot" />

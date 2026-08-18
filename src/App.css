@@ -357,6 +357,38 @@
 .lesson-complete-button { margin-top: 24px; padding: 12px; border: 1px solid #7e6240; border-radius: 3px; color: #dec08b; background: rgba(185,132,61,.1); cursor: pointer; }
 .lesson-complete-button:hover { border-color: #b68c53; background: rgba(185,132,61,.18); }
 
+.piece-lesson-layout,
+.puzzle-lesson-layout { padding: 0 clamp(24px, 6vw, 70px) 60px; display: grid; grid-template-columns: minmax(320px, .92fr) minmax(280px, 1.08fr); gap: clamp(35px, 7vw, 80px); align-items: center; }
+.move-practice-board { width: min(100%, 430px); box-sizing: border-box; aspect-ratio: 9 / 10; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(10, 1fr); overflow: hidden; border: 12px solid #7b4c27; border-radius: 5px; background: #c89958; box-shadow: 0 18px 35px rgba(0,0,0,.34), inset 0 0 24px rgba(81,44,16,.18); }
+.move-practice-board > button { min-width: 0; min-height: 0; display: grid; place-items: center; position: relative; padding: 0; border: 0; border-right: 1px solid rgba(65,39,23,.56); border-bottom: 1px solid rgba(65,39,23,.56); background: transparent; }
+.move-practice-board > button.is-target { cursor: pointer; }
+.move-practice-board > button.is-target::after { content: ""; width: 25%; aspect-ratio: 1; border-radius: 50%; background: #f2d078; box-shadow: 0 0 0 4px rgba(242,208,120,.2), 0 2px 4px rgba(60,35,16,.4); animation: practice-target 1s ease-in-out infinite alternate; }
+@keyframes practice-target { to { transform: scale(1.24); filter: brightness(1.13); } }
+.practice-piece { width: 84%; aspect-ratio: 1; display: grid; place-items: center; z-index: 1; border: 2px solid #a52c25; border-radius: 50%; color: #a52c25; background: #e6c384; box-shadow: 0 3px 5px rgba(43,24,8,.44), inset 0 0 0 2px #d2a75f; --piece-icon-cutout: #e6c384; animation: practice-piece-in 220ms ease-out both; }
+@keyframes practice-piece-in { from { transform: scale(.7); opacity: .3; } }
+.practice-piece .piece-icon { width: 62%; height: 62%; }
+.piece-lesson-copy { max-width: 390px; }
+.piece-lesson-count { color: #8e714b; font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: .14em; }
+.piece-lesson-icon { width: 72px; height: 72px; margin: 24px 0 18px; display: grid; place-items: center; border: 2px solid #a52c25; border-radius: 50%; color: #a52c25; background: #e6c384; box-shadow: 0 5px 9px rgba(31,19,8,.38), inset 0 0 0 3px #d2a75f; --piece-icon-cutout: #e6c384; }
+.piece-lesson-icon .piece-icon { width: 62%; height: 62%; }
+.piece-lesson-copy h3 { margin: 0 0 12px; color: #eadcc3; font-family: "Noto Serif SC", serif; font-size: 28px; font-weight: 500; }
+.piece-lesson-copy p { min-height: 56px; margin: 0; color: #817567; font-size: 12px; line-height: 1.75; }
+.piece-lesson-copy strong { display: block; margin: 22px 0 14px; color: #826f55; font-size: 10px; font-weight: 500; letter-spacing: .08em; }
+.piece-lesson-copy strong.is-done { color: #87a476; }
+.piece-lesson-copy > button { width: 100%; padding: 12px; border: 1px solid #7e6240; border-radius: 3px; color: #dec08b; background: rgba(185,132,61,.1); cursor: pointer; }
+.piece-lesson-copy > button:disabled { opacity: .3; cursor: not-allowed; }
+.piece-lesson-copy > button:hover:not(:disabled) { border-color: #b68c53; background: rgba(185,132,61,.18); }
+
+.puzzle-lesson-layout { grid-template-columns: minmax(340px, 520px) minmax(270px, 1fr); }
+.tutorial-puzzle-board { width: min(100%, 520px); }
+.tutorial-puzzle-board .board-shell { box-shadow: 0 18px 36px rgba(0,0,0,.38), inset 0 0 45px rgba(77,42,10,.2); }
+.tutorial-puzzle-board .piece { width: 9.2%; }
+.puzzle-instructions { padding: 28px; border-left: 1px solid #3a3026; }
+.puzzle-instructions > span { color: #a48150; font-size: 9px; letter-spacing: .15em; }
+.puzzle-instructions h3 { margin: 16px 0 12px; color: #e3d1b5; font-family: "Noto Serif SC", serif; font-size: 24px; font-weight: 500; line-height: 1.4; }
+.puzzle-instructions p { margin: 0; color: #7d7264; font-size: 11px; line-height: 1.75; }
+.puzzle-instructions .lesson-complete-button { width: 100%; }
+
 @media (max-width: 850px) {
   .app { padding-top: 28px; }
   .game-layout { grid-template-columns: minmax(0, 680px); }
@@ -368,6 +400,10 @@
   .tutorial-path { grid-template-columns: 1fr; }
   .lesson-content { grid-template-columns: 1fr; }
   .tutorial-board-demo { margin: 0 auto; }
+  .piece-lesson-layout, .puzzle-lesson-layout { grid-template-columns: 1fr; }
+  .move-practice-board, .tutorial-puzzle-board { margin: 0 auto; }
+  .piece-lesson-copy { max-width: 520px; margin: 0 auto; width: 100%; }
+  .puzzle-instructions { max-width: 520px; margin: 0 auto; padding: 24px 0; border-left: 0; border-top: 1px solid #3a3026; }
 }
 
 @media (max-width: 440px) {
@@ -381,4 +417,7 @@
   .tutorial-path article { grid-template-columns: 38px 1fr auto; padding: 15px; }
   .lesson-heading { gap: 12px; }
   .lesson-number { font-size: 44px; }
+  .piece-lesson-layout, .puzzle-lesson-layout { padding-inline: 16px; gap: 26px; }
+  .move-practice-board { border-width: 8px; }
+  .practice-piece { border-width: 1px; }
 }
