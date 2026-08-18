@@ -76,8 +76,11 @@ interface ChessBoardProps {
   pieces: ChessPiece[];
   selectedId: string | null;
   legalMoves: Position[];
+  invalidMoves?: Position[];
   onPieceClick: (piece: ChessPiece) => void;
   onMove: (position: Position) => void;
+  onInvalidMove?: (position: Position) => void;
+  invalidMoveLabel?: string;
   language: Language;
   pieceStyle: PieceStyle;
   lastMove: { from: Position; to: Position } | null;
@@ -91,7 +94,7 @@ interface ChessBoardProps {
   setupMode: boolean;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode }: ChessBoardProps) {
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick} onDragOver={(event) => event.preventDefault()} onDrop={onBoardDrop}>
       <BoardLines />
@@ -132,6 +135,16 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
           />
         );
       })}
+      {invalidMoves.map((position) => (
+        <button
+          className="move-target move-target--invalid"
+          key={`invalid-${position.row},${position.col}`}
+          type="button"
+          style={{ left: `${(x(position.col) / 800) * 100}%`, top: `${(y(position.row) / 890) * 100}%` }}
+          aria-label={invalidMoveLabel}
+          onClick={(event) => { event.stopPropagation(); onInvalidMove?.(position); }}
+        />
+      ))}
     </div>
   );
 }

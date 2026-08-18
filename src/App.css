@@ -159,6 +159,9 @@
 .move-target::after { content: ""; display: block; width: 21%; aspect-ratio: 1; margin: auto; border-radius: 50%; background: #6e421e; }
 .move-target--capture { background: rgba(178, 44, 32, 0.18); box-shadow: inset 0 0 0 3px rgba(153, 46, 32, 0.75); }
 .move-target--capture::after { width: 31%; background: #a52c25; }
+.move-target--invalid { display: grid; place-items: center; border: 2px dashed rgba(164,44,37,.88); background: rgba(164,44,37,.16); box-shadow: 0 0 0 4px rgba(164,44,37,.08); animation: invalid-target-pulse 900ms ease-in-out infinite alternate; }
+.move-target--invalid::after { content: "×"; width: auto; margin: 0; color: #9e2723; background: transparent; font-family: ui-sans-serif, sans-serif; font-size: clamp(16px, 2.5vw, 28px); font-weight: 500; line-height: 1; }
+@keyframes invalid-target-pulse { to { background: rgba(185,48,39,.27); box-shadow: 0 0 0 7px rgba(164,44,37,.06); } }
 .move-target:hover { filter: brightness(1.15); }
 
 .player-label {
@@ -386,6 +389,7 @@
 .piece-example-board { width: min(100%, 500px); }
 .piece-example-board .board-shell { box-shadow: 0 18px 36px rgba(0,0,0,.38), inset 0 0 45px rgba(77,42,10,.2); }
 .piece-example-board .piece { width: 9.2%; }
+.piece-example-board .piece > span, .tutorial-puzzle-board .piece > span { font-size: clamp(13px, 1.7vw, 21px); }
 .move-practice-board { width: min(100%, 430px); box-sizing: border-box; aspect-ratio: 9 / 10; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(10, 1fr); overflow: hidden; border: 12px solid #7b4c27; border-radius: 5px; background: #c89958; box-shadow: 0 18px 35px rgba(0,0,0,.34), inset 0 0 24px rgba(81,44,16,.18); }
 .move-practice-board > button { min-width: 0; min-height: 0; display: grid; place-items: center; position: relative; padding: 0; border: 0; border-right: 1px solid rgba(65,39,23,.56); border-bottom: 1px solid rgba(65,39,23,.56); background: transparent; }
 .move-practice-board > button.is-target { cursor: pointer; }
@@ -420,6 +424,7 @@
 .piece-lesson-icon .piece-icon { width: 62%; height: 62%; }
 .piece-lesson-copy h3 { margin: 0 0 12px; color: #eadcc3; font-family: "Noto Serif SC", serif; font-size: 28px; font-weight: 500; }
 .piece-practice-goal { display: block; margin: -5px 0 13px; color: #b08b55; font-size: 10px; letter-spacing: .08em; }
+.piece-practice-goal.is-rule-test { color: #a55d53; }
 .piece-example-progress { margin: -2px 0 17px; display: grid; grid-template-columns: 24px 34px 24px 1fr; align-items: center; gap: 6px; }
 .piece-example-progress span { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid #4f4437; border-radius: 50%; color: #675d51; font-family: ui-monospace, monospace; font-size: 8px; }
 .piece-example-progress span.is-active { border-color: #a57f4d; color: #e0c18c; background: rgba(185,132,61,.13); }
@@ -427,7 +432,7 @@
 .piece-example-progress i { height: 1px; background: #443a30; }
 .piece-example-progress small { justify-self: end; color: #62594f; font-size: 7px; letter-spacing: .13em; }
 .piece-example-tabs { margin: -2px 0 17px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-.piece-example-tabs button { padding: 8px 10px; border: 1px solid #443a31; border-radius: 3px; color: #786e61; background: rgba(255,255,255,.015); cursor: pointer; font-size: 9px; }
+.piece-example-tabs button { min-height: 34px; padding: 8px 10px; border: 1px solid #443a31; border-radius: 3px; color: #786e61; background: rgba(255,255,255,.015); cursor: pointer; font-size: 9px; line-height: 1.35; }
 .piece-example-tabs button:hover { border-color: #6f573b; color: #c8aa79; }
 .piece-example-tabs button.is-active { border-color: #9b7649; color: #e1c08a; background: rgba(185,132,61,.12); }
 .piece-example-tabs button span { margin-right: 6px; color: #8fa682; }
@@ -439,6 +444,7 @@
 .cannon-rule-steps li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: center; color: #867a69; font-size: 9px; }
 .cannon-rule-steps li span { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid #66523a; border-radius: 50%; color: #b08b55; font-family: ui-monospace, monospace; font-size: 8px; }
 .piece-lesson-copy strong { display: block; margin: 22px 0 14px; color: #826f55; font-size: 10px; font-weight: 500; letter-spacing: .08em; }
+.piece-lesson-copy strong.is-warning { color: #a96d63; }
 .piece-lesson-copy strong.is-done { color: #87a476; }
 .piece-lesson-copy > button { width: 100%; padding: 12px; border: 1px solid #7e6240; border-radius: 3px; color: #dec08b; background: rgba(185,132,61,.1); cursor: pointer; }
 .piece-lesson-copy > button:disabled { opacity: .3; cursor: not-allowed; }
