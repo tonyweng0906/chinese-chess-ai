@@ -371,19 +371,17 @@ function App() {
           </>}
           {mode === "setup" && <div className="setup-panel">
             <p className="editor-help">{t.editorHelp}</p>
-            <div className="settings-row">
-              <span>{t.player}</span>
-              <button className={setupColor === "red" ? "is-active" : ""} type="button" onClick={() => setSetupColor("red")}>{t.redSide}</button>
-              <button className={setupColor === "black" ? "is-active" : ""} type="button" onClick={() => setSetupColor("black")}>{t.blackSide}</button>
-            </div>
-            <div className="setup-piece-tray">
-              {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={type}>
-                <button className={`setup-token setup-token--${setupColor} ${setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => setSetupType(type)} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color: setupColor }))} aria-label={setupNames[type]}>
-                  {pieceStyle === "symbols" ? setupSymbols[type] : setupGlyphs[setupColor][type]}
-                </button>
-                <span>{setupNames[type]}</span>
-              </div>)}
-            </div>
+            {(["red", "black"] as PieceColor[]).map((color) => <section className="setup-color-section" key={color}>
+              <h3>{color === "red" ? (language === "zh" ? "红方棋子" : "Red pieces") : (language === "zh" ? "黑方棋子" : "Black pieces")}</h3>
+              <div className="setup-piece-tray">
+                {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={`${color}-${type}`}>
+                  <button className={`setup-token setup-token--${color} ${setupColor === color && setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => { setSetupColor(color); setSetupType(type); }} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color }))} aria-label={`${color === "red" ? t.red : t.black} ${setupNames[type]}`}>
+                    {pieceStyle === "symbols" ? setupSymbols[type] : setupGlyphs[color][type]}
+                  </button>
+                  <span>{setupNames[type]}</span>
+                </div>)}
+              </div>
+            </section>)}
             <button className="clear-board-button" type="button" onClick={clearSetupBoard}>{t.clearAll}</button>
             <button className="finish-setup-button" type="button" onClick={finishSetup} disabled={!setupReady}>{t.finishSetup}</button>
             {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
