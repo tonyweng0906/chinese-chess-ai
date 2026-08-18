@@ -455,6 +455,11 @@
 .piece-example-reset:hover { border-color: #796044; color: #c5a879; }
 .piece-lesson-copy .lesson-navigation { margin-top: 8px; }
 
+.puzzle-stepper { margin: -8px clamp(24px, 6vw, 70px) 28px; display: flex; align-items: center; gap: 8px; }
+.puzzle-stepper::before { content: ""; flex: 1; height: 1px; order: 2; background: #3b332b; }
+.puzzle-stepper span { width: 28px; height: 28px; display: grid; place-items: center; position: relative; z-index: 1; order: 1; border: 1px solid #4e4337; border-radius: 50%; color: #74695b; background: #201c18; font-family: ui-monospace, monospace; font-size: 9px; }
+.puzzle-stepper span.is-active { border-color: #a27a49; color: #e4c38e; background: rgba(185,132,61,.13); }
+.puzzle-stepper span.is-done { border-color: #5f7456; color: #9eb28f; }
 .puzzle-lesson-layout { grid-template-columns: minmax(340px, 520px) minmax(270px, 1fr); }
 .tutorial-puzzle-board { width: min(100%, 520px); }
 .tutorial-puzzle-board .board-shell { box-shadow: 0 18px 36px rgba(0,0,0,.38), inset 0 0 45px rgba(77,42,10,.2); }
@@ -464,6 +469,13 @@
 .puzzle-instructions h3 { margin: 16px 0 12px; color: #e3d1b5; font-family: "Noto Serif SC", serif; font-size: 24px; font-weight: 500; line-height: 1.4; }
 .puzzle-instructions p { margin: 0; color: #7d7264; font-size: 11px; line-height: 1.75; }
 .puzzle-instructions .lesson-navigation { width: 100%; }
+.puzzle-next-button { width: 100%; margin-top: 24px; padding: 12px; border: 1px solid #8e6b41; border-radius: 3px; color: #e1c18d; background: rgba(185,132,61,.12); cursor: pointer; }
+.puzzle-next-button:hover { border-color: #b68c53; background: rgba(185,132,61,.2); }
+.test-scorebar { margin: -8px clamp(24px, 6vw, 70px) 28px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #40362d; border-radius: 4px; color: #817362; background: rgba(255,255,255,.015); font-size: 9px; letter-spacing: .08em; }
+.test-scorebar strong { color: #c3a675; font-family: ui-monospace, monospace; font-weight: 500; }
+.test-attempts { margin-top: 16px; padding-top: 12px; border-top: 1px solid #382f28; color: #766a5b; font-family: ui-monospace, monospace; font-size: 9px; }
+.test-wrong { display: block; margin-top: 12px; color: #b46d62; font-size: 10px; font-weight: 500; line-height: 1.55; animation: invalid-notice-in 220ms ease-out both; }
+.test-instructions .lesson-navigation { margin-top: 18px; }
 
 @media (max-width: 850px) {
   .app { padding-top: 28px; }
@@ -500,6 +512,7 @@
   .piece-library-heading { align-items: flex-start; }
   .piece-library-list { grid-template-columns: repeat(4, minmax(58px, 1fr)); gap: 6px; }
   .piece-library-token { width: 36px; height: 36px; font-size: 18px; }
+  .puzzle-stepper, .test-scorebar { margin-inline: 16px; }
   .lesson-navigation { grid-template-columns: 1fr; }
   .lesson-navigation button:only-child { grid-column: auto; }
   .piece-lesson-layout, .puzzle-lesson-layout { padding-inline: 16px; gap: 26px; }

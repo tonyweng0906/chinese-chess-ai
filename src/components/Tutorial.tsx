@@ -15,14 +15,15 @@ interface TutorialProps {
 
 const tutorialCopy = {
   zh: {
-    eyebrow: "新手教程", title: "从第一步开始，认识中国象棋", intro: "用四节简短课程认识棋盘、棋子和胜负规则。无需基础，跟着提示一步一步练习。", backGame: "返回棋局", progress: "学习进度", completed: "已完成", start: "开始学习", continue: "继续学习", review: "重新复习", startHere: "从这里开始", unlocked: "已解锁", locked: "完成上一课后解锁", done: "已完成", overview: "课程总览", finish: "完成本课", nextChapter: "下一章节：", finishCourse: "完成课程",
+    eyebrow: "新手教程", title: "从第一步开始，认识中国象棋", intro: "用五节互动课程认识棋盘、棋子、将军、将死和残局思考。无需基础，跟着提示逐步练习。", backGame: "返回棋局", progress: "学习进度", completed: "已完成", start: "开始学习", continue: "继续学习", review: "重新复习", startHere: "从这里开始", unlocked: "已解锁", locked: "完成上一课后解锁", done: "已完成", overview: "课程总览", finish: "完成本课", nextChapter: "下一章节：", finishCourse: "完成课程", nextExercise: "下一题", exercise: "练习", testQuestion: "测试题", testScore: "当前得分", wrongMove: "这不是本题的最佳走法，请重新选择", firstTry: "一次通过", attempts: "本题失误", proficiency: "熟练度评估",
     lessons: [
       ["认识棋盘", "了解九宫、楚河汉界和双方阵营"],
       ["认识棋子", "逐一练习七类棋子的基本走法"],
       ["吃子与将军", "亲手完成一次吃子并将军"],
-      ["赢下第一局", "在实战棋盘上完成一步将死"],
+      ["赢下第一局", "完成三种不同的一步将死"],
+      ["残局测试", "独立完成解将、炮架与将死测试"],
     ],
-    lessonLabels: ["第一课", "第二课", "第三课", "第四课"],
+    lessonLabels: ["第一课", "第二课", "第三课", "第四课", "第五课"],
     boardIntro: "中国象棋的棋子落在交叉点上。先记住下面三个区域，就能看懂棋盘。",
     boardFacts: [
       ["九路十行", "棋盘由 9 条竖线和 10 条横线组成，共有 90 个落子点。"],
@@ -44,14 +45,15 @@ const tutorialCopy = {
     mateIntro: "这是一个一步将死局面。红兵封住两侧，红马保护进攻位置。找到红车的制胜落点。", mateGoal: "目标：一步将死并赢下对局", mateSuccess: "将死！黑方没有任何合法应对，你赢下了第一局。",
   },
   en: {
-    eyebrow: "BEGINNER GUIDE", title: "Learn Xiangqi from your very first move", intro: "Four short lessons introduce the board, pieces, and winning rules. No experience needed—learn one step at a time.", backGame: "Back to game", progress: "Learning progress", completed: "completed", start: "Start learning", continue: "Continue", review: "Review course", startHere: "Start here", unlocked: "Unlocked", locked: "Complete the previous lesson", done: "Completed", overview: "Course overview", finish: "Complete lesson", nextChapter: "Next chapter: ", finishCourse: "Finish course",
+    eyebrow: "BEGINNER GUIDE", title: "Learn Xiangqi from your very first move", intro: "Five interactive lessons cover the board, pieces, check, mate, and endgame thinking. No experience needed.", backGame: "Back to game", progress: "Learning progress", completed: "completed", start: "Start learning", continue: "Continue", review: "Review course", startHere: "Start here", unlocked: "Unlocked", locked: "Complete the previous lesson", done: "Completed", overview: "Course overview", finish: "Complete lesson", nextChapter: "Next chapter: ", finishCourse: "Finish course", nextExercise: "Next puzzle", exercise: "Exercise", testQuestion: "Test", testScore: "Current score", wrongMove: "That is not the best move for this puzzle. Try again.", firstTry: "Solved first try", attempts: "Mistakes", proficiency: "Proficiency result",
     lessons: [
       ["Meet the board", "Learn the palaces, river, and two sides"],
       ["Meet the pieces", "Practice the movement of all seven pieces"],
       ["Capture and check", "Make a capture that checks the enemy king"],
-      ["Win your first game", "Deliver checkmate on a real board"],
+      ["Win your first game", "Solve three different mate-in-one patterns"],
+      ["Endgame test", "Independently solve defense, cannon, and mate tests"],
     ],
-    lessonLabels: ["LESSON ONE", "LESSON TWO", "LESSON THREE", "LESSON FOUR"],
+    lessonLabels: ["LESSON ONE", "LESSON TWO", "LESSON THREE", "LESSON FOUR", "LESSON FIVE"],
     boardIntro: "Xiangqi pieces sit on intersections. Learn these three areas first and the board becomes easy to read.",
     boardFacts: [
       ["Nine files, ten ranks", "The board has 9 vertical and 10 horizontal lines, creating 90 intersections for pieces."],
@@ -250,46 +252,113 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
   </>;
 }
 
-const capturePieces: ChessPiece[] = [
-  { id: "tutorial-black-general", type: "general", color: "black", row: 0, col: 4 },
-  { id: "tutorial-black-soldier", type: "soldier", color: "black", row: 3, col: 4 },
-  { id: "tutorial-red-rook", type: "rook", color: "red", row: 5, col: 4 },
-  { id: "tutorial-red-general", type: "general", color: "red", row: 9, col: 4 },
-];
+type PuzzleValidation = "check-black" | "escape-red" | "mate-black" | "capture-target";
+interface PuzzleText { title: string; goal: string; instruction: string; success: string; }
+interface GuidedPuzzle { id: string; pieces: ChessPiece[]; actorId: string; target: Position; validation: PuzzleValidation; copy: Record<Language, PuzzleText>; }
 
-const matePieces: ChessPiece[] = [
-  { id: "tutorial-black-general", type: "general", color: "black", row: 0, col: 4 },
-  { id: "tutorial-black-soldier", type: "soldier", color: "black", row: 1, col: 4 },
-  { id: "tutorial-red-soldier-left", type: "soldier", color: "red", row: 1, col: 3 },
-  { id: "tutorial-red-soldier-right", type: "soldier", color: "red", row: 1, col: 5 },
-  { id: "tutorial-red-rook", type: "rook", color: "red", row: 2, col: 4 },
-  { id: "tutorial-red-horse", type: "horse", color: "red", row: 3, col: 3 },
-  { id: "tutorial-red-general", type: "general", color: "red", row: 9, col: 4 },
-];
+const chapterPuzzles: Record<"capture" | "mate", GuidedPuzzle[]> = {
+  capture: [
+    { id: "check-rook", actorId: "check-rook", target: { row: 3, col: 4 }, validation: "check-black", pieces: [
+      { id: "check-black-general", type: "general", color: "black", row: 0, col: 4 }, { id: "check-target", type: "soldier", color: "black", row: 3, col: 4 }, { id: "check-rook", type: "rook", color: "red", row: 5, col: 4 }, { id: "check-red-general", type: "general", color: "red", row: 9, col: 3 },
+    ], copy: { zh: { title: "车吃子将军", goal: "吃掉黑卒并将军", instruction: "选择红车，沿竖线吃掉黑卒。观察车如何直接攻击黑将。", success: "完成！红车吃子后沿同一直线将军。" }, en: { title: "Rook capture check", goal: "Capture and give check", instruction: "Select the red rook and capture the pawn along the file.", success: "Done! The rook now checks along the open file." } } },
+    { id: "check-cannon", actorId: "check-cannon", target: { row: 5, col: 4 }, validation: "check-black", pieces: [
+      { id: "cannon-black-general", type: "general", color: "black", row: 0, col: 4 }, { id: "cannon-screen", type: "horse", color: "red", row: 3, col: 4 }, { id: "check-cannon", type: "cannon", color: "red", row: 5, col: 1 }, { id: "cannon-red-general", type: "general", color: "red", row: 9, col: 3 },
+    ], copy: { zh: { title: "借炮架将军", goal: "利用炮架形成将军", instruction: "把红炮平移到黑将所在竖线，让红马成为唯一炮架。", success: "完成！炮与黑将之间恰好隔着红马，形成将军。" }, en: { title: "Cannon-screen check", goal: "Give check over one screen", instruction: "Move the cannon onto the king's file so the horse becomes its screen.", success: "Done! The horse is the single screen for the cannon check." } } },
+    { id: "escape-check", actorId: "escape-rook", target: { row: 8, col: 4 }, validation: "escape-red", pieces: [
+      { id: "escape-black-general", type: "general", color: "black", row: 0, col: 3 }, { id: "escape-black-rook", type: "rook", color: "black", row: 5, col: 4 }, { id: "escape-rook", type: "rook", color: "red", row: 8, col: 0 }, { id: "escape-left-block", type: "soldier", color: "red", row: 9, col: 3 }, { id: "escape-right-block", type: "soldier", color: "red", row: 9, col: 5 }, { id: "escape-red-general", type: "general", color: "red", row: 9, col: 4 },
+    ], copy: { zh: { title: "挡住将军", goal: "解除黑车的将军", instruction: "红帅正被黑车将军。选择红车，找到能阻断攻击线的位置。", success: "完成！红车挡在攻击线上，红帅已经安全。" }, en: { title: "Block a check", goal: "Save the red king", instruction: "The black rook is checking. Use the red rook to block the attack line.", success: "Done! The red rook blocks the check." } } },
+  ],
+  mate: [
+    { id: "mate-center", actorId: "mate-center-rook", target: { row: 1, col: 4 }, validation: "mate-black", pieces: [
+      { id: "mate-center-general", type: "general", color: "black", row: 0, col: 4 }, { id: "mate-center-target", type: "soldier", color: "black", row: 1, col: 4 }, { id: "mate-center-left", type: "soldier", color: "red", row: 1, col: 3 }, { id: "mate-center-right", type: "soldier", color: "red", row: 1, col: 5 }, { id: "mate-center-rook", type: "rook", color: "red", row: 2, col: 4 }, { id: "mate-center-horse", type: "horse", color: "red", row: 3, col: 3 }, { id: "mate-center-red-general", type: "general", color: "red", row: 9, col: 4 },
+    ], copy: { zh: { title: "中路车将死", goal: "一步将死", instruction: "红兵封住两侧，红马保护进攻点。用红车完成中路将死。", success: "将死！黑将的三个出口都被控制。" }, en: { title: "Central rook mate", goal: "Mate in one", instruction: "The pawns cover both sides and the horse protects the attack point.", success: "Checkmate! Every escape is covered." } } },
+    { id: "mate-edge", actorId: "mate-edge-rook", target: { row: 1, col: 3 }, validation: "mate-black", pieces: [
+      { id: "mate-edge-general", type: "general", color: "black", row: 0, col: 3 }, { id: "mate-edge-target", type: "soldier", color: "black", row: 1, col: 3 }, { id: "mate-edge-pawn", type: "soldier", color: "red", row: 1, col: 4 }, { id: "mate-edge-rook", type: "rook", color: "red", row: 2, col: 3 }, { id: "mate-edge-horse", type: "horse", color: "red", row: 3, col: 2 }, { id: "mate-edge-red-general", type: "general", color: "red", row: 9, col: 4 },
+    ], copy: { zh: { title: "九宫边线将死", goal: "利用九宫边缘将死", instruction: "黑将位于九宫边线，只剩右侧出口。找出红车的制胜落点。", success: "将死！九宫边缘减少了黑将的逃跑空间。" }, en: { title: "Palace-edge mate", goal: "Mate on the palace edge", instruction: "The black king is on the palace edge with only one side exit.", success: "Checkmate! The palace edge removes an escape." } } },
+    { id: "mate-cannon", actorId: "mate-cannon-piece", target: { row: 3, col: 4 }, validation: "mate-black", pieces: [
+      { id: "mate-cannon-general", type: "general", color: "black", row: 0, col: 4 }, { id: "mate-cannon-screen", type: "soldier", color: "black", row: 1, col: 4 }, { id: "mate-cannon-left", type: "soldier", color: "red", row: 1, col: 3 }, { id: "mate-cannon-right", type: "soldier", color: "red", row: 1, col: 5 }, { id: "mate-cannon-piece", type: "cannon", color: "red", row: 3, col: 0 }, { id: "mate-cannon-red-general", type: "general", color: "red", row: 9, col: 3 },
+    ], copy: { zh: { title: "炮架锁宫", goal: "用敌棋作炮架将死", instruction: "黑卒堵住自己的宫门，同时可以成为炮架。把红炮移到正确竖线。", success: "将死！黑卒成为炮架，也封住了黑将的前方出口。" }, en: { title: "Cannon-screen mate", goal: "Mate using an enemy screen", instruction: "The black pawn blocks the palace and can serve as the cannon screen.", success: "Checkmate! The pawn is both screen and blocked escape." } } },
+  ],
+};
 
-function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, onNext }: { kind: "capture" | "mate"; t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void; onNext?: () => void }) {
-  const startPieces = kind === "capture" ? capturePieces : matePieces;
-  const target = kind === "capture" ? { row: 3, col: 4 } : { row: 1, col: 4 };
+function puzzleSucceeded(validation: PuzzleValidation, pieces: ChessPiece[]) {
+  if (validation === "check-black") return isInCheck("black", pieces);
+  if (validation === "escape-red") return !isInCheck("red", pieces);
+  if (validation === "mate-black") return isInCheck("black", pieces) && getAllLegalMoves("black", pieces).length === 0;
+  return true;
+}
+
+function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, onNext }: { kind: "capture" | "mate"; t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void; onNext: () => void }) {
+  const puzzles = chapterPuzzles[kind];
   const lessonIndex = kind === "capture" ? 2 : 3;
-  const [pieces, setPieces] = useState<ChessPiece[]>(startPieces);
+  const [puzzleIndex, setPuzzleIndex] = useState(0);
+  const puzzle = puzzles[puzzleIndex];
+  const copy = puzzle.copy[language];
+  const [pieces, setPieces] = useState<ChessPiece[]>(puzzle.pieces);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const [solved, setSolved] = useState(false);
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
-  const guidedMoves = useMemo(() => selectedPiece && getLegalMoves(selectedPiece, pieces).some((move) => move.row === target.row && move.col === target.col) ? [target] : [], [selectedPiece, pieces, target.row, target.col]);
-  function selectPiece(piece: ChessPiece) { if (!solved && piece.id === "tutorial-red-rook") setSelectedId(piece.id); }
+  const guidedMoves = useMemo(() => selectedPiece && selectedPiece.id === puzzle.actorId && getLegalMoves(selectedPiece, pieces).some((move) => move.row === puzzle.target.row && move.col === puzzle.target.col) ? [puzzle.target] : [], [selectedPiece, pieces, puzzle]);
+  function selectPiece(piece: ChessPiece) { if (!solved && piece.id === puzzle.actorId) setSelectedId(piece.id); }
   function move(position: Position) {
-    if (!selectedPiece || position.row !== target.row || position.col !== target.col) return;
+    if (!selectedPiece || selectedPiece.id !== puzzle.actorId || position.row !== puzzle.target.row || position.col !== puzzle.target.col) return;
     const next = pieces.filter((piece) => !(piece.row === position.row && piece.col === position.col)).map((piece) => piece.id === selectedPiece.id ? { ...piece, ...position } : piece);
-    const success = kind === "capture" ? isInCheck("black", next) : isInCheck("black", next) && getAllLegalMoves("black", next).length === 0;
-    if (!success) return;
+    if (!puzzleSucceeded(puzzle.validation, next)) return;
     setPieces(next); setLastMove({ from: { row: selectedPiece.row, col: selectedPiece.col }, to: position }); setSelectedId(null); setSolved(true);
   }
+  function nextPuzzle() { const nextIndex = puzzleIndex + 1; const next = puzzles[nextIndex]; setPuzzleIndex(nextIndex); setPieces(next.pieces); setSelectedId(null); setLastMove(null); setSolved(false); }
+  const lastPuzzle = puzzleIndex === puzzles.length - 1;
   return <>
-    <LessonHeading number={lessonIndex + 1} title={t.lessons[lessonIndex][0]} intro={kind === "capture" ? t.captureIntro : t.mateIntro} label={t.lessonLabels[lessonIndex]} />
+    <LessonHeading number={lessonIndex + 1} title={t.lessons[lessonIndex][0]} intro={kind === "capture" ? (language === "zh" ? "依次练习车将军、炮架将军，以及被将军后的防守。" : "Practice rook check, cannon-screen check, and defending against check.") : (language === "zh" ? "完成中路、边线和炮架三种一步将死。" : "Solve central, edge, and cannon-screen mates in one.")} label={t.lessonLabels[lessonIndex]} />
+    <div className="puzzle-stepper">{puzzles.map((item, index) => <span className={index < puzzleIndex ? "is-done" : index === puzzleIndex ? "is-active" : ""} key={item.id}>{index < puzzleIndex ? "✓" : index + 1}</span>)}</div>
     <div className="puzzle-lesson-layout">
       <div className="tutorial-puzzle-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={guidedMoves} onPieceClick={selectPiece} onMove={move} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={null} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
-      <div className="puzzle-instructions"><span>{kind === "capture" ? t.captureGoal : t.mateGoal}</span><h3>{solved ? (kind === "capture" ? t.captureSuccess : t.mateSuccess) : t.selectRook}</h3><p>{kind === "capture" ? t.captureIntro : t.mateIntro}</p>{solved && <LessonNavigation t={t} nextTitle={kind === "capture" ? t.lessons[3][0] : undefined} onComplete={onComplete} onNext={onNext} final={kind === "mate"} />}</div>
+      <div className="puzzle-instructions"><span>{t.exercise} {puzzleIndex + 1} / {puzzles.length} · {copy.goal}</span><h3>{solved ? copy.success : copy.title}</h3><p>{copy.instruction}</p>{solved && !lastPuzzle && <button className="puzzle-next-button" type="button" onClick={nextPuzzle}>{t.nextExercise} →</button>}{solved && lastPuzzle && <LessonNavigation t={t} nextTitle={t.lessons[lessonIndex + 1][0]} onComplete={onComplete} onNext={onNext} />}</div>
+    </div>
+  </>;
+}
+
+const endgameTests: GuidedPuzzle[] = [
+  { ...chapterPuzzles.capture[2], id: "test-defense", copy: { zh: { title: "第一题：先解将", goal: "找到唯一的挡车位置", instruction: "红帅正在被将军。你可以选择任意红棋，找出解除将军的最佳一步。", success: "正确！先保证帅的安全，才有后续反击。" }, en: { title: "Test 1: Answer check", goal: "Find the only blocking move", instruction: "The red king is in check. Choose any red piece and find the best defense.", success: "Correct! King safety comes first." } } },
+  { id: "test-cannon", actorId: "test-cannon-piece", target: { row: 7, col: 7 }, validation: "capture-target", pieces: [
+    { id: "test-cannon-black-general", type: "general", color: "black", row: 0, col: 3 }, { id: "test-cannon-target", type: "rook", color: "black", row: 7, col: 7 }, { id: "test-cannon-piece", type: "cannon", color: "red", row: 7, col: 1 }, { id: "test-cannon-screen", type: "horse", color: "red", row: 7, col: 4 }, { id: "test-cannon-red-general", type: "general", color: "red", row: 9, col: 5 },
+  ], copy: { zh: { title: "第二题：识别炮架", goal: "吃掉远处的黑车", instruction: "选择合适的红棋，利用棋盘上的炮架吃掉黑车。", success: "正确！红马是唯一炮架，红炮可以隔子吃车。" }, en: { title: "Test 2: Find the screen", goal: "Capture the distant black rook", instruction: "Choose the right red piece and use the available screen.", success: "Correct! The horse is the cannon's single screen." } } },
+  { ...chapterPuzzles.mate[1], id: "test-mate", copy: { zh: { title: "第三题：独立将死", goal: "一步结束残局", instruction: "没有指定棋子提示。观察九宫出口与保护关系，找出一步将死。", success: "正确！你独立完成了边线将死。" }, en: { title: "Test 3: Find mate", goal: "Finish the endgame in one", instruction: "No piece hint. Read the palace exits and protection, then find mate.", success: "Correct! You found the palace-edge mate." } } },
+];
+
+function EndgameTestLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void }) {
+  const [testIndex, setTestIndex] = useState(0);
+  const test = endgameTests[testIndex];
+  const copy = test.copy[language];
+  const [pieces, setPieces] = useState<ChessPiece[]>(test.pieces);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
+  const [solved, setSolved] = useState(false);
+  const [mistakes, setMistakes] = useState(0);
+  const [score, setScore] = useState(0);
+  const [wrong, setWrong] = useState(false);
+  const [invalidPieceId, setInvalidPieceId] = useState<string | null>(null);
+  const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
+  const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces).filter((move) => !pieces.some((piece) => piece.row === move.row && piece.col === move.col && piece.type === "general")) : [], [selectedPiece, pieces]);
+  function selectPiece(piece: ChessPiece) { if (!solved && piece.color === "red") { setSelectedId(piece.id); setWrong(false); setInvalidPieceId(null); } }
+  function move(position: Position) {
+    if (!selectedPiece || solved) return;
+    const correct = selectedPiece.id === test.actorId && position.row === test.target.row && position.col === test.target.col;
+    if (!correct) { setMistakes((count) => count + 1); setWrong(true); setInvalidPieceId(selectedPiece.id); setSelectedId(null); return; }
+    const next = pieces.filter((piece) => !(piece.row === position.row && piece.col === position.col)).map((piece) => piece.id === selectedPiece.id ? { ...piece, ...position } : piece);
+    if (!puzzleSucceeded(test.validation, next)) return;
+    const earned = Math.max(1, 3 - mistakes); setScore((current) => current + earned); setPieces(next); setLastMove({ from: { row: selectedPiece.row, col: selectedPiece.col }, to: position }); setSelectedId(null); setSolved(true); setWrong(false); setInvalidPieceId(null);
+  }
+  function nextTest() { const nextIndex = testIndex + 1; const next = endgameTests[nextIndex]; setTestIndex(nextIndex); setPieces(next.pieces); setSelectedId(null); setLastMove(null); setSolved(false); setMistakes(0); setWrong(false); setInvalidPieceId(null); }
+  const finished = solved && testIndex === endgameTests.length - 1;
+  const result = score >= 8 ? (language === "zh" ? "残局高手：判断准确，规则运用熟练。" : "Endgame expert: accurate and confident.") : score >= 5 ? (language === "zh" ? "基础扎实：再减少几次试错就很优秀。" : "Solid foundation: reduce a few mistakes to excel.") : (language === "zh" ? "继续练习：建议重新复习将军与特殊走法。" : "Keep practicing: review check and special moves.");
+  return <>
+    <LessonHeading number={5} title={t.lessons[4][0]} intro={language === "zh" ? "三道题不再指定棋子：独立判断局面，系统根据错误次数给出熟练度。" : "Three puzzles remove piece hints and score your accuracy."} label={t.lessonLabels[4]} />
+    <div className="test-scorebar"><span>{t.testQuestion} {testIndex + 1} / {endgameTests.length}</span><strong>{t.testScore}：{score} / 9</strong></div>
+    <div className="puzzle-lesson-layout">
+      <div className="tutorial-puzzle-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={selectPiece} onMove={move} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={invalidPieceId} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
+      <div className="puzzle-instructions test-instructions"><span>{copy.goal}</span><h3>{finished ? t.proficiency : solved ? copy.success : copy.title}</h3><p>{finished ? result : copy.instruction}</p><div className="test-attempts"><span>{solved && mistakes === 0 ? t.firstTry : `${t.attempts}：${mistakes}`}</span></div>{wrong && <strong className="test-wrong">{t.wrongMove}</strong>}{solved && !finished && <button className="puzzle-next-button" type="button" onClick={nextTest}>{t.nextExercise} →</button>}{finished && <LessonNavigation t={t} onComplete={onComplete} final />}</div>
     </div>
   </>;
 }
@@ -297,11 +366,11 @@ function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, o
 export function Tutorial({ language, pieceStyle, pieceTheme, onPieceStyleChange, onPieceThemeChange, onClose }: TutorialProps) {
   const [activeLesson, setActiveLesson] = useState<number | null>(null);
   const [completedLessons, setCompletedLessons] = useState<number[]>(() => {
-    try { const saved = JSON.parse(localStorage.getItem("xiangqi-tutorial-progress") ?? "[]"); return Array.isArray(saved) ? saved.filter((item) => Number.isInteger(item) && item >= 0 && item < 4) : []; } catch { return []; }
+    try { const saved = JSON.parse(localStorage.getItem("xiangqi-tutorial-progress") ?? "[]"); return Array.isArray(saved) ? saved.filter((item) => Number.isInteger(item) && item >= 0 && item < 5) : []; } catch { return []; }
   });
   const t = tutorialCopy[language];
   useEffect(() => { localStorage.setItem("xiangqi-tutorial-progress", JSON.stringify(completedLessons)); }, [completedLessons]);
-  const firstIncomplete = [0, 1, 2, 3].find((index) => !completedLessons.includes(index)) ?? 0;
+  const firstIncomplete = [0, 1, 2, 3, 4].find((index) => !completedLessons.includes(index)) ?? 0;
   function completeLesson(index: number, nextLesson: number | null = null) { setCompletedLessons((current) => current.includes(index) ? current : [...current, index].sort()); setActiveLesson(nextLesson); }
 
   if (activeLesson !== null) {
@@ -311,15 +380,16 @@ export function Tutorial({ language, pieceStyle, pieceTheme, onPieceStyleChange,
       {activeLesson === 0 && <BoardLesson t={t} onComplete={() => completeLesson(0)} onNext={() => completeLesson(0, 1)} />}
       {activeLesson === 1 && <PieceLesson t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(1)} onNext={() => completeLesson(1, 2)} />}
       {activeLesson === 2 && <PuzzleLesson kind="capture" t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(2)} onNext={() => completeLesson(2, 3)} />}
-      {activeLesson === 3 && <PuzzleLesson kind="mate" t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(3)} />}
+      {activeLesson === 3 && <PuzzleLesson kind="mate" t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(3)} onNext={() => completeLesson(3, 4)} />}
+      {activeLesson === 4 && <EndgameTestLesson t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(4)} />}
     </section>;
   }
 
   return <section className="tutorial-shell" aria-label={t.eyebrow}>
     <div className="tutorial-topbar"><span>{t.eyebrow}</span><button type="button" onClick={onClose}>← {t.backGame}</button></div>
     <TutorialDisplayControls t={t} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={onPieceStyleChange} onPieceThemeChange={onPieceThemeChange} />
-    <div className="tutorial-intro"><div><p>{t.eyebrow}</p><h2>{t.title}</h2><span>{t.intro}</span><button type="button" onClick={() => setActiveLesson(firstIncomplete)}>{completedLessons.length === 4 ? t.review : completedLessons.length ? t.continue : t.start} <b>→</b></button></div><div className="tutorial-emblem" aria-hidden="true"><span>帥</span><i /><span>將</span></div></div>
-    <div className="tutorial-progress"><div><span>{t.progress}</span><strong>{completedLessons.length} / 4 {t.completed}</strong></div><div className="tutorial-progress-track"><i style={{ width: `${completedLessons.length * 25}%` }} /></div></div>
+    <div className="tutorial-intro"><div><p>{t.eyebrow}</p><h2>{t.title}</h2><span>{t.intro}</span><button type="button" onClick={() => setActiveLesson(firstIncomplete)}>{completedLessons.length === 5 ? t.review : completedLessons.length ? t.continue : t.start} <b>→</b></button></div><div className="tutorial-emblem" aria-hidden="true"><span>帥</span><i /><span>將</span></div></div>
+    <div className="tutorial-progress"><div><span>{t.progress}</span><strong>{completedLessons.length} / 5 {t.completed}</strong></div><div className="tutorial-progress-track"><i style={{ width: `${completedLessons.length * 20}%` }} /></div></div>
     <div className="tutorial-path">{t.lessons.map(([title, description], index) => {
       const complete = completedLessons.includes(index); const unlocked = index === 0 || completedLessons.includes(index - 1);
       return <article className={`${complete ? "is-complete" : unlocked ? "is-current" : "is-locked"}`} key={title}><div className="tutorial-step-number">{complete ? "✓" : String(index + 1).padStart(2, "0")}</div><div className="tutorial-step-copy"><span>{complete ? t.done : unlocked ? (index === 0 ? t.startHere : t.unlocked) : t.locked}</span><h3>{title}</h3><p>{description}</p></div>{unlocked && <button type="button" onClick={() => setActiveLesson(index)} aria-label={title}>→</button>}</article>;
