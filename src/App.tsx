@@ -6,9 +6,10 @@ import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
 import { Tutorial } from "./components/Tutorial";
+import { GameReview } from "./components/GameReview";
 import { playGameSound, type GameSound } from "./audio/gameSounds";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
-import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
+import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
   zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音" },
@@ -45,6 +46,8 @@ interface GameSnapshot {
   ruleMoves: RuleMoveRecord[];
   noCapturePlyCount: number;
   lastMove: { from: Position; to: Position } | null;
+  gameStartPieces: ChessPiece[];
+  gameMoves: RecordedMove[];
 }
 
 const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
@@ -70,11 +73,14 @@ function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundVolume, setSoundVolume] = useState(0.58);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
   const rulesText = ruleCopy[language];
   const [history, setHistory] = useState<GameSnapshot[]>([]);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
+  const [gameStartPieces, setGameStartPieces] = useState<ChessPiece[]>(initialPieces);
+  const [gameMoves, setGameMoves] = useState<RecordedMove[]>([]);
   const [positionHistory, setPositionHistory] = useState<string[]>(() => [getPositionKey(initialPieces, "red")]);
   const [ruleMoves, setRuleMoves] = useState<RuleMoveRecord[]>([]);
   const [noCapturePlyCount, setNoCapturePlyCount] = useState(0);
@@ -142,7 +148,7 @@ function App() {
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
       .map((item) => item.id === piece.id ? { ...item, ...position } : item);
-    setHistory((current) => [...current, { pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, lastMove }]);
+    setHistory((current) => [...current, { pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, lastMove, gameStartPieces, gameMoves }]);
     setMoveHistory((current) => [...current, `${turnName}：(${piece.row},${piece.col}) → (${position.row},${position.col})`]);
     setLastMove({ from: { row: piece.row, col: piece.col }, to: position });
     setPieces(nextPieces);
@@ -157,6 +163,18 @@ function App() {
     const opponentInCheck = opponentGeneralExists && isInCheck(nextTurn, nextPieces);
     const opponentHasMoves = opponentGeneralExists && getAllLegalMoves(nextTurn, nextPieces).length > 0;
     const repetitionDecision = adjudicateRepetition(nextPositionHistory, nextRuleMoves);
+    const recordedMove: RecordedMove = {
+      id: `move-${Date.now()}-${gameMoves.length}`,
+      mover: turn,
+      pieceId: piece.id,
+      pieceType: piece.type,
+      from: { row: piece.row, col: piece.col },
+      to: position,
+      capturedPiece: capturedPiece ?? null,
+      gaveCheck: opponentInCheck,
+      boardAfter: nextPieces,
+    };
+    setGameMoves((current) => [...current, recordedMove]);
     let sound: GameSound = capturedPiece ? "capture" : "move";
     if (!opponentGeneralExists) {
       setWinner(turn);
@@ -262,6 +280,8 @@ function App() {
     setPieces(clearedPieces);
     setHistory([]);
     setMoveHistory([]);
+    setGameStartPieces(clearedPieces);
+    setGameMoves([]);
     setPositionHistory([getPositionKey(clearedPieces, turn)]);
     setRuleMoves([]);
     setNoCapturePlyCount(0);
@@ -280,6 +300,7 @@ function App() {
     setSelectedId(null);
     setHistory([]);
     setMoveHistory([]);
+    setGameMoves([]);
     setPositionHistory([]);
     setRuleMoves([]);
     setNoCapturePlyCount(0);
@@ -295,6 +316,8 @@ function App() {
     setDraw(false);
     setHistory([]);
     setMoveHistory([]);
+    setGameStartPieces(pieces);
+    setGameMoves([]);
     setPositionHistory([getPositionKey(pieces, turn)]);
     setRuleMoves([]);
     setNoCapturePlyCount(0);
@@ -322,6 +345,8 @@ function App() {
     setPositionHistory(previous.positionHistory);
     setRuleMoves(previous.ruleMoves);
     setNoCapturePlyCount(previous.noCapturePlyCount);
+    setGameStartPieces(previous.gameStartPieces);
+    setGameMoves(previous.gameMoves);
     setTurn(previous.turn);
     setWinner(null);
     setDraw(false);
@@ -343,6 +368,8 @@ function App() {
     setLastMove(null);
     setHistory([]);
     setMoveHistory([]);
+    setGameStartPieces(initialPieces);
+    setGameMoves([]);
     setPositionHistory([getPositionKey(initialPieces, "red")]);
     setRuleMoves([]);
     setNoCapturePlyCount(0);
@@ -380,6 +407,8 @@ function App() {
     setDraw(false);
     setHistory([]);
     setMoveHistory([]);
+    setGameStartPieces(initialPieces);
+    setGameMoves([]);
     setPositionHistory([getPositionKey(initialPieces, "red")]);
     setRuleMoves([]);
     setNoCapturePlyCount(0);
@@ -414,6 +443,8 @@ function App() {
       setPieces(restoredPieces);
       setTurn(restoredTurn);
       if (Array.isArray(data.moveHistory)) setMoveHistory(data.moveHistory);
+      if (Array.isArray(data.gameStartPieces)) setGameStartPieces(data.gameStartPieces);
+      if (Array.isArray(data.gameMoves)) setGameMoves(data.gameMoves);
       setPositionHistory(Array.isArray(data.positionHistory) && data.positionHistory.length > 0 ? data.positionHistory : [getPositionKey(restoredPieces, restoredTurn)]);
       if (Array.isArray(data.ruleMoves)) setRuleMoves(data.ruleMoves);
       if (Number.isInteger(data.noCapturePlyCount) && data.noCapturePlyCount >= 0) setNoCapturePlyCount(data.noCapturePlyCount);
@@ -434,22 +465,22 @@ function App() {
 
   useEffect(() => {
     if (!saveReady) return;
-    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume }));
-  }, [saveReady, pieces, turn, moveHistory, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume]);
+    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, gameStartPieces, gameMoves, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume }));
+  }, [saveReady, pieces, turn, moveHistory, gameStartPieces, gameMoves, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume]);
 
   return (
-    <main className={`app ${tutorialOpen ? "app--tutorial" : ""}`}>
+    <main className={`app ${tutorialOpen || reviewOpen ? "app--tutorial" : ""}`}>
       <header className="hero">
         <p className="eyebrow">AI CHINESE CHESS</p>
         <h1>弈境</h1>
         <p className="subtitle">方寸棋盘，推演千秋</p>
-        {!tutorialOpen && <div className="hero-mobile-actions">
+        {!tutorialOpen && !reviewOpen && <div className="hero-mobile-actions">
           <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : "Beginner guide"}</button>
           <button className={`sound-mobile-toggle ${soundEnabled ? "is-active" : ""}`} type="button" aria-label={`${t.sound}：${soundEnabled ? t.soundOn : t.soundOff}`} aria-pressed={soundEnabled} onClick={toggleSound}><span aria-hidden="true">♪</span>{soundEnabled ? t.soundOn : t.soundOff}</button>
         </div>}
       </header>
 
-      {tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
+      {reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} onClose={() => setReviewOpen(false)} /> : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
         <div className="board-area">
           <div className="player-label player-label--black">
             <span className="player-dot" />
@@ -568,6 +599,9 @@ function App() {
           <button className="reset-button" type="button" onClick={resetGame}>{t.reset}</button>
           <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0}>{t.undo}</button>
           <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
+          <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : "Make at least one move to start a review") : undefined}>
+            <span>{language === "zh" ? "AI 复盘讲解" : "AI game review"}</span><i>→</i>
+          </button>
           <button className="settings-reset" type="button" onClick={resetAllSettings}>{t.resetSettings}</button>
           <div className="move-log" aria-label="走棋记录">
             <p>{t.log}</p>

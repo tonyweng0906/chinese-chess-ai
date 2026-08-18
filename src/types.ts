@@ -19,3 +19,15 @@ export interface ChessPiece {
   row: number;
   col: number;
 }
+
+export interface RecordedMove {
+  id: string;
+  mover: PieceColor;
+  pieceId: string;
+  pieceType: PieceType;
+  from: { row: number; col: number };
+  to: { row: number; col: number };
+  capturedPiece: ChessPiece | null;
+  gaveCheck: boolean;
+  boardAfter: ChessPiece[];
+}
