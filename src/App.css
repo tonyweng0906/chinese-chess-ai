@@ -471,9 +471,7 @@
 .puzzle-instructions .lesson-navigation { width: 100%; }
 .puzzle-next-button { width: 100%; margin-top: 24px; padding: 12px; border: 1px solid #8e6b41; border-radius: 3px; color: #e1c18d; background: rgba(185,132,61,.12); cursor: pointer; }
 .puzzle-next-button:hover { border-color: #b68c53; background: rgba(185,132,61,.2); }
-.test-scorebar { margin: -8px clamp(24px, 6vw, 70px) 28px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #40362d; border-radius: 4px; color: #817362; background: rgba(255,255,255,.015); font-size: 9px; letter-spacing: .08em; }
-.test-scorebar strong { color: #c3a675; font-family: ui-monospace, monospace; font-weight: 500; }
-.test-attempts { margin-top: 16px; padding-top: 12px; border-top: 1px solid #382f28; color: #766a5b; font-family: ui-monospace, monospace; font-size: 9px; }
+.test-progressbar { margin: -8px clamp(24px, 6vw, 70px) 28px; padding: 13px 16px; border: 1px solid #40362d; border-radius: 4px; color: #9d855f; background: rgba(255,255,255,.015); font-family: ui-monospace, monospace; font-size: 9px; letter-spacing: .08em; }
 .test-wrong { display: block; margin-top: 12px; color: #b46d62; font-size: 10px; font-weight: 500; line-height: 1.55; animation: invalid-notice-in 220ms ease-out both; }
 .test-instructions .lesson-navigation { margin-top: 18px; }
 
@@ -512,7 +510,7 @@
   .piece-library-heading { align-items: flex-start; }
   .piece-library-list { grid-template-columns: repeat(4, minmax(58px, 1fr)); gap: 6px; }
   .piece-library-token { width: 36px; height: 36px; font-size: 18px; }
-  .puzzle-stepper, .test-scorebar { margin-inline: 16px; }
+  .puzzle-stepper, .test-progressbar { margin-inline: 16px; }
   .lesson-navigation { grid-template-columns: 1fr; }
   .lesson-navigation button:only-child { grid-column: auto; }
   .piece-lesson-layout, .puzzle-lesson-layout { padding-inline: 16px; gap: 26px; }

@@ -15,7 +15,7 @@ interface TutorialProps {
 
 const tutorialCopy = {
   zh: {
-    eyebrow: "新手教程", title: "从第一步开始，认识中国象棋", intro: "用五节互动课程认识棋盘、棋子、将军、将死和残局思考。无需基础，跟着提示逐步练习。", backGame: "返回棋局", progress: "学习进度", completed: "已完成", start: "开始学习", continue: "继续学习", review: "重新复习", startHere: "从这里开始", unlocked: "已解锁", locked: "完成上一课后解锁", done: "已完成", overview: "课程总览", finish: "完成本课", nextChapter: "下一章节：", finishCourse: "完成课程", nextExercise: "下一题", exercise: "练习", testQuestion: "测试题", testScore: "当前得分", wrongMove: "这不是本题的最佳走法，请重新选择", firstTry: "一次通过", attempts: "本题失误", proficiency: "熟练度评估",
+    eyebrow: "新手教程", title: "从第一步开始，认识中国象棋", intro: "用五节互动课程认识棋盘、棋子、将军、将死和残局思考。无需基础，跟着提示逐步练习。", backGame: "返回棋局", progress: "学习进度", completed: "已完成", start: "开始学习", continue: "继续学习", review: "重新复习", startHere: "从这里开始", unlocked: "已解锁", locked: "完成上一课后解锁", done: "已完成", overview: "课程总览", finish: "完成本课", nextChapter: "下一章节：", finishCourse: "完成课程", nextExercise: "下一题", exercise: "练习", testQuestion: "测试题", wrongMove: "这不是本题的正确走法，请重新选择", testComplete: "测试完成",
     lessons: [
       ["认识棋盘", "了解九宫、楚河汉界和双方阵营"],
       ["认识棋子", "逐一练习七类棋子的基本走法"],
@@ -45,7 +45,7 @@ const tutorialCopy = {
     mateIntro: "这是一个一步将死局面。红兵封住两侧，红马保护进攻位置。找到红车的制胜落点。", mateGoal: "目标：一步将死并赢下对局", mateSuccess: "将死！黑方没有任何合法应对，你赢下了第一局。",
   },
   en: {
-    eyebrow: "BEGINNER GUIDE", title: "Learn Xiangqi from your very first move", intro: "Five interactive lessons cover the board, pieces, check, mate, and endgame thinking. No experience needed.", backGame: "Back to game", progress: "Learning progress", completed: "completed", start: "Start learning", continue: "Continue", review: "Review course", startHere: "Start here", unlocked: "Unlocked", locked: "Complete the previous lesson", done: "Completed", overview: "Course overview", finish: "Complete lesson", nextChapter: "Next chapter: ", finishCourse: "Finish course", nextExercise: "Next puzzle", exercise: "Exercise", testQuestion: "Test", testScore: "Current score", wrongMove: "That is not the best move for this puzzle. Try again.", firstTry: "Solved first try", attempts: "Mistakes", proficiency: "Proficiency result",
+    eyebrow: "BEGINNER GUIDE", title: "Learn Xiangqi from your very first move", intro: "Five interactive lessons cover the board, pieces, check, mate, and endgame thinking. No experience needed.", backGame: "Back to game", progress: "Learning progress", completed: "completed", start: "Start learning", continue: "Continue", review: "Review course", startHere: "Start here", unlocked: "Unlocked", locked: "Complete the previous lesson", done: "Completed", overview: "Course overview", finish: "Complete lesson", nextChapter: "Next chapter: ", finishCourse: "Finish course", nextExercise: "Next puzzle", exercise: "Exercise", testQuestion: "Test", wrongMove: "That is not the correct move for this puzzle. Try again.", testComplete: "Test complete",
     lessons: [
       ["Meet the board", "Learn the palaces, river, and two sides"],
       ["Meet the pieces", "Practice the movement of all seven pieces"],
@@ -335,8 +335,6 @@ function EndgameTestLesson({ t, language, pieceStyle, pieceTheme, onComplete }: 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const [solved, setSolved] = useState(false);
-  const [mistakes, setMistakes] = useState(0);
-  const [score, setScore] = useState(0);
   const [wrong, setWrong] = useState(false);
   const [invalidPieceId, setInvalidPieceId] = useState<string | null>(null);
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
@@ -345,20 +343,19 @@ function EndgameTestLesson({ t, language, pieceStyle, pieceTheme, onComplete }: 
   function move(position: Position) {
     if (!selectedPiece || solved) return;
     const correct = selectedPiece.id === test.actorId && position.row === test.target.row && position.col === test.target.col;
-    if (!correct) { setMistakes((count) => count + 1); setWrong(true); setInvalidPieceId(selectedPiece.id); setSelectedId(null); return; }
+    if (!correct) { setWrong(true); setInvalidPieceId(selectedPiece.id); setSelectedId(null); return; }
     const next = pieces.filter((piece) => !(piece.row === position.row && piece.col === position.col)).map((piece) => piece.id === selectedPiece.id ? { ...piece, ...position } : piece);
     if (!puzzleSucceeded(test.validation, next)) return;
-    const earned = Math.max(1, 3 - mistakes); setScore((current) => current + earned); setPieces(next); setLastMove({ from: { row: selectedPiece.row, col: selectedPiece.col }, to: position }); setSelectedId(null); setSolved(true); setWrong(false); setInvalidPieceId(null);
+    setPieces(next); setLastMove({ from: { row: selectedPiece.row, col: selectedPiece.col }, to: position }); setSelectedId(null); setSolved(true); setWrong(false); setInvalidPieceId(null);
   }
-  function nextTest() { const nextIndex = testIndex + 1; const next = endgameTests[nextIndex]; setTestIndex(nextIndex); setPieces(next.pieces); setSelectedId(null); setLastMove(null); setSolved(false); setMistakes(0); setWrong(false); setInvalidPieceId(null); }
+  function nextTest() { const nextIndex = testIndex + 1; const next = endgameTests[nextIndex]; setTestIndex(nextIndex); setPieces(next.pieces); setSelectedId(null); setLastMove(null); setSolved(false); setWrong(false); setInvalidPieceId(null); }
   const finished = solved && testIndex === endgameTests.length - 1;
-  const result = score >= 8 ? (language === "zh" ? "残局高手：判断准确，规则运用熟练。" : "Endgame expert: accurate and confident.") : score >= 5 ? (language === "zh" ? "基础扎实：再减少几次试错就很优秀。" : "Solid foundation: reduce a few mistakes to excel.") : (language === "zh" ? "继续练习：建议重新复习将军与特殊走法。" : "Keep practicing: review check and special moves.");
   return <>
-    <LessonHeading number={5} title={t.lessons[4][0]} intro={language === "zh" ? "三道题不再指定棋子：独立判断局面，系统根据错误次数给出熟练度。" : "Three puzzles remove piece hints and score your accuracy."} label={t.lessonLabels[4]} />
-    <div className="test-scorebar"><span>{t.testQuestion} {testIndex + 1} / {endgameTests.length}</span><strong>{t.testScore}：{score} / 9</strong></div>
+    <LessonHeading number={5} title={t.lessons[4][0]} intro={language === "zh" ? "三道题不再指定棋子：独立观察局面并找出正确走法。" : "Three puzzles remove piece hints so you can solve each position independently."} label={t.lessonLabels[4]} />
+    <div className="test-progressbar"><span>{t.testQuestion} {testIndex + 1} / {endgameTests.length}</span></div>
     <div className="puzzle-lesson-layout">
       <div className="tutorial-puzzle-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={selectPiece} onMove={move} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={invalidPieceId} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
-      <div className="puzzle-instructions test-instructions"><span>{copy.goal}</span><h3>{finished ? t.proficiency : solved ? copy.success : copy.title}</h3><p>{finished ? result : copy.instruction}</p><div className="test-attempts"><span>{solved && mistakes === 0 ? t.firstTry : `${t.attempts}：${mistakes}`}</span></div>{wrong && <strong className="test-wrong">{t.wrongMove}</strong>}{solved && !finished && <button className="puzzle-next-button" type="button" onClick={nextTest}>{t.nextExercise} →</button>}{finished && <LessonNavigation t={t} onComplete={onComplete} final />}</div>
+      <div className="puzzle-instructions test-instructions"><span>{copy.goal}</span><h3>{finished ? t.testComplete : solved ? copy.success : copy.title}</h3><p>{finished ? (language === "zh" ? "你已经完成全部三道残局题，可以返回课程总览。" : "You completed all three endgame puzzles and can return to the course overview.") : copy.instruction}</p>{wrong && <strong className="test-wrong">{t.wrongMove}</strong>}{solved && !finished && <button className="puzzle-next-button" type="button" onClick={nextTest}>{t.nextExercise} →</button>}{finished && <LessonNavigation t={t} onComplete={onComplete} final />}</div>
     </div>
   </>;
 }
