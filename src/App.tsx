@@ -122,9 +122,23 @@ function App() {
   }
 
   function setupPositionAllowed(type: PieceType, color: PieceColor, row: number, col: number) {
-    if ((type === "general" || type === "advisor") && (col < 3 || col > 5 || (color === "red" ? row < 7 : row > 2))) return false;
-    if (type === "elephant" && (color === "red" ? row < 5 : row > 4)) return false;
-    if (type === "soldier" && (color === "red" ? row > 6 : row < 3)) return false;
+    if (type === "general" && (col < 3 || col > 5 || (color === "red" ? row < 7 : row > 2))) return false;
+    if (type === "advisor") {
+      const valid = color === "red"
+        ? [[7, 3], [7, 5], [8, 4], [9, 3], [9, 5]]
+        : [[0, 3], [0, 5], [1, 4], [2, 3], [2, 5]];
+      if (!valid.some(([validRow, validCol]) => row === validRow && col === validCol)) return false;
+    }
+    if (type === "elephant") {
+      const valid = color === "red"
+        ? [[5, 2], [5, 6], [7, 0], [7, 4], [7, 8], [9, 2], [9, 6]]
+        : [[0, 2], [0, 6], [2, 0], [2, 4], [2, 8], [4, 2], [4, 6]];
+      if (!valid.some(([validRow, validCol]) => row === validRow && col === validCol)) return false;
+    }
+    if (type === "soldier") {
+      if (color === "red" && (row > 6 || (row >= 5 && col % 2 !== 0))) return false;
+      if (color === "black" && (row < 3 || (row <= 4 && col % 2 !== 0))) return false;
+    }
     return true;
   }
 
@@ -176,6 +190,7 @@ function App() {
 
   function startSetupMode() {
     setMode("setup");
+    setPieces((current) => current.filter((piece) => setupPositionAllowed(piece.type, piece.color, piece.row, piece.col)));
     setWinner(null);
     setDraw(false);
     setSelectedId(null);
@@ -289,7 +304,7 @@ function App() {
     if (!saved) return;
     try {
       const data = JSON.parse(saved);
-      if (Array.isArray(data.pieces)) setPieces(data.pieces);
+      if (Array.isArray(data.pieces)) setPieces(data.pieces.filter((piece: ChessPiece) => setupPositionAllowed(piece.type, piece.color, piece.row, piece.col)));
       if (data.turn === "red" || data.turn === "black") setTurn(data.turn);
       if (Array.isArray(data.moveHistory)) setMoveHistory(data.moveHistory);
       if (data.language === "zh" || data.language === "en") setLanguage(data.language);
