@@ -24,7 +24,11 @@ const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
 };
 
 const englishLabels: Record<PieceType, string> = {
-  general: "General", advisor: "Advisor", elephant: "Elephant", horse: "Horse", rook: "Rook", cannon: "Cannon", soldier: "Soldier",
+  general: "King", advisor: "Guard", elephant: "Bishop", horse: "Knight", rook: "Rook", cannon: "Cannon", soldier: "Pawn",
+};
+
+const englishMarks: Record<PieceType, string> = {
+  general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P",
 };
 
 const symbols: Record<PieceType, string> = {
@@ -32,7 +36,7 @@ const symbols: Record<PieceType, string> = {
 };
 
 function pieceText(piece: ChessPiece, language: Language, style: PieceStyle) {
-  return style === "symbols" ? symbols[piece.type] : language === "zh" ? labels[piece.color][piece.type] : piece.type.slice(0, 1).toUpperCase();
+  return style === "symbols" ? symbols[piece.type] : language === "zh" ? labels[piece.color][piece.type] : englishMarks[piece.type];
 }
 
 function pieceName(piece: ChessPiece, language: Language) {
@@ -81,7 +85,6 @@ interface ChessBoardProps {
   pieceStyle: PieceStyle;
   lastMove: { from: Position; to: Position } | null;
   pieceTheme: PieceTheme;
-  customImage: string | null;
   flipped: boolean;
   invalidPieceId: string | null;
   hintPieceIds: Set<string>;
@@ -91,7 +94,7 @@ interface ChessBoardProps {
   setupMode: boolean;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, customImage, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMove, language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode }: ChessBoardProps) {
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick} onDragOver={(event) => event.preventDefault()} onDrop={onBoardDrop}>
       <BoardLines />
@@ -116,7 +119,6 @@ export function ChessBoard({ pieces, selectedId, legalMoves, onPieceClick, onMov
           draggable={setupMode}
           onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}
         >
-          {customImage && <img className="piece-image" src={customImage} alt="" aria-hidden="true" />}
           <span>{pieceText(piece, language, pieceStyle)}</span>
         </button>
       ))}

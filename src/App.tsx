@@ -1,6 +1,6 @@
 import "./App.css";
 import { ChessBoard } from "./components/ChessBoard";
-import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent, type MouseEvent } from "react";
 import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
 import { chooseBestMove } from "./game/ai";
@@ -21,6 +21,7 @@ const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
 };
 
 const setupSymbols: Record<PieceType, string> = { general: "♔", advisor: "◇", elephant: "△", horse: "♞", rook: "♜", cannon: "◉", soldier: "●" };
+const englishBoardMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
 
 function App() {
   const [pieces, setPieces] = useState<ChessPiece[]>(initialPieces);
@@ -35,7 +36,6 @@ function App() {
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [playerColor, setPlayerColor] = useState<PieceColor>("red");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("wood");
-  const [customImage, setCustomImage] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
   const [history, setHistory] = useState<ChessPiece[][]>([]);
@@ -60,7 +60,7 @@ function App() {
 
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
-    : { general: "General", advisor: "Advisor", elephant: "Elephant", horse: "Horse", rook: "Rook", cannon: "Cannon", soldier: "Soldier" };
+    : { general: "King", advisor: "Guard", elephant: "Bishop", horse: "Knight", rook: "Rook", cannon: "Cannon", soldier: "Pawn" };
   const setupReady = pieces.some((piece) => piece.type === "general" && piece.color === "red") && pieces.some((piece) => piece.type === "general" && piece.color === "black");
 
   function registerInvalidAction() {
@@ -260,7 +260,6 @@ function App() {
     setDifficulty("normal");
     setPlayerColor("red");
     setPieceTheme("wood");
-    setCustomImage(null);
     resetGame();
   }
 
@@ -278,14 +277,6 @@ function App() {
     setLastMove(null);
     setAiThinking(false);
     setSelfCheckWarning(false);
-  }
-
-  function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file || !["image/png", "image/svg+xml", "image/jpeg"].includes(file.type)) return;
-    const reader = new FileReader();
-    reader.onload = () => setCustomImage(typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
   }
 
   function exportRecord() {
@@ -315,13 +306,12 @@ function App() {
       if (["easy", "normal", "hard"].includes(data.difficulty)) setDifficulty(data.difficulty);
       if (data.playerColor === "red" || data.playerColor === "black") setPlayerColor(data.playerColor);
       if (["wood", "jade", "flat"].includes(data.pieceTheme)) setPieceTheme(data.pieceTheme);
-      if (typeof data.customImage === "string") setCustomImage(data.customImage);
     } catch { localStorage.removeItem("chinese-chess-ai-game"); }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, customImage }));
-  }, [pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, customImage]);
+    localStorage.setItem("chinese-chess-ai-game", JSON.stringify({ pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme }));
+  }, [pieces, turn, moveHistory, language, pieceStyle, mode, difficulty, playerColor, pieceTheme]);
 
   return (
     <main className="app">
@@ -337,7 +327,7 @@ function App() {
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup"} />
+          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup"} />
           {mode !== "setup" && (winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
@@ -405,15 +395,14 @@ function App() {
             <button className={pieceTheme === "jade" ? "is-active" : ""} type="button" onClick={() => setPieceTheme("jade")}>{t.jade}</button>
             <button className={pieceTheme === "flat" ? "is-active" : ""} type="button" onClick={() => setPieceTheme("flat")}>{t.flat}</button>
           </div>
-          <label className="upload-button">
-            {t.upload}
-            <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={handleImageUpload} />
-          </label>
           <div className="settings-row">
             <span>{language === "zh" ? "棋子" : "Pieces"}</span>
             <button className={pieceStyle === "hanzi" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("hanzi")}>{t.chinese}</button>
             <button className={pieceStyle === "symbols" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("symbols")}>{t.symbols}</button>
           </div>
+          {language === "en" && pieceStyle === "hanzi" && <div className="piece-legend">
+            {(Object.keys(setupNames) as PieceType[]).map((type) => <span key={type}><b>{englishBoardMarks[type]}</b> {setupNames[type]}</span>)}
+          </div>}
           <p className="panel-kicker">{t.current}</p>
           <h2>{winner ? (winner === "red" ? t.redWin : t.blackWin) : draw ? t.drawTitle : `${turnName} ${t.turn}`}</h2>
           <div className="turn-card">

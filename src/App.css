@@ -143,8 +143,6 @@
 .board-shell--jade .piece { background: #d8e5d0; box-shadow: 0 4px 7px rgba(20, 48, 34, 0.38), inset 0 0 0 3px #aec5ad, inset 0 0 0 5px currentColor; }
 .board-shell--flat { background: #e4d6bf; box-shadow: 0 22px 48px rgba(0,0,0,0.36); }
 .board-shell--flat .piece { border-width: 3px; background: #f1e8d8; box-shadow: 0 3px 4px rgba(43, 24, 8, 0.24); }
-.piece-image { position: absolute; inset: 5px; width: calc(100% - 10px); height: calc(100% - 10px); border-radius: 50%; object-fit: cover; opacity: 0.28; pointer-events: none; }
-.piece-image + span { position: relative; z-index: 1; text-shadow: 0 1px 1px rgba(255,255,255,0.3); }
 
 .move-target { position: absolute; width: 8.7%; aspect-ratio: 1; transform: translate(-50%, -50%); z-index: 5; padding: 0; border: 0; border-radius: 50%; background: rgba(248, 219, 135, 0.52); box-shadow: inset 0 0 0 3px rgba(107, 69, 26, 0.45); cursor: pointer; }
 .move-target::after { content: ""; display: block; width: 21%; aspect-ratio: 1; margin: auto; border-radius: 50%; background: #6e421e; }
@@ -174,6 +172,8 @@
 .settings-row > span { min-width: 42px; letter-spacing: 0.08em; }
 .settings-row button { padding: 4px 8px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
 .settings-row button:hover, .settings-row button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
+.piece-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 9px; margin: 7px 0 14px; color: #766c5f; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 9px; }
+.piece-legend b { display: inline-block; width: 13px; color: #c3a877; }
 .editor-help { margin: 9px 0 12px; color: #8d806c; font-size: 10px; line-height: 1.55; }
 .setup-piece-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 9px 0 12px; }
 .setup-piece-grid button { padding: 6px 5px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
@@ -199,9 +199,8 @@
 .finish-setup-button:hover:not(:disabled) { border-color: #c39a5d; background: rgba(185, 132, 61, 0.24); }
 .finish-setup-button:disabled { cursor: not-allowed; opacity: 0.36; }
 .setup-validation { margin: 8px 0 0; color: #9b665e; font-size: 9px; text-align: center; }
-.upload-button, .export-button { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; text-align: center; font-size: 10px; letter-spacing: 0.08em; }
-.upload-button:hover, .export-button:hover { border-color: #806748; color: #d6bd91; }
-.upload-button input { display: none; }
+.export-button { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; text-align: center; font-size: 10px; letter-spacing: 0.08em; }
+.export-button:hover { border-color: #806748; color: #d6bd91; }
 .settings-reset { width: 100%; margin-top: 16px; padding: 8px 10px; border: 1px solid #302a23; border-radius: 3px; color: #6e665b; background: transparent; cursor: pointer; font-size: 10px; letter-spacing: 0.08em; }
 .settings-reset:hover { border-color: #7e4b41; color: #c68b7b; background: rgba(126, 75, 65, 0.1); }
 
