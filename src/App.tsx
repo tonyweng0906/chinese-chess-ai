@@ -179,7 +179,10 @@ function App() {
   }
 
   function clearSetupBoard() {
-    setPieces([]);
+    setPieces([
+      { id: "setup-black-general", type: "general", color: "black", row: 0, col: 4 },
+      { id: "setup-red-general", type: "general", color: "red", row: 9, col: 4 },
+    ]);
     setHistory([]);
     setMoveHistory([]);
     setSelectedId(null);
