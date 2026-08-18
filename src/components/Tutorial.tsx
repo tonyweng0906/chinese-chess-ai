@@ -15,7 +15,7 @@ interface TutorialProps {
 
 const tutorialCopy = {
   zh: {
-    eyebrow: "新手教程", title: "从第一步开始，认识中国象棋", intro: "用四节简短课程认识棋盘、棋子和胜负规则。无需基础，跟着提示一步一步练习。", backGame: "返回棋局", progress: "学习进度", completed: "已完成", start: "开始学习", continue: "继续学习", review: "重新复习", startHere: "从这里开始", unlocked: "已解锁", locked: "完成上一课后解锁", done: "已完成", overview: "课程总览", finish: "完成本课",
+    eyebrow: "新手教程", title: "从第一步开始，认识中国象棋", intro: "用四节简短课程认识棋盘、棋子和胜负规则。无需基础，跟着提示一步一步练习。", backGame: "返回棋局", progress: "学习进度", completed: "已完成", start: "开始学习", continue: "继续学习", review: "重新复习", startHere: "从这里开始", unlocked: "已解锁", locked: "完成上一课后解锁", done: "已完成", overview: "课程总览", finish: "完成本课", nextChapter: "下一章节：", finishCourse: "完成课程",
     lessons: [
       ["认识棋盘", "了解九宫、楚河汉界和双方阵营"],
       ["认识棋子", "逐一练习七类棋子的基本走法"],
@@ -44,7 +44,7 @@ const tutorialCopy = {
     mateIntro: "这是一个一步将死局面。红兵封住两侧，红马保护进攻位置。找到红车的制胜落点。", mateGoal: "目标：一步将死并赢下对局", mateSuccess: "将死！黑方没有任何合法应对，你赢下了第一局。",
   },
   en: {
-    eyebrow: "BEGINNER GUIDE", title: "Learn Xiangqi from your very first move", intro: "Four short lessons introduce the board, pieces, and winning rules. No experience needed—learn one step at a time.", backGame: "Back to game", progress: "Learning progress", completed: "completed", start: "Start learning", continue: "Continue", review: "Review course", startHere: "Start here", unlocked: "Unlocked", locked: "Complete the previous lesson", done: "Completed", overview: "Course overview", finish: "Complete lesson",
+    eyebrow: "BEGINNER GUIDE", title: "Learn Xiangqi from your very first move", intro: "Four short lessons introduce the board, pieces, and winning rules. No experience needed—learn one step at a time.", backGame: "Back to game", progress: "Learning progress", completed: "completed", start: "Start learning", continue: "Continue", review: "Review course", startHere: "Start here", unlocked: "Unlocked", locked: "Complete the previous lesson", done: "Completed", overview: "Course overview", finish: "Complete lesson", nextChapter: "Next chapter: ", finishCourse: "Finish course",
     lessons: [
       ["Meet the board", "Learn the palaces, river, and two sides"],
       ["Meet the pieces", "Practice the movement of all seven pieces"],
@@ -170,17 +170,21 @@ function LessonHeading({ number, title, intro, label }: { number: number; title:
   return <div className="lesson-heading"><span className="lesson-number">0{number}</span><div><p>{label}</p><h2>{title}</h2><span>{intro}</span></div></div>;
 }
 
-function BoardLesson({ t, onComplete }: { t: TutorialText; onComplete: () => void }) {
+function LessonNavigation({ t, nextTitle, onComplete, onNext, final = false }: { t: TutorialText; nextTitle?: string; onComplete: () => void; onNext?: () => void; final?: boolean }) {
+  return <div className="lesson-navigation"><button type="button" onClick={onComplete}>{final ? t.finishCourse : t.finish}</button>{nextTitle && onNext && <button className="is-next" type="button" onClick={onNext}>{t.nextChapter}{nextTitle} →</button>}</div>;
+}
+
+function BoardLesson({ t, onComplete, onNext }: { t: TutorialText; onComplete: () => void; onNext: () => void }) {
   return <>
     <LessonHeading number={1} title={t.lessons[0][0]} intro={t.boardIntro} label={t.lessonLabels[0]} />
     <div className="lesson-content">
       <div className="tutorial-board-demo" aria-label={t.lessons[0][0]}><span className="demo-side demo-side--top">{t.boardTop}</span><div className="demo-palace demo-palace--top" /><div className="demo-river">{t.river}</div><div className="demo-palace demo-palace--bottom" /><span className="demo-side demo-side--bottom">{t.boardBottom}</span></div>
-      <div className="lesson-facts">{t.boardFacts.map(([title, description], index) => <article key={title}><span>0{index + 1}</span><div><h3>{title}</h3><p>{description}</p></div></article>)}<button className="lesson-complete-button" type="button" onClick={onComplete}>{t.finish}</button></div>
+      <div className="lesson-facts">{t.boardFacts.map(([title, description], index) => <article key={title}><span>0{index + 1}</span><div><h3>{title}</h3><p>{description}</p></div></article>)}<LessonNavigation t={t} nextTitle={t.lessons[1][0]} onComplete={onComplete} onNext={onNext} /></div>
     </div>
   </>;
 }
 
-function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void }) {
+function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }: { t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void; onNext: () => void }) {
   const [type, setType] = useState<PieceType>("general");
   const [exampleIndex, setExampleIndex] = useState(0);
   const initialScenario = pieceScenarios.general[0];
@@ -239,7 +243,8 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: T
         <div className="piece-rule-focus"><b>{t.ruleFocus}</b><p>{scenarioText.focus}</p></div>
         {scenario.id === "cannon-screen" && <ol className="cannon-rule-steps">{t.cannonSteps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>}
         <strong className={practiced ? "is-done" : scenario.valid ? "" : "is-warning"}>{practiced && scenario.freeMove ? <><span>✓ {t.freePractice}</span><small>{t.movesMade}: {freeMoveCount} {t.moveUnit}</small></> : practiced ? `✓ ${scenarioText.success}` : scenarioText.instruction}</strong>
-        <div className="piece-lesson-actions"><button type="button" onClick={() => loadScenario(type, exampleIndex)}>{t.restartExample}</button><button type="button" onClick={onComplete}>{t.finish} →</button></div>
+        <button className="piece-example-reset" type="button" onClick={() => loadScenario(type, exampleIndex)}>{t.restartExample}</button>
+        <LessonNavigation t={t} nextTitle={t.lessons[2][0]} onComplete={onComplete} onNext={onNext} />
       </div>
     </div>
   </>;
@@ -262,7 +267,7 @@ const matePieces: ChessPiece[] = [
   { id: "tutorial-red-general", type: "general", color: "red", row: 9, col: 4 },
 ];
 
-function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete }: { kind: "capture" | "mate"; t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void }) {
+function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, onNext }: { kind: "capture" | "mate"; t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void; onNext?: () => void }) {
   const startPieces = kind === "capture" ? capturePieces : matePieces;
   const target = kind === "capture" ? { row: 3, col: 4 } : { row: 1, col: 4 };
   const lessonIndex = kind === "capture" ? 2 : 3;
@@ -284,7 +289,7 @@ function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete }:
     <LessonHeading number={lessonIndex + 1} title={t.lessons[lessonIndex][0]} intro={kind === "capture" ? t.captureIntro : t.mateIntro} label={t.lessonLabels[lessonIndex]} />
     <div className="puzzle-lesson-layout">
       <div className="tutorial-puzzle-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={guidedMoves} onPieceClick={selectPiece} onMove={move} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={null} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
-      <div className="puzzle-instructions"><span>{kind === "capture" ? t.captureGoal : t.mateGoal}</span><h3>{solved ? (kind === "capture" ? t.captureSuccess : t.mateSuccess) : t.selectRook}</h3><p>{kind === "capture" ? t.captureIntro : t.mateIntro}</p>{solved && <button className="lesson-complete-button" type="button" onClick={onComplete}>{t.finish} →</button>}</div>
+      <div className="puzzle-instructions"><span>{kind === "capture" ? t.captureGoal : t.mateGoal}</span><h3>{solved ? (kind === "capture" ? t.captureSuccess : t.mateSuccess) : t.selectRook}</h3><p>{kind === "capture" ? t.captureIntro : t.mateIntro}</p>{solved && <LessonNavigation t={t} nextTitle={kind === "capture" ? t.lessons[3][0] : undefined} onComplete={onComplete} onNext={onNext} final={kind === "mate"} />}</div>
     </div>
   </>;
 }
@@ -297,15 +302,15 @@ export function Tutorial({ language, pieceStyle, pieceTheme, onPieceStyleChange,
   const t = tutorialCopy[language];
   useEffect(() => { localStorage.setItem("xiangqi-tutorial-progress", JSON.stringify(completedLessons)); }, [completedLessons]);
   const firstIncomplete = [0, 1, 2, 3].find((index) => !completedLessons.includes(index)) ?? 0;
-  function completeLesson(index: number) { setCompletedLessons((current) => current.includes(index) ? current : [...current, index].sort()); setActiveLesson(null); }
+  function completeLesson(index: number, nextLesson: number | null = null) { setCompletedLessons((current) => current.includes(index) ? current : [...current, index].sort()); setActiveLesson(nextLesson); }
 
   if (activeLesson !== null) {
     return <section className="tutorial-shell tutorial-lesson" aria-label={t.lessons[activeLesson][0]}>
       <LessonTopbar label={t.lessonLabels[activeLesson]} t={t} onOverview={() => setActiveLesson(null)} onClose={onClose} />
       <TutorialDisplayControls t={t} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={onPieceStyleChange} onPieceThemeChange={onPieceThemeChange} />
-      {activeLesson === 0 && <BoardLesson t={t} onComplete={() => completeLesson(0)} />}
-      {activeLesson === 1 && <PieceLesson t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(1)} />}
-      {activeLesson === 2 && <PuzzleLesson kind="capture" t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(2)} />}
+      {activeLesson === 0 && <BoardLesson t={t} onComplete={() => completeLesson(0)} onNext={() => completeLesson(0, 1)} />}
+      {activeLesson === 1 && <PieceLesson t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(1)} onNext={() => completeLesson(1, 2)} />}
+      {activeLesson === 2 && <PuzzleLesson kind="capture" t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(2)} onNext={() => completeLesson(2, 3)} />}
       {activeLesson === 3 && <PuzzleLesson kind="mate" t={t} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onComplete={() => completeLesson(3)} />}
     </section>;
   }
