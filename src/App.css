@@ -180,11 +180,22 @@
 .setup-piece-grid button:hover, .setup-piece-grid button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
 .setup-piece-grid button[draggable="true"] { cursor: grab; }
 .setup-piece-grid button[draggable="true"]:active { cursor: grabbing; }
+.setup-piece-tray { display: grid; grid-template-columns: repeat(4, minmax(48px, 1fr)); gap: 12px 7px; margin: 14px 0 17px; }
+.setup-piece-option { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #756b5e; font-size: 9px; text-align: center; }
+.setup-token { width: 45px; height: 45px; display: grid; place-items: center; padding: 0; border: 2px solid currentColor; border-radius: 50%; background: #e6c384; box-shadow: 0 3px 6px rgba(31, 19, 8, 0.42), inset 0 0 0 3px #d2a75f; cursor: grab; font-family: "Noto Serif SC", serif; font-size: 23px; font-weight: 700; transition: transform 140ms ease, box-shadow 140ms ease; }
+.setup-token--red { color: #a52c25; }
+.setup-token--black { color: #24211d; }
+.setup-token:hover, .setup-token.is-active { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 0 3px rgba(240, 202, 115, 0.42), 0 5px 9px rgba(31, 19, 8, 0.42), inset 0 0 0 3px #d2a75f; }
+.setup-token:active { cursor: grabbing; }
 .board-shell--setup { outline: 2px dashed rgba(210, 169, 98, 0.38); outline-offset: 7px; }
 .board-shell--setup .piece { cursor: grab; }
 .board-shell--setup .piece:active { cursor: grabbing; }
 .clear-board-button { width: 100%; margin: 7px 0 12px; padding: 8px 10px; border: 1px solid #70463e; border-radius: 3px; color: #bd8174; background: rgba(112, 70, 62, 0.08); cursor: pointer; font-size: 10px; letter-spacing: 0.08em; }
 .clear-board-button:hover { border-color: #a45d50; color: #e0a092; background: rgba(112, 70, 62, 0.16); }
+.finish-setup-button { width: 100%; padding: 10px; border: 1px solid #8b6b42; border-radius: 3px; color: #e0c38f; background: rgba(185, 132, 61, 0.14); cursor: pointer; font-size: 11px; letter-spacing: 0.08em; }
+.finish-setup-button:hover:not(:disabled) { border-color: #c39a5d; background: rgba(185, 132, 61, 0.24); }
+.finish-setup-button:disabled { cursor: not-allowed; opacity: 0.36; }
+.setup-validation { margin: 8px 0 0; color: #9b665e; font-size: 9px; text-align: center; }
 .upload-button, .export-button { display: block; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; text-align: center; font-size: 10px; letter-spacing: 0.08em; }
 .upload-button:hover, .export-button:hover { border-color: #806748; color: #d6bd91; }
 .upload-button input { display: none; }

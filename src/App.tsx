@@ -7,13 +7,20 @@ import { chooseBestMove } from "./game/ai";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "拖动棋子到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general" },
 } as const;
 
 function symbolsForTurn(turn: PieceColor) {
   return turn === "red" ? "♔" : "♚";
 }
+
+const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
+  red: { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" },
+  black: { general: "将", advisor: "士", elephant: "象", horse: "马", rook: "车", cannon: "炮", soldier: "卒" },
+};
+
+const setupSymbols: Record<PieceType, string> = { general: "♔", advisor: "◇", elephant: "△", horse: "♞", rook: "♜", cannon: "◉", soldier: "●" };
 
 function App() {
   const [pieces, setPieces] = useState<ChessPiece[]>(initialPieces);
@@ -54,6 +61,7 @@ function App() {
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
     : { general: "General", advisor: "Advisor", elephant: "Elephant", horse: "Horse", rook: "Rook", cannon: "Cannon", soldier: "Soldier" };
+  const setupReady = pieces.some((piece) => piece.type === "general" && piece.color === "red") && pieces.some((piece) => piece.type === "general" && piece.color === "black");
 
   function registerInvalidAction() {
     if (!checkRestricted || winner || draw || aiThinking) return;
@@ -163,6 +171,28 @@ function App() {
     setSelectedId(null);
     setWinner(null);
     setDraw(false);
+    setLastMove(null);
+  }
+
+  function startSetupMode() {
+    setMode("setup");
+    setWinner(null);
+    setDraw(false);
+    setSelectedId(null);
+    setHistory([]);
+    setMoveHistory([]);
+    setLastMove(null);
+  }
+
+  function finishSetup() {
+    if (!setupReady) return;
+    setMode("local");
+    setTurn("red");
+    setSelectedId(null);
+    setWinner(null);
+    setDraw(false);
+    setHistory([]);
+    setMoveHistory([]);
     setLastMove(null);
   }
 
@@ -291,7 +321,7 @@ function App() {
             {flipped ? t.red : t.black}
           </div>
           <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} customImage={customImage} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup"} />
-          {(winner || draw) && (
+          {mode !== "setup" && (winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
               <strong>{winner ? (winner === "red" ? t.redWin : t.blackWin) : t.drawTitle}</strong>
@@ -309,7 +339,7 @@ function App() {
             <span>{t.mode}</span>
             <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => setMode("local")}>{t.local}</button>
             <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => startAiGame(playerColor)}>{t.ai}</button>
-            <button className={mode === "setup" ? "is-active" : ""} type="button" onClick={() => setMode("setup")}>{t.setup}</button>
+            <button className={mode === "setup" ? "is-active" : ""} type="button" onClick={startSetupMode}>{t.setup}</button>
           </div>
           {mode === "ai" && <>
             <div className="settings-row">
@@ -331,11 +361,19 @@ function App() {
               <button className={setupColor === "red" ? "is-active" : ""} type="button" onClick={() => setSetupColor("red")}>{t.redSide}</button>
               <button className={setupColor === "black" ? "is-active" : ""} type="button" onClick={() => setSetupColor("black")}>{t.blackSide}</button>
             </div>
-            <div className="setup-piece-grid">
-              {(Object.keys(setupNames) as PieceType[]).map((type) => <button key={type} className={setupType === type ? "is-active" : ""} type="button" draggable onClick={() => setSetupType(type)} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color: setupColor }))}>{setupNames[type]}</button>)}
+            <div className="setup-piece-tray">
+              {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={type}>
+                <button className={`setup-token setup-token--${setupColor} ${setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => setSetupType(type)} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color: setupColor }))} aria-label={setupNames[type]}>
+                  {pieceStyle === "symbols" ? setupSymbols[type] : setupGlyphs[setupColor][type]}
+                </button>
+                <span>{setupNames[type]}</span>
+              </div>)}
             </div>
             <button className="clear-board-button" type="button" onClick={clearSetupBoard}>{t.clearAll}</button>
+            <button className="finish-setup-button" type="button" onClick={finishSetup} disabled={!setupReady}>{t.finishSetup}</button>
+            {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
           </div>}
+          {mode !== "setup" && <>
           <div className="settings-row">
             <span>{t.language}</span>
             <button className={language === "zh" ? "is-active" : ""} type="button" onClick={() => setLanguage("zh")}>中文</button>
@@ -380,6 +418,7 @@ function App() {
             {moveHistory.length === 0 ? <span>{t.noLog}</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
           </div>
           <p className="coming-soon">已支持基础走法与将军限制</p>
+          </>}
         </aside>
       </section>
     </main>
