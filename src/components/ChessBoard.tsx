@@ -50,11 +50,19 @@ function routePath(from: Position, to: Position, bend: number) {
   const x2 = x(to.col);
   const y2 = y(to.row);
   const distance = Math.hypot(x2 - x1, y2 - y1) || 1;
+  const directionX = (x2 - x1) / distance;
+  const directionY = (y2 - y1) / distance;
+  const startInset = Math.min(34, distance * 0.24);
+  const endInset = Math.min(28, distance * 0.2);
+  const startX = x1 + directionX * startInset;
+  const startY = y1 + directionY * startInset;
+  const endX = x2 - directionX * endInset;
+  const endY = y2 - directionY * endInset;
   const normalX = -(y2 - y1) / distance;
   const normalY = (x2 - x1) / distance;
-  const controlX = (x1 + x2) / 2 + normalX * bend;
-  const controlY = (y1 + y2) / 2 + normalY * bend;
-  return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+  const controlX = (startX + endX) / 2 + normalX * bend;
+  const controlY = (startY + endY) / 2 + normalY * bend;
+  return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`;
 }
 
 function BoardLines() {
@@ -126,17 +134,18 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
       {reviewComparison && (
         <svg className="review-comparison-overlay" viewBox="0 0 800 890" aria-hidden="true">
           <defs>
-            <marker id={actualMarkerId} markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto" markerUnits="strokeWidth">
-              <path className="review-arrowhead review-arrowhead--actual" d="M 0 0 L 9 4.5 L 0 9 z" />
+            <marker id={actualMarkerId} markerWidth="17" markerHeight="17" refX="15" refY="8.5" orient="auto" markerUnits="userSpaceOnUse">
+              <path className="review-arrowhead review-arrowhead--actual" d="M 1 1 L 16 8.5 L 1 16 z" />
             </marker>
-            <marker id={recommendedMarkerId} markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto" markerUnits="strokeWidth">
-              <path className="review-arrowhead review-arrowhead--recommended" d="M 0 0 L 9 4.5 L 0 9 z" />
+            <marker id={recommendedMarkerId} markerWidth="17" markerHeight="17" refX="15" refY="8.5" orient="auto" markerUnits="userSpaceOnUse">
+              <path className="review-arrowhead review-arrowhead--recommended" d="M 1 1 L 16 8.5 L 1 16 z" />
             </marker>
           </defs>
           <path className="review-route review-route--actual" d={routePath(reviewComparison.actual.from, reviewComparison.actual.to, -16)} markerEnd={`url(#${actualMarkerId})`} />
           <path className="review-route review-route--recommended" d={routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, 16)} markerEnd={`url(#${recommendedMarkerId})`} />
-          <circle className="review-route-point review-route-point--actual" cx={x(reviewComparison.actual.to.col)} cy={y(reviewComparison.actual.to.row)} r="17" />
-          <circle className="review-route-point review-route-point--recommended" cx={x(reviewComparison.recommended.to.col)} cy={y(reviewComparison.recommended.to.row)} r="17" />
+          <circle className="review-route-point review-route-point--actual" cx={x(reviewComparison.actual.to.col)} cy={y(reviewComparison.actual.to.row)} r="14" />
+          <path className="review-bad-move-cross" d={`M ${x(reviewComparison.actual.to.col) - 6} ${y(reviewComparison.actual.to.row) - 6} L ${x(reviewComparison.actual.to.col) + 6} ${y(reviewComparison.actual.to.row) + 6} M ${x(reviewComparison.actual.to.col) + 6} ${y(reviewComparison.actual.to.row) - 6} L ${x(reviewComparison.actual.to.col) - 6} ${y(reviewComparison.actual.to.row) + 6}`} />
+          <circle className="review-route-point review-route-point--recommended" cx={x(reviewComparison.recommended.to.col)} cy={y(reviewComparison.recommended.to.row)} r="14" />
         </svg>
       )}
       {pieces.map((piece) => {

@@ -305,17 +305,18 @@
 .review-legend-dot--actual { color: #d56855; background: currentColor; }
 .review-legend-dot--recommended { color: #71bc79; background: currentColor; }
 .review-comparison-overlay { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.review-route { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 15 11; filter: drop-shadow(0 2px 2px rgba(32,20,10,.48)); animation: review-route-draw 620ms ease-out both; }
+.review-route { fill: none; stroke-width: 5.5; stroke-linecap: round; stroke-dasharray: 11 9; filter: drop-shadow(0 1px 2px rgba(32,20,10,.46)); animation: review-route-draw 620ms ease-out both; }
 .review-route--actual { stroke: #d56855; }
 .review-route--recommended { stroke: #71bc79; animation-delay: 90ms; }
 .review-arrowhead--actual { fill: #d56855; }
 .review-arrowhead--recommended { fill: #71bc79; }
-.review-route-point { fill: rgba(0,0,0,.08); stroke-width: 5; animation: review-route-point 1.35s ease-in-out infinite alternate; }
+.review-route-point { fill: rgba(0,0,0,.08); stroke-width: 3.5; animation: review-route-point 1.35s ease-in-out infinite alternate; }
 .review-route-point--actual { stroke: #d56855; }
 .review-route-point--recommended { stroke: #71bc79; animation-delay: 180ms; }
-.review-board .piece--review-actual { z-index: 4; outline: 5px solid rgba(213,104,85,.95); outline-offset: 4px; }
-.review-board .piece--review-recommended { z-index: 4; box-shadow: 0 0 0 7px rgba(113,188,121,.95), 0 5px 12px rgba(23,55,29,.45), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; }
-.review-board .piece--review-actual.piece--review-recommended { outline-color: rgba(213,104,85,.98); box-shadow: 0 0 0 7px rgba(113,188,121,.95), 0 5px 12px rgba(23,55,29,.45), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; }
+.review-bad-move-cross { fill: none; stroke: #f0a092; stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 1px 2px rgba(73,17,13,.65)); }
+.review-board .piece--review-actual { z-index: 4; outline: 3.5px solid rgba(213,104,85,.95); outline-offset: 3px; }
+.review-board .piece--review-recommended { z-index: 4; box-shadow: 0 0 0 5px rgba(113,188,121,.95), 0 5px 12px rgba(23,55,29,.45), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; }
+.review-board .piece--review-actual.piece--review-recommended { outline-color: rgba(213,104,85,.98); box-shadow: 0 0 0 5px rgba(113,188,121,.95), 0 5px 12px rgba(23,55,29,.45), inset 0 0 0 3px #d2a75f, inset 0 0 0 5px currentColor; }
 @keyframes review-route-draw { from { stroke-dashoffset: 170; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes review-route-point { from { opacity: .5; } to { opacity: 1; } }
 .review-step-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; color: #867865; font-size: 10px; letter-spacing: .1em; }
@@ -363,9 +364,11 @@
 .review-move-list__heading b { color: #a58961; font-family: ui-monospace,monospace; font-weight: 500; }
 .review-move-list button { width: 100%; display: grid; grid-template-columns: 26px minmax(0,1fr) 14px; gap: 7px; align-items: center; padding: 9px 11px; border: 0; border-top: 1px solid #2c261f; color: #746a5e; background: transparent; cursor: pointer; text-align: left; font-size: 9px; }
 .review-move-list button:hover,.review-move-list button.is-active { color: #d2b685; background: rgba(185,132,61,.09); }
+.review-move-list button.has-review-warning { background-image: linear-gradient(90deg, rgba(168,70,57,.09), transparent 62%); }
 .review-move-list button i { color: #5f574d; font-family: ui-monospace,monospace; font-style: normal; }
 .review-move-list button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .review-move-list button b { color: #b8705f; }
+.review-move-list .review-move-warning { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid rgba(205,105,88,.72); border-radius: 50%; color: #e49384; background: rgba(145,57,47,.18); font-family: ui-sans-serif,system-ui,sans-serif; font-size: 11px; line-height: 1; }
 .review-local-note { margin: 11px 2px 0; color: #514b43; font-size: 8px; line-height: 1.5; }
 
 .tutorial-open-button {
