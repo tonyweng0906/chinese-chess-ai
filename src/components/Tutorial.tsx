@@ -76,7 +76,19 @@ const tutorialCopy = {
   },
 } as const;
 
-type TutorialText = (typeof tutorialCopy)[Language];
+type TutorialContentLanguage = "zh" | "en";
+const tutorialCopyKo = {
+  ...tutorialCopy.en,
+  eyebrow: "초보자 안내", title: "첫 수부터 중국 장기 배우기", intro: "보드, 기물, 장군, 외통수와 끝내기를 다섯 개의 대화형 수업으로 배워 보세요.", backGame: "대국으로 돌아가기", progress: "학습 진행", completed: "완료", start: "학습 시작", continue: "계속하기", review: "다시 보기", startHere: "여기서 시작", unlocked: "잠금 해제", locked: "이전 수업을 완료하세요", done: "완료", overview: "수업 개요", finish: "수업 완료", nextChapter: "다음 장: ", finishCourse: "과정 완료", nextExercise: "다음 문제", exercise: "연습", testQuestion: "테스트", wrongMove: "정답이 아닙니다. 다시 선택하세요", testComplete: "테스트 완료",
+  lessons: [["보드 익히기", "궁, 강과 양쪽 진영 알아보기"], ["기물 익히기", "일곱 종류 기물의 기본 이동 연습"], ["포획과 장군", "포획으로 상대 장군 만들기"], ["첫 승리", "세 가지 한 수 외통수 풀기"], ["끝내기 테스트", "방어, 포대와 외통수 문제 풀기"]],
+  lessonLabels: ["첫 번째 수업", "두 번째 수업", "세 번째 수업", "네 번째 수업", "다섯 번째 수업"],
+  boardTop: "흑 진영", river: "강", boardBottom: "홍 진영", piecesIntro: "원하는 기물을 선택해 이동, 포획과 규칙을 익혀 보세요.", tapTarget: "금색 도착점을 누르세요", practiced: "좋아요. 올바른 수입니다", nextPiece: "다음 기물", finishPieces: "기물 연습 완료",
+  displaySettings: "튜토리얼 기물 설정", pieceForm: "기물 형태", hanziStyle: "문자", symbolStyle: "기호", pieceThemeLabel: "기물 테마", choosePiece: "배울 기물을 선택하세요", choosePieceHint: "각 기물에는 여러 사례가 있습니다.", movementTab: "이동 예시", captureTab: "포획 예시", viewed: "연습 완료", freePractice: "자유 연습이 활성화되었습니다", movesMade: "둔 수", moveUnit: "수", restartExample: "예시 다시 놓기",
+} as const;
+type TutorialText = (typeof tutorialCopy)[TutorialContentLanguage];
+function contentLanguage(language: Language): TutorialContentLanguage {
+  return language === "zh" ? "zh" : "en";
+}
 const pieceOrder: PieceType[] = ["general", "advisor", "elephant", "horse", "rook", "cannon", "soldier"];
 const tutorialGlyphs: Record<PieceType, string> = { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" };
 const tutorialEnglishMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
@@ -129,7 +141,7 @@ const pieceScenarios: Record<PieceType, PieceScenario[]> = {
   ],
 };
 
-const pieceScenarioCopy: Record<string, Record<Language, ScenarioText>> = {
+const pieceScenarioCopy: Record<string, Record<TutorialContentLanguage, ScenarioText>> = {
   "general-step": { zh: { tab: "九宫移动", description: "帅每次只能横走或直走一格，并且必须留在九宫内。", focus: "金色落点仍在下方九宫内。九宫外的交叉点不会成为合法落点。", instruction: "点击金色落点，让帅在九宫内前进一步", success: "帅在九宫内完成了一格移动" }, en: { tab: "Palace move", description: "The king moves exactly one point orthogonally and must stay in the palace.", focus: "The gold point remains inside the lower palace; intersections outside it are illegal.", instruction: "Move the king one point inside the palace", success: "The king moved one point inside the palace" } },
   "general-capture": { zh: { tab: "近身吃子", description: "帅也能吃掉相邻的敌棋，但落点仍必须安全且位于九宫内。", focus: "吃子不会让帅获得额外距离；它仍然只能移动一格。", instruction: "点击黑卒，让帅吃掉相邻敌棋", success: "帅吃掉了九宫内相邻的黑卒" }, en: { tab: "Capture", description: "The king may capture an adjacent enemy if the destination is safe and inside the palace.", focus: "Capturing does not extend its range; the king still moves only one point.", instruction: "Capture the adjacent black pawn", success: "The king captured the adjacent pawn" } },
   "general-facing": { zh: { tab: "将帅照面", description: "将和帅不能在同一条竖线上直接面对，中间必须至少隔着一枚棋子。", focus: "如果帅走到红色叉号处，双方将帅之间没有任何棋子，因此这一步违规。", instruction: "点击红色叉号，观察为什么帅不能走到这里", success: "正确识别：这一步会造成将帅照面，不能落子" }, en: { tab: "Facing kings", description: "The two kings may not face each other on the same open file.", focus: "Moving to the red X would leave no piece between the kings, so the move is forbidden.", instruction: "Tap the red X to test the forbidden move", success: "Correct: the move would leave the kings facing" } },
@@ -198,7 +210,7 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
   const [freeMoveCount, setFreeMoveCount] = useState(0);
   const pieceIndex = pieceOrder.indexOf(type);
   const scenario = pieceScenarios[type][exampleIndex];
-  const scenarioText = pieceScenarioCopy[scenario.id][language];
+  const scenarioText = pieceScenarioCopy[scenario.id][contentLanguage(language)];
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const availableMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces).filter((move) => !pieces.some((piece) => piece.row === move.row && piece.col === move.col && piece.type === "general")) : [], [selectedPiece, pieces]);
   const targetIsLegal = availableMoves.some((move) => move.row === scenario.target.row && move.col === scenario.target.col);
@@ -240,7 +252,7 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
         <span className="piece-lesson-count">{String(pieceIndex + 1).padStart(2, "0")} / 07</span>
         <div className={`piece-lesson-icon piece-lesson-icon--${pieceTheme} ${pieceStyle === "symbols" ? "is-symbol" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type={type} /> : <span>{lessonGlyph}</span>}</div>
         <h3>{t.pieceNames[type]}</h3>
-        <div className="piece-example-tabs" aria-label={t.exampleProgress}>{pieceScenarios[type].map((item, index) => <button className={exampleIndex === index ? "is-active" : ""} type="button" key={item.id} onClick={() => loadScenario(type, index)}>{completedExamples.has(item.id) && <span>✓</span>}{pieceScenarioCopy[item.id][language].tab}</button>)}</div>
+        <div className="piece-example-tabs" aria-label={t.exampleProgress}>{pieceScenarios[type].map((item, index) => <button className={exampleIndex === index ? "is-active" : ""} type="button" key={item.id} onClick={() => loadScenario(type, index)}>{completedExamples.has(item.id) && <span>✓</span>}{pieceScenarioCopy[item.id][contentLanguage(language)].tab}</button>)}</div>
         <span className={`piece-practice-goal ${scenario.valid ? "" : "is-rule-test"}`}>{scenario.valid ? (language === "zh" ? "可行走法" : "LEGAL MOVE") : (language === "zh" ? "规则辨析" : "RULE CHECK")}</span><p>{scenarioText.description}</p>
         <div className="piece-rule-focus"><b>{t.ruleFocus}</b><p>{scenarioText.focus}</p></div>
         {scenario.id === "cannon-screen" && <ol className="cannon-rule-steps">{t.cannonSteps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>}
@@ -254,7 +266,7 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
 
 type PuzzleValidation = "check-black" | "escape-red" | "mate-black" | "capture-target";
 interface PuzzleText { title: string; goal: string; instruction: string; success: string; }
-interface GuidedPuzzle { id: string; pieces: ChessPiece[]; actorId: string; target: Position; validation: PuzzleValidation; copy: Record<Language, PuzzleText>; }
+interface GuidedPuzzle { id: string; pieces: ChessPiece[]; actorId: string; target: Position; validation: PuzzleValidation; copy: Record<TutorialContentLanguage, PuzzleText>; }
 
 const chapterPuzzles: Record<"capture" | "mate", GuidedPuzzle[]> = {
   capture: [
@@ -293,7 +305,7 @@ function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, o
   const lessonIndex = kind === "capture" ? 2 : 3;
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const puzzle = puzzles[puzzleIndex];
-  const copy = puzzle.copy[language];
+  const copy = puzzle.copy[contentLanguage(language)];
   const [pieces, setPieces] = useState<ChessPiece[]>(puzzle.pieces);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -330,7 +342,7 @@ const endgameTests: GuidedPuzzle[] = [
 function EndgameTestLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void }) {
   const [testIndex, setTestIndex] = useState(0);
   const test = endgameTests[testIndex];
-  const copy = test.copy[language];
+  const copy = test.copy[contentLanguage(language)];
   const [pieces, setPieces] = useState<ChessPiece[]>(test.pieces);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -365,7 +377,7 @@ export function Tutorial({ language, pieceStyle, pieceTheme, onPieceStyleChange,
   const [completedLessons, setCompletedLessons] = useState<number[]>(() => {
     try { const saved = JSON.parse(localStorage.getItem("xiangqi-tutorial-progress") ?? "[]"); return Array.isArray(saved) ? saved.filter((item) => Number.isInteger(item) && item >= 0 && item < 5) : []; } catch { return []; }
   });
-  const t = tutorialCopy[language];
+  const t = (language === "zh" ? tutorialCopy.zh : language === "ko" ? tutorialCopyKo : tutorialCopy.en) as unknown as TutorialText;
   useEffect(() => { localStorage.setItem("xiangqi-tutorial-progress", JSON.stringify(completedLessons)); }, [completedLessons]);
   const firstIncomplete = [0, 1, 2, 3, 4].find((index) => !completedLessons.includes(index)) ?? 0;
   function completeLesson(index: number, nextLesson: number | null = null) { setCompletedLessons((current) => current.includes(index) ? current : [...current, index].sort()); setActiveLesson(nextLesson); }

@@ -33,12 +33,17 @@ const englishMarks: Record<PieceType, string> = {
   general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P",
 };
 
+const koreanLabels: Record<ChessPiece["color"], Record<PieceType, string>> = {
+  black: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "졸" },
+  red: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "병" },
+};
+
 function pieceText(piece: ChessPiece, language: Language) {
-  return language === "zh" ? labels[piece.color][piece.type] : englishMarks[piece.type];
+  return language === "zh" ? labels[piece.color][piece.type] : language === "ko" ? koreanLabels[piece.color][piece.type] : englishMarks[piece.type];
 }
 
 function pieceName(piece: ChessPiece, language: Language) {
-  return language === "zh" ? labels[piece.color][piece.type] : englishLabels[piece.type];
+  return language === "zh" ? labels[piece.color][piece.type] : language === "ko" ? koreanLabels[piece.color][piece.type] : englishLabels[piece.type];
 }
 
 const x = (col: number) => 40 + col * 90;
@@ -175,7 +180,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
               left: `${(x(piece.col) / 800) * 100}%`,
               top: `${(y(piece.row) / 890) * 100}%`,
             }}
-            aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
+            aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : language === "ko" ? "홍" : "Red") : (language === "zh" ? "黑方" : language === "ko" ? "흑" : "Black")} ${pieceName(piece, language)}`}
             onClick={(event) => { event.stopPropagation(); onPieceClick(piece); }}
             draggable={setupMode && !disabled}
             onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}

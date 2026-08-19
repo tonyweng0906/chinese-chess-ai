@@ -10,7 +10,7 @@ interface TrainingArchiveLibraryProps {
   onClose: () => void;
 }
 
-const copy = {
+const copyBase = {
   zh: {
     eyebrow: "AI 训练档案馆", title: "自我对弈存档", close: "返回棋局", total: "存档总数", red: "红方胜", black: "黑方胜", draw: "和棋",
     plies: "手", replay: "查看回放", remove: "删除", clear: "清空全部存档", emptyTitle: "还没有训练存档", empty: "完成一局 AI 自我训练后，棋谱会自动出现在这里。",
@@ -22,6 +22,13 @@ const copy = {
     clearConfirm: "Clear every training replay? This cannot be undone.", removeConfirm: "Delete this training replay?",
   },
 } as const;
+const copy = {
+  ...copyBase,
+  ko: {
+    ...copyBase.en,
+    eyebrow: "AI 훈련 보관함", title: "자기 대국 리플레이", close: "대국으로 돌아가기", total: "전체 기록", red: "홍 승리", black: "흑 승리", draw: "무승부", plies: "수", replay: "리플레이 보기", remove: "삭제", clear: "전체 기록 삭제", emptyTitle: "훈련 기록이 없습니다", empty: "AI 자기 대국이 끝나면 리플레이가 이곳에 자동 저장됩니다.", clearConfirm: "모든 훈련 기록을 삭제할까요? 되돌릴 수 없습니다.", removeConfirm: "이 훈련 기록을 삭제할까요?",
+  },
+} as const;
 
 function resultLabel(archive: TrainingArchive, language: Language) {
   const t = copy[language];
@@ -29,7 +36,7 @@ function resultLabel(archive: TrainingArchive, language: Language) {
 }
 
 function archiveDate(timestamp: number, language: Language) {
-  return new Intl.DateTimeFormat(language === "zh" ? "zh-CN" : "en-US", {
+  return new Intl.DateTimeFormat(language === "zh" ? "zh-CN" : language === "ko" ? "ko-KR" : "en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -62,7 +69,7 @@ export function TrainingArchiveLibrary({ archives, language, onSelect, onDelete,
         {newestFirst.map((archive, index) => <article className="training-archive-card" key={archive.id}>
           <button className="training-archive-card__main" type="button" onClick={() => onSelect(archive.id)}>
             <span className={`training-archive-result training-archive-result--${archive.winner ?? "draw"}`}>{resultLabel(archive, language)}</span>
-            <strong>{language === "zh" ? `训练棋局 ${String(newestFirst.length - index).padStart(2, "0")}` : `Training game ${String(newestFirst.length - index).padStart(2, "0")}`}</strong>
+            <strong>{language === "zh" ? `训练棋局 ${String(newestFirst.length - index).padStart(2, "0")}` : language === "ko" ? `훈련 대국 ${String(newestFirst.length - index).padStart(2, "0")}` : `Training game ${String(newestFirst.length - index).padStart(2, "0")}`}</strong>
             <small>{archiveDate(archive.finishedAt, language)} · {archive.moves.length} {t.plies}</small>
             <i>{t.replay} →</i>
           </button>
@@ -77,4 +84,3 @@ export function TrainingArchiveLibrary({ archives, language, onSelect, onDelete,
     </>}
   </section>;
 }
-

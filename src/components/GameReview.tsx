@@ -19,7 +19,7 @@ interface GameReviewProps {
   onClose: () => void;
 }
 
-const copy = {
+const copyBase = {
   zh: {
     eyebrow: "AI 复盘室", title: "棋谱回放与逐步讲解", close: "返回棋局", opening: "初始局面", move: "第", moveUnit: "步", red: "红方", black: "黑方",
     first: "回到开局", previous: "上一步", play: "自动播放", pause: "暂停", next: "下一步", last: "跳到末局", record: "棋谱时间轴", analysis: "AI 逐步讲解", thinking: "AI 正在重新计算这一步…",
@@ -51,10 +51,22 @@ const copy = {
     localNote: "Analysis uses a limited-depth local search; “AI top choice” does not mean a proven theoretical best move.",
   },
 } as const;
+const copy = {
+  ...copyBase,
+  ko: {
+    ...copyBase.en,
+    eyebrow: "AI 복기실", title: "기보 리플레이 및 수별 해설", close: "대국으로 돌아가기", opening: "초기 국면", move: "제", moveUnit: "수", red: "홍", black: "흑",
+    first: "처음", previous: "이전 수", play: "자동 재생", pause: "일시정지", next: "다음 수", last: "마지막", record: "기보 타임라인", analysis: "AI 수별 해설", thinking: "AI가 이 수를 다시 계산하는 중…",
+    openingHint: "타임라인에서 수를 선택하면 당시 국면과 AI 제안을 볼 수 있습니다.", recommended: "AI 추천 수", alternative: "AI의 다른 선택", reply: "상대의 주요 대응", capture: "잡고", check: "장군", mate: "이 수로 대국이 끝납니다.",
+    quality: { best: "AI 추천", good: "추천에 근접", questionable: "개선 가능", mistake: "큰 실수" }, scoreGap: "추천 수와 차이", decisive: "결정적", confidenceLabel: "신뢰도", confidence: { low: "낮음", medium: "중간", high: "높음" },
+    actualRoute: "문제 수", recommendedRoute: "AI 제안", comparisonHint: "현재 리플레이 국면: 빨간 ×는 잘못된 도착점", badMove: "문제 수", localNote: "해설은 제한된 깊이의 로컬 검색으로 계산됩니다.",
+  },
+} as const;
 
 const pieceNames: Record<Language, Record<PieceType, string>> = {
   zh: { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马", rook: "车", cannon: "炮", soldier: "兵/卒" },
   en: { general: "King", advisor: "Guard", elephant: "Bishop", horse: "Knight", rook: "Rook", cannon: "Cannon", soldier: "Pawn" },
+  ko: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "졸" },
 };
 
 function coordinate(position: { row: number; col: number }) {
@@ -62,14 +74,14 @@ function coordinate(position: { row: number; col: number }) {
 }
 
 function moveLabel(move: RecordedMove, language: Language) {
-  const side = move.mover === "red" ? (language === "zh" ? "红" : "Red") : (language === "zh" ? "黑" : "Black");
+  const side = move.mover === "red" ? (language === "zh" ? "红" : language === "ko" ? "홍" : "Red") : (language === "zh" ? "黑" : language === "ko" ? "흑" : "Black");
   return `${side} ${pieceNames[language][move.pieceType]} ${coordinate(move.from)} → ${coordinate(move.to)}`;
 }
 
 function scoreGap(scoreLoss: number, language: Language, decisive: string) {
   if (scoreLoss >= 50_000) return decisive;
   const pawns = scoreLoss / 100;
-  return language === "zh" ? `${pawns.toFixed(1)} 兵` : `${pawns.toFixed(1)} pawns`;
+  return language === "zh" ? `${pawns.toFixed(1)} 兵` : language === "ko" ? `${pawns.toFixed(1)} 폰` : `${pawns.toFixed(1)} pawns`;
 }
 
 function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAnalysis | null; move: RecordedMove | null; language: Language; loading: boolean }) {
@@ -108,7 +120,7 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
 export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, soundEnabled = true, soundVolume = 0.58, onClose }: GameReviewProps) {
   const t = copy[language];
   const heading = archiveMode
-    ? language === "zh" ? { eyebrow: "AI 训练档案", title: "训练棋局回放", close: "返回存档" } : { eyebrow: "AI TRAINING ARCHIVE", title: "Training game replay", close: "Back to archives" }
+    ? language === "zh" ? { eyebrow: "AI 训练档案", title: "训练棋局回放", close: "返回存档" } : language === "ko" ? { eyebrow: "AI 훈련 보관함", title: "훈련 대국 리플레이", close: "보관함으로" } : { eyebrow: "AI TRAINING ARCHIVE", title: "Training game replay", close: "Back to archives" }
     : { eyebrow: t.eyebrow, title: t.title, close: t.close };
   const [step, setStep] = useState(moves.length);
   const [playing, setPlaying] = useState(false);

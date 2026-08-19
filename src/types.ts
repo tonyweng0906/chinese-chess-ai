@@ -1,5 +1,5 @@
 export type PieceColor = "red" | "black";
-export type Language = "zh" | "en";
+export type Language = "zh" | "en" | "ko";
 export type PieceStyle = "hanzi" | "symbols";
 export type PieceTheme = "wood" | "jade" | "flat";
 
