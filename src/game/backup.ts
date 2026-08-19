@@ -28,6 +28,21 @@ export interface PreviousGameBackup extends GameSnapshot {
   difficulty: "easy" | "normal" | "hard";
 }
 
+export function compactPreviousGameBackup(backup: PreviousGameBackup, historyLimit = 8): PreviousGameBackup {
+  const limit = Math.max(0, historyLimit);
+  return { ...backup, history: limit === 0 ? [] : backup.history.slice(-limit) };
+}
+
+export function minimalPreviousGameBackup(backup: PreviousGameBackup): PreviousGameBackup {
+  return {
+    ...backup,
+    history: [],
+    gameMoves: [],
+    ruleMoves: [],
+    positionHistory: backup.positionHistory.length > 0 ? [backup.positionHistory.at(-1)!] : [],
+  };
+}
+
 export function hasGameProgress(
   pieces: ChessPiece[],
   turn: PieceColor,
@@ -49,6 +64,9 @@ export function parsePreviousGameBackup(value: string | null): PreviousGameBacku
     if (data.mode !== "local" && data.mode !== "ai") return null;
     if (data.playerColor !== "red" && data.playerColor !== "black") return null;
     if (data.difficulty !== "easy" && data.difficulty !== "normal" && data.difficulty !== "hard") return null;
+    if (data.winner !== null && data.winner !== "red" && data.winner !== "black") return null;
+    const endReasons: Array<GameEndReason | null> = [null, "general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit"];
+    if (!endReasons.includes(data.endReason ?? null)) return null;
     if (!Number.isInteger(data.noCapturePlyCount) || (data.noCapturePlyCount ?? -1) < 0) return null;
     return data as PreviousGameBackup;
   } catch {

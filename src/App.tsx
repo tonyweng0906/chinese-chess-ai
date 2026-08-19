@@ -10,7 +10,7 @@ import { GameReview } from "./components/GameReview";
 import { playGameSound, type GameSound } from "./audio/gameSounds";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
 import { getUndoSnapshotIndex } from "./game/undo";
-import { hasGameProgress, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
+import { compactPreviousGameBackup, hasGameProgress, minimalPreviousGameBackup, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
@@ -288,6 +288,7 @@ function App() {
   }
 
   function startSetupMode() {
+    saveCurrentGameAsPrevious();
     setMode("setup");
     setPieces((current) => current.filter((piece) => setupPositionAllowed(piece.type, piece.color, piece.row, piece.col)));
     setWinner(null);
@@ -406,12 +407,17 @@ function App() {
       playerColor,
       difficulty,
     };
-    try {
-      localStorage.setItem(PREVIOUS_GAME_KEY, JSON.stringify(backup));
-      setHasPreviousGame(true);
-    } catch {
-      setHasPreviousGame(parsePreviousGameBackup(localStorage.getItem(PREVIOUS_GAME_KEY)) !== null);
+    const candidates = [compactPreviousGameBackup(backup), minimalPreviousGameBackup(backup)];
+    for (const candidate of candidates) {
+      try {
+        localStorage.setItem(PREVIOUS_GAME_KEY, JSON.stringify(candidate));
+        setHasPreviousGame(true);
+        return;
+      } catch {
+        continue;
+      }
     }
+    setHasPreviousGame(parsePreviousGameBackup(localStorage.getItem(PREVIOUS_GAME_KEY)) !== null);
   }
 
   function restorePreviousGame() {
@@ -491,6 +497,8 @@ function App() {
   }
 
   function startAiGame(color: PieceColor) {
+    saveCurrentGameAsPrevious();
+    cancelAiCalculation();
     setMode("ai");
     setPlayerColor(color);
     setPieces(initialPieces);
