@@ -1,6 +1,7 @@
 import type { ChessPiece, Language, PieceStyle, PieceTheme, PieceType } from "../types";
-import type { DragEvent, MouseEvent } from "react";
+import { useId, type DragEvent, type MouseEvent } from "react";
 import type { Position } from "../game/rules";
+import type { ReviewBoardComparison } from "../game/reviewComparison";
 import { PieceIcon } from "./PieceIcon";
 
 const labels: Record<ChessPiece["color"], Record<PieceType, string>> = {
@@ -42,6 +43,19 @@ function pieceName(piece: ChessPiece, language: Language) {
 
 const x = (col: number) => 40 + col * 90;
 const y = (row: number) => 40 + row * 90;
+
+function routePath(from: Position, to: Position, bend: number) {
+  const x1 = x(from.col);
+  const y1 = y(from.row);
+  const x2 = x(to.col);
+  const y2 = y(to.row);
+  const distance = Math.hypot(x2 - x1, y2 - y1) || 1;
+  const normalX = -(y2 - y1) / distance;
+  const normalY = (x2 - x1) / distance;
+  const controlX = (x1 + x2) / 2 + normalX * bend;
+  const controlY = (y1 + y2) / 2 + normalY * bend;
+  return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+}
 
 function BoardLines() {
   return (
@@ -92,9 +106,13 @@ interface ChessBoardProps {
   onBoardClick: (event: MouseEvent<HTMLDivElement>) => void;
   onBoardDrop: (event: DragEvent<HTMLDivElement>) => void;
   setupMode: boolean;
+  reviewComparison?: ReviewBoardComparison | null;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null }: ChessBoardProps) {
+  const markerKey = useId().replace(/:/g, "");
+  const actualMarkerId = `review-actual-${markerKey}`;
+  const recommendedMarkerId = `review-recommended-${markerKey}`;
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick} onDragOver={(event) => event.preventDefault()} onDrop={onBoardDrop}>
       <BoardLines />
@@ -105,23 +123,43 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
           <circle cx={x(lastMove.to.col)} cy={y(lastMove.to.row)} r="17" className="trail-destination" />
         </svg>
       )}
-      {pieces.map((piece) => (
-        <button
-          className={`piece piece--${piece.color} ${pieceStyle === "symbols" ? "piece--symbols" : ""} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""}`}
-          key={piece.id}
-          type="button"
-          style={{
-            left: `${(x(piece.col) / 800) * 100}%`,
-            top: `${(y(piece.row) / 890) * 100}%`,
-          }}
-          aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
-          onClick={(event) => { event.stopPropagation(); onPieceClick(piece); }}
-          draggable={setupMode}
-          onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}
-        >
-          {pieceStyle === "symbols" ? <PieceIcon type={piece.type} /> : <span>{pieceText(piece, language)}</span>}
-        </button>
-      ))}
+      {reviewComparison && (
+        <svg className="review-comparison-overlay" viewBox="0 0 800 890" aria-hidden="true">
+          <defs>
+            <marker id={actualMarkerId} markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto" markerUnits="strokeWidth">
+              <path className="review-arrowhead review-arrowhead--actual" d="M 0 0 L 9 4.5 L 0 9 z" />
+            </marker>
+            <marker id={recommendedMarkerId} markerWidth="9" markerHeight="9" refX="7.5" refY="4.5" orient="auto" markerUnits="strokeWidth">
+              <path className="review-arrowhead review-arrowhead--recommended" d="M 0 0 L 9 4.5 L 0 9 z" />
+            </marker>
+          </defs>
+          <path className="review-route review-route--actual" d={routePath(reviewComparison.actual.from, reviewComparison.actual.to, -16)} markerEnd={`url(#${actualMarkerId})`} />
+          <path className="review-route review-route--recommended" d={routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, 16)} markerEnd={`url(#${recommendedMarkerId})`} />
+          <circle className="review-route-point review-route-point--actual" cx={x(reviewComparison.actual.to.col)} cy={y(reviewComparison.actual.to.row)} r="17" />
+          <circle className="review-route-point review-route-point--recommended" cx={x(reviewComparison.recommended.to.col)} cy={y(reviewComparison.recommended.to.row)} r="17" />
+        </svg>
+      )}
+      {pieces.map((piece) => {
+        const isActualPiece = reviewComparison?.actual.from.row === piece.row && reviewComparison.actual.from.col === piece.col;
+        const isRecommendedPiece = reviewComparison?.recommended.from.row === piece.row && reviewComparison.recommended.from.col === piece.col;
+        return (
+          <button
+            className={`piece piece--${piece.color} ${pieceStyle === "symbols" ? "piece--symbols" : ""} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""} ${isActualPiece ? "piece--review-actual" : ""} ${isRecommendedPiece ? "piece--review-recommended" : ""}`}
+            key={piece.id}
+            type="button"
+            style={{
+              left: `${(x(piece.col) / 800) * 100}%`,
+              top: `${(y(piece.row) / 890) * 100}%`,
+            }}
+            aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
+            onClick={(event) => { event.stopPropagation(); onPieceClick(piece); }}
+            draggable={setupMode}
+            onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}
+          >
+            {pieceStyle === "symbols" ? <PieceIcon type={piece.type} /> : <span>{pieceText(piece, language)}</span>}
+          </button>
+        );
+      })}
       {legalMoves.map((position) => {
         const occupied = pieces.some((piece) => piece.row === position.row && piece.col === position.col);
         return (

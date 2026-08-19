@@ -2,6 +2,7 @@ import type { ChessPiece, PieceColor, RecordedMove } from "../types";
 import { initialPieces } from "../data/initialPieces";
 import { applyAiMove, searchBestMove } from "./ai";
 import { analyzeRecordedMove } from "./review";
+import { getReviewBoardComparison } from "./reviewComparison";
 import { isInCheck } from "./rules";
 
 export interface ReviewBenchmarkResult {
@@ -49,6 +50,8 @@ export function runReviewBenchmarks(): ReviewBenchmarkResult[] {
   const blunderAnalysis = analyzeRecordedMove(position, blunderMove, 2);
   const quietMove = recordedMove(initialPieces, "red-advisor-3", 8, 4);
   const quietAnalysis = analyzeRecordedMove(initialPieces, quietMove, 2);
+  const blunderComparison = getReviewBoardComparison(blunderAnalysis, blunderMove);
+  const engineComparison = getReviewBoardComparison(engineAnalysis, engineMove);
 
   return [
     {
@@ -68,6 +71,24 @@ export function runReviewBenchmarks(): ReviewBenchmarkResult[] {
       passed: Boolean(blunderAnalysis.recommendation && blunderAnalysis.reply),
       quality: blunderAnalysis.quality,
       scoreLoss: blunderAnalysis.scoreLoss,
+    },
+    {
+      name: "bad-move-has-board-comparison",
+      passed: Boolean(
+        blunderComparison
+        && blunderComparison.actual.from.row === blunderMove.from.row
+        && blunderComparison.actual.to.row === blunderMove.to.row
+        && blunderComparison.recommended.from.row === blunderAnalysis.recommendation?.from.row
+        && blunderComparison.recommended.to.col === blunderAnalysis.recommendation?.to.col
+      ),
+      quality: blunderAnalysis.quality,
+      scoreLoss: blunderAnalysis.scoreLoss,
+    },
+    {
+      name: "top-choice-keeps-simple-board",
+      passed: engineComparison === null,
+      quality: engineAnalysis.quality,
+      scoreLoss: engineAnalysis.scoreLoss,
     },
     {
       name: "ordinary-move-is-not-automatically-best",

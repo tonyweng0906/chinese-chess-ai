@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChessPiece, Language, PieceColor, PieceStyle, PieceTheme, PieceType, RecordedMove } from "../types";
 import type { MoveAnalysis } from "../game/review";
+import { getReviewBoardComparison } from "../game/reviewComparison";
 import { ChessBoard } from "./ChessBoard";
 
 interface GameReviewProps {
@@ -26,6 +27,7 @@ const copy = {
       "missed-check": "这一步错过了可迫使对手应将的机会，主动权有所下降。", position: "继续计算对手的最佳回应后，这一步得到的局面评估低于 AI 首选。",
     },
     scoreGap: "与首选差距", decisive: "决定性", confidenceLabel: "可信度", confidence: { low: "较低", medium: "中等", high: "较高" },
+    actualRoute: "实际着法", recommendedRoute: "AI 建议", comparisonHint: "落子前局面：对比两枚高亮棋子和行棋方向",
     localNote: "分析由本地有限深度搜索完成，不上传棋局；“AI 首选”不等同于理论最优解。",
   },
   en: {
@@ -39,6 +41,7 @@ const copy = {
       "missed-check": "This misses a forcing check and gives up some initiative.", position: "After calculating the opponent's best reply, this position evaluates below the AI's top line.",
     },
     scoreGap: "Gap from top", decisive: "decisive", confidenceLabel: "Confidence", confidence: { low: "low", medium: "medium", high: "high" },
+    actualRoute: "Played move", recommendedRoute: "AI suggestion", comparisonHint: "Position before the move: compare the highlighted pieces and directions",
     localNote: "Analysis uses a limited-depth local search; “AI top choice” does not mean a proven theoretical best move.",
   },
 } as const;
@@ -143,6 +146,8 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   }, [step, activeMove, piecesBefore, analysisDepth]);
 
   const lastMove = activeMove ? { from: activeMove.from, to: activeMove.to } : null;
+  const reviewComparison = getReviewBoardComparison(analysis, activeMove);
+  const displayedPieces = reviewComparison ? piecesBefore : boardPieces;
   const progress = moves.length === 0 ? 0 : (step / moves.length) * 100;
   const timelineStyle = useMemo(() => ({ "--review-progress": `${progress}%` } as React.CSSProperties), [progress]);
 
@@ -159,7 +164,12 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
     <div className="review-layout">
       <div className="review-board-column">
         <div className="review-step-label"><span>{step === 0 ? t.opening : `${t.move} ${step} ${t.moveUnit}`}</span><b>{step} / {moves.length}</b></div>
-        <div className="review-board"><ChessBoard pieces={boardPieces} selectedId={null} legalMoves={[]} onPieceClick={() => undefined} onMove={() => undefined} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={null} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
+        {reviewComparison && <div className="review-comparison-legend" role="status">
+          <span><i className="review-legend-dot review-legend-dot--actual" />{t.actualRoute}</span>
+          <span><i className="review-legend-dot review-legend-dot--recommended" />{t.recommendedRoute}</span>
+          <small>{t.comparisonHint}</small>
+        </div>}
+        <div className="review-board"><ChessBoard pieces={displayedPieces} selectedId={null} legalMoves={[]} onPieceClick={() => undefined} onMove={() => undefined} language={language} pieceStyle={pieceStyle} lastMove={reviewComparison ? null : lastMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={null} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} reviewComparison={reviewComparison} /></div>
         <div className="review-player-controls">
           <button type="button" aria-label={t.first} title={t.first} onClick={() => chooseStep(0)} disabled={step === 0}>|‹</button>
           <button type="button" aria-label={t.previous} title={t.previous} onClick={() => chooseStep(step - 1)} disabled={step === 0}>‹</button>
