@@ -7,12 +7,14 @@ import type { AiSearchResult } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
 import { Tutorial } from "./components/Tutorial";
 import { GameReview } from "./components/GameReview";
+import { TrainingArchiveLibrary } from "./components/TrainingArchiveLibrary";
 import { playGameSound, type GameSound } from "./audio/gameSounds";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
 import { getUndoSnapshotIndex } from "./game/undo";
 import { compactPreviousGameBackup, hasGameProgress, minimalPreviousGameBackup, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
 import { buildLearningGame, createLearningDataset, getLearningGameId, getLearningMoveHints, getLearningStats, LEARNING_STORAGE_KEY, parseLearningDataset, recordLearningGame, removeLearningGame } from "./game/learning";
 import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayPreviewMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
+import { createTrainingArchiveDataset, parseTrainingArchiveDataset, recordTrainingArchive, reconstructTrainingMoves, removeTrainingArchive, TRAINING_ARCHIVE_STORAGE_KEY } from "./game/trainingArchive";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
@@ -25,12 +27,14 @@ const trainingCopy = {
     title: "AI 自我训练", idle: "准备就绪", running: "训练中", paused: "已暂停", complete: "本轮完成", error: "训练出错",
     short: "3 局", long: "10 局", start: "开始训练", stop: "暂停训练", games: "完成局数", samples: "有效样本", total: "累计",
     result: "红胜 / 黑胜 / 和", watching: "训练观战", game: "第", gameUnit: "局", ply: "手", toMove: "行棋",
+    archive: "训练回放", archiveHint: "每局结束后自动存档",
     hint: "后台自我对弈并由当前引擎筛选步骤；正常对局需要 AI 思考时会自动暂停。",
   },
   en: {
     title: "AI self-training", idle: "Ready", running: "Training", paused: "Paused", complete: "Batch complete", error: "Training error",
     short: "3 games", long: "10 games", start: "Start training", stop: "Pause training", games: "Games", samples: "Accepted", total: "Total",
     result: "Red / Black / Draw", watching: "Training live", game: "Game", gameUnit: "", ply: "ply", toMove: "to move",
+    archive: "Training replays", archiveHint: "Auto-saved after every game",
     hint: "Runs filtered self-play in the background and pauses automatically when the match AI needs to think.",
   },
 } as const;
@@ -92,6 +96,9 @@ function App() {
   const [selfPlayProgress, setSelfPlayProgress] = useState({ completedGames: 0, targetGames: 3, redWins: 0, blackWins: 0, draws: 0, acceptedDecisions: 0, lastGamePlies: 0 });
   const [selfPlayError, setSelfPlayError] = useState("");
   const [selfPlayPreview, setSelfPlayPreview] = useState<SelfPlayPreviewMessage | null>(null);
+  const [trainingArchives, setTrainingArchives] = useState(() => parseTrainingArchiveDataset(localStorage.getItem(TRAINING_ARCHIVE_STORAGE_KEY)));
+  const [trainingArchiveOpen, setTrainingArchiveOpen] = useState(false);
+  const [selectedTrainingArchiveId, setSelectedTrainingArchiveId] = useState<string | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -142,6 +149,11 @@ function App() {
     [learningEnabled, learningDataset, pieces, aiColor],
   );
   const trainingBoard = selfPlayStatus === "running" ? selfPlayPreview : null;
+  const selectedTrainingArchive = trainingArchives.archives.find((archive) => archive.id === selectedTrainingArchiveId) ?? null;
+  const selectedTrainingMoves = useMemo(
+    () => selectedTrainingArchive ? reconstructTrainingMoves(selectedTrainingArchive) : [],
+    [selectedTrainingArchive],
+  );
 
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
@@ -403,6 +415,14 @@ function App() {
     }
   }, [learningDataset]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(TRAINING_ARCHIVE_STORAGE_KEY, JSON.stringify(trainingArchives));
+    } catch {
+      // Archives are optional; training remains available when storage is full.
+    }
+  }, [trainingArchives]);
+
   useEffect(() => () => {
     selfPlayWorkerRef.current?.terminate();
     selfPlayWorkerRef.current = null;
@@ -507,6 +527,7 @@ function App() {
           (dataset, game) => recordLearningGame(dataset, game),
           current,
         ));
+        setTrainingArchives((current) => recordTrainingArchive(current, progress.archive));
         return;
       }
       worker.terminate();
@@ -529,6 +550,15 @@ function App() {
       dataset: learningDataset,
       seed: Date.now() >>> 0,
     });
+  }
+
+  function openTrainingArchives() {
+    if (selfPlayWorkerRef.current) stopSelfPlayTraining();
+    else setSelfPlayPreview(null);
+    setTutorialOpen(false);
+    setReviewOpen(false);
+    setSelectedTrainingArchiveId(null);
+    setTrainingArchiveOpen(true);
   }
 
   function saveCurrentGameAsPrevious() {
@@ -688,6 +718,7 @@ function App() {
   }
 
   const moveCount = moveHistory.length;
+  const fullScreenPanelOpen = tutorialOpen || reviewOpen || trainingArchiveOpen || Boolean(selectedTrainingArchive);
 
   useEffect(() => {
     const saved = localStorage.getItem("chinese-chess-ai-game");
@@ -726,18 +757,21 @@ function App() {
   }, [saveReady, pieces, turn, moveHistory, gameStartPieces, gameMoves, positionHistory, ruleMoves, noCapturePlyCount, winner, draw, endReason, language, pieceStyle, mode, difficulty, playerColor, pieceTheme, soundEnabled, soundVolume, learningEnabled]);
 
   return (
-    <main className={`app ${tutorialOpen || reviewOpen ? "app--tutorial" : ""}`}>
+    <main className={`app ${fullScreenPanelOpen ? "app--tutorial" : ""}`}>
       <header className="hero">
         <p className="eyebrow">AI CHINESE CHESS</p>
         <h1>弈境</h1>
         <p className="subtitle">方寸棋盘，推演千秋</p>
-        {!tutorialOpen && !reviewOpen && <div className="hero-mobile-actions">
+        {!fullScreenPanelOpen && <div className="hero-mobile-actions">
           <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : "Beginner guide"}</button>
           <button className={`sound-mobile-toggle ${soundEnabled ? "is-active" : ""}`} type="button" aria-label={`${t.sound}：${soundEnabled ? t.soundOn : t.soundOff}`} aria-pressed={soundEnabled} onClick={toggleSound}><span aria-hidden="true">♪</span>{soundEnabled ? t.soundOn : t.soundOff}</button>
         </div>}
       </header>
 
-      {reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} onClose={() => setReviewOpen(false)} /> : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
+      {selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode onClose={() => setSelectedTrainingArchiveId(null)} />
+        : trainingArchiveOpen ? <TrainingArchiveLibrary archives={trainingArchives.archives} language={language} onSelect={setSelectedTrainingArchiveId} onDelete={(archiveId) => setTrainingArchives((current) => removeTrainingArchive(current, archiveId))} onClear={() => setTrainingArchives(createTrainingArchiveDataset())} onClose={() => setTrainingArchiveOpen(false)} />
+          : reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} onClose={() => setReviewOpen(false)} />
+            : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
         <div className={`board-area ${trainingBoard ? "board-area--training" : ""}`}>
           <div className="player-label player-label--black">
             <span className="player-dot" />
@@ -816,6 +850,10 @@ function App() {
                 {selfPlayStatus === "running"
                   ? <button className="self-play-training__action is-stop" type="button" onClick={() => stopSelfPlayTraining()}>{trainingText.stop}</button>
                   : <button className="self-play-training__action" type="button" disabled={!learningEnabled || aiThinking} onClick={startSelfPlayTraining}>{trainingText.start}</button>}
+                <button className="self-play-training__archive" type="button" onClick={openTrainingArchives}>
+                  <span><b>{trainingText.archive}</b><small>{trainingText.archiveHint}</small></span>
+                  <i>{trainingArchives.archives.length}</i>
+                </button>
                 <small>{trainingText.hint}</small>
                 {selfPlayError && <p className="self-play-training__error">{selfPlayError}</p>}
               </section>

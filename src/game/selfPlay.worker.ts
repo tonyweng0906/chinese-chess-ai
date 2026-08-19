@@ -7,6 +7,7 @@ import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_
 import { getLearningMoveHints, recordLearningGame, type LearningDataset, type LearningGame } from "./learning";
 import { getAllLegalMoves, isInCheck } from "./rules";
 import { buildSelfPlayLearningGames, type SelfPlayDecisionLabel } from "./selfPlay";
+import { buildTrainingArchive, type TrainingArchive } from "./trainingArchive";
 
 interface SelfPlayRequest {
   type: "start";
@@ -26,9 +27,10 @@ export interface SelfPlayProgressMessage {
   acceptedDecisions: number;
   lastGamePlies: number;
   games: LearningGame[];
+  archive: TrainingArchive;
 }
 
-export interface SelfPlayCompleteMessage extends Omit<SelfPlayProgressMessage, "type" | "games"> {
+export interface SelfPlayCompleteMessage extends Omit<SelfPlayProgressMessage, "type" | "games" | "archive"> {
   type: "complete";
 }
 
@@ -216,6 +218,7 @@ self.onmessage = (event: MessageEvent<SelfPlayRequest>) => {
         acceptedDecisions,
         lastGamePlies,
         games: result.learningGames,
+        archive: buildTrainingArchive(trainingGameId, result.moves, result.winner, result.draw),
       };
       self.postMessage(message);
     }

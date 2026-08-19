@@ -11,6 +11,15 @@ import {
   removeLearningGame,
 } from "./learning";
 import { buildSelfPlayLearningGames, getSelfPlayDecisionReward } from "./selfPlay";
+import {
+  buildTrainingArchive,
+  createTrainingArchiveDataset,
+  MAX_TRAINING_ARCHIVES,
+  parseTrainingArchiveDataset,
+  recordTrainingArchive,
+  reconstructTrainingMoves,
+  removeTrainingArchive,
+} from "./trainingArchive";
 
 export interface LearningBenchmarkResult {
   name: string;
@@ -80,6 +89,14 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
   for (let index = 0; index < MAX_LEARNING_GAMES + 5; index += 1) {
     capped = recordLearningGame(capped, { ...game, id: `game-${index}`, finishedAt: index });
   }
+  const archive = buildTrainingArchive("archive-1", [redMove, blackMove], "black", false, 30);
+  const restoredMoves = reconstructTrainingMoves(archive, startPieces);
+  const archiveDataset = recordTrainingArchive(createTrainingArchiveDataset(), archive);
+  const parsedArchives = parseTrainingArchiveDataset(JSON.stringify(archiveDataset));
+  let cappedArchives = createTrainingArchiveDataset();
+  for (let index = 0; index < MAX_TRAINING_ARCHIVES + 3; index += 1) {
+    cappedArchives = recordTrainingArchive(cappedArchives, { ...archive, id: `archive-${index}`, finishedAt: index });
+  }
 
   return [
     { name: "records-only-ai-decisions", passed: game.decisions.length === 1 && game.decisions[0].ply === 1 },
@@ -114,6 +131,21 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
       name: "counts-one-self-play-board-game",
       passed: getLearningStats(selfPlayDataset).selfPlayGames === 1
         && getLearningStats(parseLearningDataset(JSON.stringify(selfPlayDataset))).selfPlayGames === 1,
+    },
+    {
+      name: "reconstructs-compact-training-archive",
+      passed: !("boardAfter" in archive.moves[0])
+        && restoredMoves.length === 2
+        && restoredMoves[1].boardAfter.some((piece) => piece.id === "br" && piece.row === 1 && piece.col === 0),
+    },
+    { name: "round-trips-training-archive", passed: parsedArchives.archives[0]?.id === archive.id },
+    {
+      name: "caps-training-archives",
+      passed: cappedArchives.archives.length === MAX_TRAINING_ARCHIVES && cappedArchives.archives[0]?.id === "archive-3",
+    },
+    {
+      name: "removes-training-archive",
+      passed: removeTrainingArchive(archiveDataset, archive.id).archives.length === 0,
     },
   ];
 }

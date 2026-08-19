@@ -12,6 +12,7 @@ interface GameReviewProps {
   pieceTheme: PieceTheme;
   flipped: boolean;
   analysisDepth: number;
+  archiveMode?: boolean;
   onClose: () => void;
 }
 
@@ -101,8 +102,11 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
   </div>;
 }
 
-export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, onClose }: GameReviewProps) {
+export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, onClose }: GameReviewProps) {
   const t = copy[language];
+  const heading = archiveMode
+    ? language === "zh" ? { eyebrow: "AI 训练档案", title: "训练棋局回放", close: "返回存档" } : { eyebrow: "AI TRAINING ARCHIVE", title: "Training game replay", close: "Back to archives" }
+    : { eyebrow: t.eyebrow, title: t.title, close: t.close };
   const [step, setStep] = useState(moves.length);
   const [playing, setPlaying] = useState(false);
   const [analysis, setAnalysis] = useState<MoveAnalysis | null>(null);
@@ -158,10 +162,10 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
     setStep(Math.max(0, Math.min(moves.length, nextStep)));
   }
 
-  return <section className="game-review" aria-label={t.title}>
+  return <section className="game-review" aria-label={heading.title}>
     <div className="review-header">
-      <div><p>{t.eyebrow}</p><h2>{t.title}</h2></div>
-      <button type="button" onClick={onClose}>← {t.close}</button>
+      <div><p>{heading.eyebrow}</p><h2>{heading.title}</h2></div>
+      <button type="button" onClick={onClose}>← {heading.close}</button>
     </div>
     <div className="review-layout">
       <div className="review-board-column">

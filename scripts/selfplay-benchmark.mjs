@@ -42,6 +42,7 @@ try {
     { name: "streams-initial-training-board", passed: first?.ply === 0 && first?.pieces?.length === 32 },
     { name: "streams-live-training-moves", passed: Boolean(moved?.lastMove && moved.pieces && moved.turn) },
     { name: "finishes-previewed-training-game", passed: Boolean(progress?.completedGames === 1 && complete?.completedGames === 1) },
+    { name: "emits-complete-training-archive", passed: Boolean(progress?.archive?.id && progress.archive.moves?.length === progress.lastGamePlies) },
   ];
   console.table(results);
   if (results.some((result) => !result.passed)) process.exitCode = 1;
@@ -49,4 +50,3 @@ try {
   delete globalThis.self;
   await rm(outDir, { recursive: true, force: true });
 }
-
