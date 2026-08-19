@@ -121,6 +121,13 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
   const markerKey = useId().replace(/:/g, "");
   const actualMarkerId = `review-actual-${markerKey}`;
   const recommendedMarkerId = `review-recommended-${markerKey}`;
+  const comparisonHasSharedOrigin = Boolean(
+    reviewComparison
+    && reviewComparison.actual.from.row === reviewComparison.recommended.from.row
+    && reviewComparison.actual.from.col === reviewComparison.recommended.from.col
+  );
+  const actualRoute = reviewComparison ? routePath(reviewComparison.actual.from, reviewComparison.actual.to, comparisonHasSharedOrigin ? -9 : 0) : "";
+  const recommendedRoute = reviewComparison ? routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, comparisonHasSharedOrigin ? 9 : 0) : "";
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick} onDragOver={(event) => event.preventDefault()} onDrop={onBoardDrop}>
       <BoardLines />
@@ -135,17 +142,20 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
         <svg className="review-comparison-overlay" viewBox="0 0 800 890" aria-hidden="true">
           <defs>
             <marker id={actualMarkerId} markerWidth="17" markerHeight="17" refX="15" refY="8.5" orient="auto" markerUnits="userSpaceOnUse">
-              <path className="review-arrowhead review-arrowhead--actual" d="M 1 1 L 16 8.5 L 1 16 z" />
+              <path className="review-arrowhead review-arrowhead--actual" d="M 1.5 1.5 L 15.5 8.5 L 1.5 15.5 z" />
             </marker>
             <marker id={recommendedMarkerId} markerWidth="17" markerHeight="17" refX="15" refY="8.5" orient="auto" markerUnits="userSpaceOnUse">
-              <path className="review-arrowhead review-arrowhead--recommended" d="M 1 1 L 16 8.5 L 1 16 z" />
+              <path className="review-arrowhead review-arrowhead--recommended" d="M 1.5 1.5 L 15.5 8.5 L 1.5 15.5 z" />
             </marker>
           </defs>
-          <path className="review-route review-route--actual" d={routePath(reviewComparison.actual.from, reviewComparison.actual.to, -16)} markerEnd={`url(#${actualMarkerId})`} />
-          <path className="review-route review-route--recommended" d={routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, 16)} markerEnd={`url(#${recommendedMarkerId})`} />
+          <path className="review-route-backdrop" d={actualRoute} />
+          <path className="review-route-backdrop" d={recommendedRoute} />
+          <path className="review-route review-route--actual" d={actualRoute} markerEnd={`url(#${actualMarkerId})`} />
+          <path className="review-route review-route--recommended" d={recommendedRoute} markerEnd={`url(#${recommendedMarkerId})`} />
           <circle className="review-route-point review-route-point--actual" cx={x(reviewComparison.actual.to.col)} cy={y(reviewComparison.actual.to.row)} r="14" />
           <path className="review-bad-move-cross" d={`M ${x(reviewComparison.actual.to.col) - 6} ${y(reviewComparison.actual.to.row) - 6} L ${x(reviewComparison.actual.to.col) + 6} ${y(reviewComparison.actual.to.row) + 6} M ${x(reviewComparison.actual.to.col) + 6} ${y(reviewComparison.actual.to.row) - 6} L ${x(reviewComparison.actual.to.col) - 6} ${y(reviewComparison.actual.to.row) + 6}`} />
           <circle className="review-route-point review-route-point--recommended" cx={x(reviewComparison.recommended.to.col)} cy={y(reviewComparison.recommended.to.row)} r="14" />
+          <circle className="review-recommended-destination" cx={x(reviewComparison.recommended.to.col)} cy={y(reviewComparison.recommended.to.row)} r="4" />
         </svg>
       )}
       {pieces.map((piece) => {
