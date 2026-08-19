@@ -10,6 +10,7 @@
     "test:review": "node scripts/review-benchmark.mjs",
     "test:undo": "node scripts/undo-benchmark.mjs",
     "test:backup": "node scripts/backup-benchmark.mjs",
+    "test:learning": "node scripts/learning-benchmark.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

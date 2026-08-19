@@ -197,6 +197,20 @@
 .sound-volume input:disabled { cursor: not-allowed; opacity: .32; }
 .sound-volume output { color: #99856a; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
 .sound-control small { display: block; margin-top: 8px; color: #554f47; font-size: 8px; line-height: 1.5; letter-spacing: .02em; }
+.learning-control { margin: 12px 0 17px; padding: 12px; border: 1px solid #342d25; border-radius: 4px; background: rgba(255,255,255,.015); transition: border-color 180ms ease, background 180ms ease; }
+.learning-control--active { border-color: rgba(67,119,87,.68); background: rgba(54,112,77,.055); }
+.learning-control__header { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #837768; font-size: 10px; }
+.learning-control__header > span { display: inline-flex; align-items: center; gap: 6px; letter-spacing: .06em; }
+.learning-control__header i { color: #63b27c; font-size: 12px; font-style: normal; }
+.learning-control__header button { padding: 4px 8px; border: 1px solid #3b342b; border-radius: 999px; color: #786f62; background: transparent; cursor: pointer; font-size: 9px; }
+.learning-control__header button.is-active { border-color: #4f8c66; color: #9fd6af; background: rgba(70,139,91,.12); }
+.learning-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 11px; }
+.learning-stats span { display: flex; flex-direction: column; gap: 3px; padding: 7px; border: 1px solid #343029; border-radius: 3px; color: #5f584f; font-size: 8px; }
+.learning-stats b { color: #b5aa98; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 12px; font-weight: 500; }
+.learning-control small { display: block; margin-top: 9px; color: #575149; font-size: 8px; line-height: 1.55; }
+.learning-clear { width: 100%; margin-top: 9px; padding: 6px 8px; border: 1px solid #3a312a; border-radius: 3px; color: #746b5f; background: transparent; cursor: pointer; font-size: 9px; }
+.learning-clear:hover:not(:disabled) { border-color: #7c4c43; color: #c68f83; background: rgba(126,75,65,.08); }
+.learning-clear:disabled { cursor: not-allowed; opacity: .3; }
 .piece-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 9px; margin: 7px 0 14px; color: #766c5f; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 9px; }
 .piece-legend b { display: inline-block; width: 13px; color: #c3a877; }
 .editor-help { margin: 9px 0 12px; color: #8d806c; font-size: 10px; line-height: 1.55; }
