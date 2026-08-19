@@ -3,7 +3,7 @@ import { ChessBoard } from "./components/ChessBoard";
 import { useEffect, useMemo, useState, type DragEvent, type MouseEvent } from "react";
 import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
-import { chooseBestMove } from "./game/ai";
+import type { AiSearchResult } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
 import { Tutorial } from "./components/Tutorial";
 import { GameReview } from "./components/GameReview";
@@ -88,7 +88,8 @@ function App() {
   const [saveReady, setSaveReady] = useState(false);
   const turnName = turn === "red" ? t.red : t.black;
   const aiColor = playerColor === "red" ? "black" : "red";
-  const depth = difficulty === "easy" ? 1 : difficulty === "normal" ? 2 : 3;
+  const depth = difficulty === "easy" ? 2 : difficulty === "normal" ? 4 : 6;
+  const aiTimeLimit = difficulty === "easy" ? 120 : difficulty === "normal" ? 400 : 1500;
   const flipped = mode === "ai" && playerColor === "black";
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const legalMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces) : [], [selectedPiece, pieces]);
@@ -328,13 +329,27 @@ function App() {
   useEffect(() => {
     if (mode !== "ai" || turn !== aiColor || winner || draw) return;
     setAiThinking(true);
+    let worker: Worker | null = null;
     const timer = window.setTimeout(() => {
-      const choice = chooseBestMove(pieces, aiColor, depth);
-      if (choice) applyMove(choice.piece, choice.move);
-      setAiThinking(false);
+      worker = new Worker(new URL("./game/ai.worker.ts", import.meta.url), { type: "module" });
+      worker.onmessage = (event: MessageEvent<AiSearchResult>) => {
+        if (event.data.choice) applyMove(event.data.choice.piece, event.data.choice.move);
+        setAiThinking(false);
+        worker?.terminate();
+      };
+      worker.onerror = () => {
+        const fallback = getAllLegalMoves(aiColor, pieces)[0];
+        if (fallback) applyMove(fallback.piece, fallback.move);
+        setAiThinking(false);
+        worker?.terminate();
+      };
+      worker.postMessage({ pieces, color: aiColor, maxDepth: depth, timeLimit: aiTimeLimit });
     }, 350);
-    return () => window.clearTimeout(timer);
-  }, [mode, turn, pieces, winner, draw, aiColor, depth]);
+    return () => {
+      window.clearTimeout(timer);
+      worker?.terminate();
+    };
+  }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit]);
 
   function undoMove() {
     const previous = history.at(-1);

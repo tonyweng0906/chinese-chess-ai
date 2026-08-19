@@ -1,48 +1,325 @@
-import { getAllLegalMoves, isInCheck } from "./rules";
+import { getAllLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./rules";
 import type { ChessPiece, PieceColor, PieceType } from "../types";
 
-const values: Record<PieceType, number> = { general: 10000, rook: 900, cannon: 450, horse: 400, elephant: 200, advisor: 200, soldier: 100 };
+const pieceValues: Record<PieceType, number> = {
+  general: 100000,
+  rook: 900,
+  cannon: 450,
+  horse: 400,
+  elephant: 200,
+  advisor: 200,
+  soldier: 100,
+};
 
-function applyMove(pieces: ChessPiece[], pieceId: string, row: number, col: number) {
-  return pieces.filter((piece) => !(piece.row === row && piece.col === col)).map((piece) => piece.id === pieceId ? { ...piece, row, col } : piece);
+const MATE_SCORE = 1_000_000;
+const MAX_QUIESCENCE_DEPTH = 4;
+const TIMEOUT = Symbol("ai-search-timeout");
+
+export interface AiChoice {
+  piece: ChessPiece;
+  move: Position;
 }
 
-function evaluate(pieces: ChessPiece[], root: PieceColor) {
+export interface AiSearchStats {
+  completedDepth: number;
+  nodes: number;
+  quiescenceNodes: number;
+  cacheHits: number;
+  cutoffs: number;
+  elapsedMs: number;
+  timedOut: boolean;
+}
+
+export interface AiSearchResult {
+  choice: AiChoice | null;
+  score: number;
+  stats: AiSearchStats;
+}
+
+interface OrderedMove extends AiChoice {
+  nextPieces: ChessPiece[];
+  captured: ChessPiece | null;
+  givesCheck: boolean;
+  key: string;
+  orderScore: number;
+}
+
+interface TranspositionEntry {
+  depth: number;
+  score: number;
+  flag: "exact" | "lower" | "upper";
+  bestMoveKey: string | null;
+}
+
+interface SearchContext {
+  deadline: number;
+  nodes: number;
+  quiescenceNodes: number;
+  cacheHits: number;
+  cutoffs: number;
+  table: Map<string, TranspositionEntry>;
+  killerMoves: Map<number, string[]>;
+  historyScores: Map<string, number>;
+}
+
+function opposite(color: PieceColor): PieceColor {
+  return color === "red" ? "black" : "red";
+}
+
+export function applyAiMove(pieces: ChessPiece[], pieceId: string, row: number, col: number) {
+  return pieces
+    .filter((piece) => !(piece.row === row && piece.col === col))
+    .map((piece) => piece.id === pieceId ? { ...piece, row, col } : piece);
+}
+
+function moveKey(pieceId: string, move: Position) {
+  return `${pieceId}:${move.row},${move.col}`;
+}
+
+function positionKey(pieces: ChessPiece[], turn: PieceColor) {
+  return `${turn}|${pieces
+    .map((piece) => `${piece.color[0]}:${piece.type}:${piece.row}:${piece.col}`)
+    .sort()
+    .join("|")}`;
+}
+
+function checkTime(context: SearchContext, quiescence = false) {
+  if (quiescence) context.quiescenceNodes += 1;
+  else context.nodes += 1;
+  if (performance.now() >= context.deadline) throw TIMEOUT;
+}
+
+function evaluate(pieces: ChessPiece[], color: PieceColor) {
+  const opponent = opposite(color);
+  const ownGeneral = pieces.some((piece) => piece.type === "general" && piece.color === color);
+  const enemyGeneral = pieces.some((piece) => piece.type === "general" && piece.color === opponent);
+  if (!ownGeneral) return -MATE_SCORE;
+  if (!enemyGeneral) return MATE_SCORE;
+
   return pieces.reduce((total, piece) => {
-    const value = values[piece.type] + (piece.type === "soldier" && (piece.color === "red" ? piece.row <= 4 : piece.row >= 5) ? 45 : 0);
-    return total + (piece.color === root ? value : -value);
+    const crossedBonus = piece.type === "soldier" && (piece.color === "red" ? piece.row <= 4 : piece.row >= 5) ? 45 : 0;
+    const value = pieceValues[piece.type] + crossedBonus;
+    return total + (piece.color === color ? value : -value);
   }, 0);
 }
 
-interface SearchContext { deadline: number; stopped: boolean }
-
-function minimax(pieces: ChessPiece[], turn: PieceColor, root: PieceColor, depth: number, alpha: number, beta: number, context: SearchContext): number {
-  if (performance.now() >= context.deadline) { context.stopped = true; return evaluate(pieces, root); }
-  const moves = getAllLegalMoves(turn, pieces);
-  if (moves.length === 0) return isInCheck(turn, pieces) ? (turn === root ? -100000 : 100000) : 0;
-  if (depth === 0) return evaluate(pieces, root);
-  const maximizing = turn === root;
-  let best = maximizing ? -Infinity : Infinity;
-  for (const { piece, move } of moves) {
-    const value = minimax(applyMove(pieces, piece.id, move.row, move.col), turn === "red" ? "black" : "red", root, depth - 1, alpha, beta, context);
-    best = maximizing ? Math.max(best, value) : Math.min(best, value);
-    if (maximizing) alpha = Math.max(alpha, best); else beta = Math.min(beta, best);
-    if (beta <= alpha || context.stopped) break;
-  }
-  return best;
+function rememberKiller(context: SearchContext, ply: number, key: string) {
+  const killers = context.killerMoves.get(ply) ?? [];
+  if (killers[0] === key) return;
+  context.killerMoves.set(ply, [key, ...killers.filter((move) => move !== key)].slice(0, 2));
 }
 
-export function chooseBestMove(pieces: ChessPiece[], color: PieceColor = "black", depth = 2, timeLimit = 700) {
-  const moves = getAllLegalMoves(color, pieces);
-  if (moves.length === 0) return null;
-  const context: SearchContext = { deadline: performance.now() + timeLimit, stopped: false };
+function orderMoves(
+  pieces: ChessPiece[],
+  turn: PieceColor,
+  context: SearchContext,
+  ply: number,
+  preferredMoveKey: string | null = null,
+  includeCheckPriority = true,
+  capturesOnly = false,
+) {
+  const killers = context.killerMoves.get(ply) ?? [];
+  const opponent = opposite(turn);
+  const legalMoves = capturesOnly
+    ? pieces.filter((piece) => piece.color === turn).flatMap((piece) =>
+        getPseudoLegalMoves(piece, pieces)
+          .filter((move) => pieces.some((target) => target.color !== turn && target.row === move.row && target.col === move.col))
+          .filter((move) => !isInCheck(turn, applyAiMove(pieces, piece.id, move.row, move.col)))
+          .map((move) => ({ piece, move })))
+    : getAllLegalMoves(turn, pieces);
+  return legalMoves.flatMap(({ piece, move }): OrderedMove[] => {
+    const captured = pieces.find((item) => item.row === move.row && item.col === move.col) ?? null;
+    if (capturesOnly && !captured) return [];
+    const nextPieces = applyAiMove(pieces, piece.id, move.row, move.col);
+    const givesCheck = includeCheckPriority && isInCheck(opponent, nextPieces);
+    const key = moveKey(piece.id, move);
+    let orderScore = context.historyScores.get(key) ?? 0;
+    if (key === preferredMoveKey) orderScore += 2_000_000;
+    if (captured) orderScore += 1_000_000 + pieceValues[captured.type] * 16 - pieceValues[piece.type];
+    if (givesCheck) orderScore += 500_000;
+    const killerIndex = killers.indexOf(key);
+    if (killerIndex >= 0) orderScore += 200_000 - killerIndex * 10_000;
+    if (piece.type === "soldier" && (piece.color === "red" ? move.row <= 4 : move.row >= 5)) orderScore += 2_000;
+    return [{ piece, move, nextPieces, captured, givesCheck, key, orderScore }];
+  }).sort((a, b) => b.orderScore - a.orderScore);
+}
+
+function quiescence(
+  pieces: ChessPiece[],
+  turn: PieceColor,
+  alpha: number,
+  beta: number,
+  ply: number,
+  depthLeft: number,
+  context: SearchContext,
+): number {
+  checkTime(context, true);
+  const inCheck = isInCheck(turn, pieces);
+  const standPat = evaluate(pieces, turn);
+  if (depthLeft <= 0) return standPat;
+
+  const moves = orderMoves(pieces, turn, context, ply, null, false, !inCheck);
+  if (inCheck && moves.length === 0) return -MATE_SCORE + ply;
+  if (!inCheck) {
+    if (standPat >= beta) return beta;
+    if (standPat > alpha) alpha = standPat;
+  }
+  if (moves.length === 0) return alpha;
+
+  for (const candidate of moves) {
+    const score = -quiescence(candidate.nextPieces, opposite(turn), -beta, -alpha, ply + 1, depthLeft - 1, context);
+    if (score >= beta) { context.cutoffs += 1; return beta; }
+    if (score > alpha) alpha = score;
+  }
+  return alpha;
+}
+
+function negamax(
+  pieces: ChessPiece[],
+  turn: PieceColor,
+  depth: number,
+  alpha: number,
+  beta: number,
+  ply: number,
+  context: SearchContext,
+): number {
+  checkTime(context);
+  if (depth <= 0) return quiescence(pieces, turn, alpha, beta, ply, MAX_QUIESCENCE_DEPTH, context);
+
+  const key = positionKey(pieces, turn);
+  const originalAlpha = alpha;
+  const originalBeta = beta;
+  const cached = context.table.get(key);
+  if (cached && cached.depth >= depth) {
+    context.cacheHits += 1;
+    if (cached.flag === "exact") return cached.score;
+    if (cached.flag === "lower") alpha = Math.max(alpha, cached.score);
+    else beta = Math.min(beta, cached.score);
+    if (alpha >= beta) return cached.score;
+  }
+
+  const moves = orderMoves(pieces, turn, context, ply, cached?.bestMoveKey ?? null, false);
+  if (moves.length === 0) return -MATE_SCORE + ply;
+
+  let bestScore = -Infinity;
+  let bestMoveKey: string | null = null;
+  for (let index = 0; index < moves.length; index += 1) {
+    const candidate = moves[index];
+    let score: number;
+    if (index === 0 || !Number.isFinite(alpha)) {
+      score = -negamax(candidate.nextPieces, opposite(turn), depth - 1, -beta, -alpha, ply + 1, context);
+    } else {
+      score = -negamax(candidate.nextPieces, opposite(turn), depth - 1, -alpha - 1, -alpha, ply + 1, context);
+      if (score > alpha && score < beta) {
+        score = -negamax(candidate.nextPieces, opposite(turn), depth - 1, -beta, -alpha, ply + 1, context);
+      }
+    }
+    if (score > bestScore) { bestScore = score; bestMoveKey = candidate.key; }
+    if (score > alpha) alpha = score;
+    if (alpha >= beta) {
+      context.cutoffs += 1;
+      if (!candidate.captured) {
+        rememberKiller(context, ply, candidate.key);
+        context.historyScores.set(candidate.key, (context.historyScores.get(candidate.key) ?? 0) + depth * depth);
+      }
+      break;
+    }
+  }
+
+  const flag: TranspositionEntry["flag"] = bestScore <= originalAlpha ? "upper" : bestScore >= originalBeta ? "lower" : "exact";
+  if (context.table.size < 60_000) context.table.set(key, { depth, score: bestScore, flag, bestMoveKey });
+  return bestScore;
+}
+
+function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, context: SearchContext, preferredMoveKey: string | null) {
+  checkTime(context);
+  const moves = orderMoves(pieces, color, context, 0, preferredMoveKey);
+  if (moves.length === 0) return { choice: null, score: -MATE_SCORE, bestMoveKey: null };
+  let alpha = -Infinity;
+  const beta = Infinity;
   let best = moves[0];
   let bestScore = -Infinity;
-  for (const candidate of moves) {
-    const next = applyMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
-    const candidateScore = minimax(next, color === "red" ? "black" : "red", color, depth - 1, -Infinity, Infinity, context);
-    if (candidateScore > bestScore) { best = candidate; bestScore = candidateScore; }
-    if (context.stopped) break;
+  for (let index = 0; index < moves.length; index += 1) {
+    const candidate = moves[index];
+    let score: number;
+    if (index === 0 || !Number.isFinite(alpha)) {
+      score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -beta, -alpha, 1, context);
+    } else {
+      score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -alpha - 1, -alpha, 1, context);
+      if (score > alpha && score < beta) {
+        score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -beta, -alpha, 1, context);
+      }
+    }
+    if (score > bestScore) { bestScore = score; best = candidate; }
+    if (score > alpha) alpha = score;
   }
-  return best;
+  return { choice: { piece: best.piece, move: best.move }, score: bestScore, bestMoveKey: best.key };
+}
+
+export function searchBestMove(
+  pieces: ChessPiece[],
+  color: PieceColor = "black",
+  maxDepth = 4,
+  timeLimit = 700,
+): AiSearchResult {
+  const startedAt = performance.now();
+  const legalMoves = getAllLegalMoves(color, pieces);
+  if (legalMoves.length === 0) {
+    return {
+      choice: null,
+      score: -MATE_SCORE,
+      stats: { completedDepth: 0, nodes: 0, quiescenceNodes: 0, cacheHits: 0, cutoffs: 0, elapsedMs: performance.now() - startedAt, timedOut: false },
+    };
+  }
+
+  const fallback = legalMoves[0];
+  const context: SearchContext = {
+    deadline: startedAt + Math.max(20, timeLimit),
+    nodes: 0,
+    quiescenceNodes: 0,
+    cacheHits: 0,
+    cutoffs: 0,
+    table: new Map(),
+    killerMoves: new Map(),
+    historyScores: new Map(),
+  };
+  let choice: AiChoice = fallback;
+  let score = evaluate(applyAiMove(pieces, fallback.piece.id, fallback.move.row, fallback.move.col), color);
+  let completedDepth = 0;
+  let preferredMoveKey: string | null = null;
+  let timedOut = false;
+
+  for (let depth = 1; depth <= Math.max(1, maxDepth); depth += 1) {
+    try {
+      const iteration = searchRoot(pieces, color, depth, context, preferredMoveKey);
+      if (iteration.choice) {
+        choice = iteration.choice;
+        score = iteration.score;
+        preferredMoveKey = iteration.bestMoveKey;
+        completedDepth = depth;
+      }
+    } catch (error) {
+      if (error !== TIMEOUT) throw error;
+      timedOut = true;
+      break;
+    }
+  }
+
+  return {
+    choice,
+    score,
+    stats: {
+      completedDepth,
+      nodes: context.nodes,
+      quiescenceNodes: context.quiescenceNodes,
+      cacheHits: context.cacheHits,
+      cutoffs: context.cutoffs,
+      elapsedMs: performance.now() - startedAt,
+      timedOut,
+    },
+  };
+}
+
+export function chooseBestMove(pieces: ChessPiece[], color: PieceColor = "black", depth = 4, timeLimit = 700) {
+  return searchBestMove(pieces, color, depth, timeLimit).choice;
 }
