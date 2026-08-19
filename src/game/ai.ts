@@ -1,5 +1,5 @@
 import { getAllLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./rules";
-import type { ChessPiece, PieceColor, PieceType } from "../types";
+import type { ChessPiece, PieceColor, PieceType, RecordedMove } from "../types";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, type RuleMoveRecord } from "./adjudication";
 
 const pieceValues: Record<PieceType, number> = {
@@ -40,6 +40,7 @@ export interface AiSearchResult {
 export interface AiSearchHistory {
   positionHistory: string[];
   ruleMoves: RuleMoveRecord[];
+  moves?: RecordedMove[];
 }
 
 interface OrderedMove extends AiChoice {
@@ -69,6 +70,7 @@ interface SearchContext {
   positionHistory: string[];
   positionCounts: Map<string, number>;
   ruleMoves: RuleMoveRecord[];
+  recentMoves: RecordedMove[];
 }
 
 function opposite(color: PieceColor): PieceColor {
@@ -83,6 +85,45 @@ export function applyAiMove(pieces: ChessPiece[], pieceId: string, row: number, 
 
 function moveKey(pieceId: string, move: Position) {
   return `${pieceId}:${move.row},${move.col}`;
+}
+
+function samePosition(first: Position, second: Position) {
+  return first.row === second.row && first.col === second.col;
+}
+
+function isPieceUnderAttack(pieces: ChessPiece[], piece: ChessPiece) {
+  return getAllLegalMoves(opposite(piece.color), pieces)
+    .some(({ move }) => move.row === piece.row && move.col === piece.col);
+}
+
+export function getRecentMovePenalty(
+  pieces: ChessPiece[],
+  candidate: AiChoice,
+  color: PieceColor,
+  recentMoves: RecordedMove[] = [],
+) {
+  const ownMoves = recentMoves.filter((move) => move.mover === color);
+  const lastOwnMove = ownMoves.at(-1);
+  if (
+    !lastOwnMove
+    || lastOwnMove.pieceId !== candidate.piece.id
+    || !samePosition(lastOwnMove.to, candidate.piece)
+    || !samePosition(lastOwnMove.from, candidate.move)
+  ) return 0;
+
+  const captured = pieces.some((piece) => piece.color !== color && samePosition(piece, candidate.move));
+  const nextPieces = applyAiMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
+  const givesCheck = isInCheck(opposite(color), nextPieces);
+  if (captured || givesCheck || isInCheck(color, pieces) || isPieceUnderAttack(pieces, candidate.piece)) return 0;
+
+  const previousOwnMove = ownMoves.at(-2);
+  const continuesShuttle = Boolean(
+    previousOwnMove
+    && previousOwnMove.pieceId === candidate.piece.id
+    && samePosition(previousOwnMove.from, candidate.piece)
+    && samePosition(previousOwnMove.to, candidate.move)
+  );
+  return continuesShuttle ? 140 : 65;
 }
 
 function checkTime(context: SearchContext, quiescence = false) {
@@ -273,6 +314,7 @@ function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, cont
     } else if (hasFreshMove && previousOccurrences === 1) {
       score -= 35;
     }
+    score -= getRecentMovePenalty(pieces, candidate, color, context.recentMoves);
     if (score > bestScore) { bestScore = score; best = candidate; }
     if (score > alpha) alpha = score;
   }
@@ -284,7 +326,7 @@ export function searchBestMove(
   color: PieceColor = "black",
   maxDepth = 4,
   timeLimit = 700,
-  searchHistory: AiSearchHistory = { positionHistory: [], ruleMoves: [] },
+  searchHistory: AiSearchHistory = { positionHistory: [], ruleMoves: [], moves: [] },
 ): AiSearchResult {
   const startedAt = performance.now();
   const legalMoves = getAllLegalMoves(color, pieces);
@@ -316,6 +358,7 @@ export function searchBestMove(
     positionHistory: searchHistory.positionHistory,
     positionCounts,
     ruleMoves: searchHistory.ruleMoves,
+    recentMoves: searchHistory.moves ?? [],
   };
   let choice: AiChoice = fallback;
   let score = evaluate(applyAiMove(pieces, fallback.piece.id, fallback.move.row, fallback.move.col), color);

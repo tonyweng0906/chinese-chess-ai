@@ -344,7 +344,7 @@ function App() {
         if (fallback) applyMove(fallback.piece, fallback.move);
         setAiThinking(false);
       };
-      worker.postMessage({ pieces, color: aiColor, maxDepth: depth, timeLimit: aiTimeLimit, positionHistory, ruleMoves });
+      worker.postMessage({ pieces, color: aiColor, maxDepth: depth, timeLimit: aiTimeLimit, positionHistory, ruleMoves, moves: gameMoves });
     }, 350);
     aiTimerRef.current = timer;
     return () => {
@@ -353,7 +353,7 @@ function App() {
       if (aiTimerRef.current === timer) aiTimerRef.current = null;
       if (aiWorkerRef.current === worker) aiWorkerRef.current = null;
     };
-  }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit, positionHistory, ruleMoves]);
+  }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit, positionHistory, ruleMoves, gameMoves]);
 
   function undoMove() {
     const previous = history[undoSnapshotIndex];

@@ -1,6 +1,6 @@
 import { initialPieces } from "../data/initialPieces";
 import type { ChessPiece, PieceColor } from "../types";
-import { applyAiMove, searchBestMove, type AiSearchResult } from "./ai";
+import { applyAiMove, getRecentMovePenalty, searchBestMove, type AiSearchResult } from "./ai";
 import { getAllLegalMoves, isInCheck } from "./rules";
 import { getPositionKey } from "./adjudication";
 
@@ -29,6 +29,29 @@ function result(name: string, search: AiSearchResult, passed: boolean): AiBenchm
     elapsedMs: Math.round(search.stats.elapsedMs),
     completedDepth: search.stats.completedDepth,
     nodes: search.stats.nodes + search.stats.quiescenceNodes,
+  };
+}
+
+function recordedMove(
+  piecesBefore: ChessPiece[],
+  pieceId: string,
+  row: number,
+  col: number,
+  index: number,
+) {
+  const movingPiece = piecesBefore.find((item) => item.id === pieceId)!;
+  const capturedPiece = piecesBefore.find((item) => item.row === row && item.col === col) ?? null;
+  const boardAfter = applyAiMove(piecesBefore, pieceId, row, col);
+  return {
+    id: `benchmark-${index}`,
+    mover: movingPiece.color,
+    pieceId,
+    pieceType: movingPiece.type,
+    from: { row: movingPiece.row, col: movingPiece.col },
+    to: { row, col },
+    capturedPiece,
+    gaveCheck: isInCheck(movingPiece.color === "red" ? "black" : "red", boardAfter),
+    boardAfter,
   };
 }
 
@@ -117,6 +140,47 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
     ruleMoves: [],
   });
 
+  const shuttleStart = [
+    piece("bg", "general", "black", 0, 4),
+    piece("rg", "general", "red", 9, 4),
+    piece("block", "soldier", "black", 5, 4),
+    piece("rr", "rook", "red", 9, 0),
+  ];
+  const rookOut = recordedMove(shuttleStart, "rr", 8, 0, 1);
+  const afterRookOut = rookOut.boardAfter;
+  const quietReturnPenalty = getRecentMovePenalty(
+    afterRookOut,
+    { piece: afterRookOut.find((item) => item.id === "rr")!, move: { row: 9, col: 0 } },
+    "red",
+    [rookOut],
+  );
+  const rookBack = recordedMove(afterRookOut, "rr", 9, 0, 2);
+  const shuttlePenalty = getRecentMovePenalty(
+    rookBack.boardAfter,
+    { piece: rookBack.boardAfter.find((item) => item.id === "rr")!, move: { row: 8, col: 0 } },
+    "red",
+    [rookOut, rookBack],
+  );
+  const captureTargetPosition = [...afterRookOut, piece("target", "soldier", "black", 9, 0)];
+  const tacticalReturnPenalty = getRecentMovePenalty(
+    captureTargetPosition,
+    { piece: captureTargetPosition.find((item) => item.id === "rr")!, move: { row: 9, col: 0 } },
+    "red",
+    [rookOut],
+  );
+  const attackedRookPosition = [...afterRookOut, piece("attacking-rook", "rook", "black", 8, 8)];
+  const defensiveReturnPenalty = getRecentMovePenalty(
+    attackedRookPosition,
+    { piece: attackedRookPosition.find((item) => item.id === "rr")!, move: { row: 9, col: 0 } },
+    "red",
+    [rookOut],
+  );
+  const shuttleAware = searchBestMove(afterRookOut, "red", 1, 220, {
+    positionHistory: [],
+    ruleMoves: [],
+    moves: [rookOut],
+  });
+
   return [
     result("capture-hanging-rook", rookSearch, Boolean(rookPassed)),
     result("cannon-screen-capture", cannonSearch, Boolean(cannonPassed)),
@@ -160,6 +224,28 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       "allow-forced-repeat",
       forcedRepeat,
       Boolean(forcedRepeat.choice),
+    ),
+    result(
+      "penalize-quiet-rook-return",
+      shuttleAware,
+      quietReturnPenalty === 65
+        && Boolean(shuttleAware.choice)
+        && !(shuttleAware.choice?.piece.id === "rr" && shuttleAware.choice.move.row === 9 && shuttleAware.choice.move.col === 0),
+    ),
+    result(
+      "penalize-repeated-rook-shuttle",
+      shuttleAware,
+      shuttlePenalty === 140,
+    ),
+    result(
+      "allow-tactical-rook-return",
+      shuttleAware,
+      tacticalReturnPenalty === 0,
+    ),
+    result(
+      "allow-rook-retreat-under-attack",
+      shuttleAware,
+      defensiveReturnPenalty === 0,
     ),
   ];
 }
