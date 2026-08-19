@@ -10,11 +10,12 @@ import { GameReview } from "./components/GameReview";
 import { playGameSound, type GameSound } from "./audio/gameSounds";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
 import { getUndoSnapshotIndex } from "./game/undo";
+import { hasGameProgress, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate" },
 } as const;
 
 const ruleCopy = {
@@ -36,20 +37,8 @@ const ruleCopy = {
   },
 } as const;
 
-type EndReason = keyof typeof ruleCopy.zh.reasons;
+type EndReason = GameEndReason;
 const endReasons: EndReason[] = ["general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit"];
-
-interface GameSnapshot {
-  pieces: ChessPiece[];
-  turn: PieceColor;
-  moveHistory: string[];
-  positionHistory: string[];
-  ruleMoves: RuleMoveRecord[];
-  noCapturePlyCount: number;
-  lastMove: { from: Position; to: Position } | null;
-  gameStartPieces: ChessPiece[];
-  gameMoves: RecordedMove[];
-}
 
 const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
   red: { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" },
@@ -89,6 +78,7 @@ function App() {
   const [noCapturePlyCount, setNoCapturePlyCount] = useState(0);
   const [endReason, setEndReason] = useState<EndReason | null>(null);
   const [saveReady, setSaveReady] = useState(false);
+  const [hasPreviousGame, setHasPreviousGame] = useState(() => parsePreviousGameBackup(localStorage.getItem(PREVIOUS_GAME_KEY)) !== null);
   const turnName = turn === "red" ? t.red : t.black;
   const aiColor = playerColor === "red" ? "black" : "red";
   const depth = difficulty === "easy" ? 2 : difficulty === "normal" ? 4 : 6;
@@ -367,11 +357,7 @@ function App() {
   function undoMove() {
     const previous = history[undoSnapshotIndex];
     if (!previous) return;
-    if (aiTimerRef.current !== null) window.clearTimeout(aiTimerRef.current);
-    aiTimerRef.current = null;
-    aiWorkerRef.current?.terminate();
-    aiWorkerRef.current = null;
-    setAiThinking(false);
+    cancelAiCalculation();
     setPieces(previous.pieces);
     setHistory((current) => current.slice(0, undoSnapshotIndex));
     setMoveHistory(previous.moveHistory);
@@ -391,7 +377,79 @@ function App() {
     setInvalidAttempts(0);
   }
 
-  function resetGame() {
+  function cancelAiCalculation() {
+    if (aiTimerRef.current !== null) window.clearTimeout(aiTimerRef.current);
+    aiTimerRef.current = null;
+    aiWorkerRef.current?.terminate();
+    aiWorkerRef.current = null;
+    setAiThinking(false);
+  }
+
+  function saveCurrentGameAsPrevious() {
+    const hasProgress = hasGameProgress(pieces, turn, Math.max(gameMoves.length, moveHistory.length), initialPieces);
+    if (!hasProgress || mode === "setup") return;
+    const backup: PreviousGameBackup = {
+      pieces,
+      turn,
+      moveHistory,
+      positionHistory,
+      ruleMoves,
+      noCapturePlyCount,
+      lastMove,
+      gameStartPieces,
+      gameMoves,
+      history,
+      winner,
+      draw,
+      endReason,
+      mode,
+      playerColor,
+      difficulty,
+    };
+    try {
+      localStorage.setItem(PREVIOUS_GAME_KEY, JSON.stringify(backup));
+      setHasPreviousGame(true);
+    } catch {
+      setHasPreviousGame(parsePreviousGameBackup(localStorage.getItem(PREVIOUS_GAME_KEY)) !== null);
+    }
+  }
+
+  function restorePreviousGame() {
+    const backup = parsePreviousGameBackup(localStorage.getItem(PREVIOUS_GAME_KEY));
+    if (!backup) {
+      localStorage.removeItem(PREVIOUS_GAME_KEY);
+      setHasPreviousGame(false);
+      return;
+    }
+    cancelAiCalculation();
+    setPieces(backup.pieces);
+    setTurn(backup.turn);
+    setMoveHistory(backup.moveHistory);
+    setPositionHistory(backup.positionHistory);
+    setRuleMoves(backup.ruleMoves);
+    setNoCapturePlyCount(backup.noCapturePlyCount);
+    setLastMove(backup.lastMove);
+    setGameStartPieces(backup.gameStartPieces);
+    setGameMoves(backup.gameMoves);
+    setHistory(backup.history);
+    setWinner(backup.winner);
+    setDraw(backup.draw);
+    setEndReason(backup.endReason);
+    setMode(backup.mode);
+    setPlayerColor(backup.playerColor);
+    setDifficulty(backup.difficulty);
+    setSelectedId(null);
+    setInvalidPieceId(null);
+    setInvalidNotice(false);
+    setSelfCheckWarning(false);
+    setInvalidAttempts(0);
+    localStorage.removeItem(PREVIOUS_GAME_KEY);
+    setHasPreviousGame(false);
+  }
+
+  function resetGame(savePrevious = true) {
+    if (savePrevious) saveCurrentGameAsPrevious();
+    cancelAiCalculation();
     setPieces(initialPieces);
     setTurn("red");
     setSelectedId(null);
@@ -419,6 +477,8 @@ function App() {
 
   function resetAllSettings() {
     localStorage.removeItem("chinese-chess-ai-game");
+    localStorage.removeItem(PREVIOUS_GAME_KEY);
+    setHasPreviousGame(false);
     setLanguage("zh");
     setPieceStyle("hanzi");
     setMode("local");
@@ -427,7 +487,7 @@ function App() {
     setPieceTheme("wood");
     setSoundEnabled(true);
     setSoundVolume(0.58);
-    resetGame();
+    resetGame(false);
   }
 
   function startAiGame(color: PieceColor) {
@@ -629,7 +689,8 @@ function App() {
             <div><dt>{t.status}</dt><dd>{winner || draw ? t.ended : isInCheck(turn, pieces) ? t.checkShort : t.playing}</dd></div>
             <div><dt>{rulesText.noCapture}</dt><dd>{noCapturePlyCount} / {NO_CAPTURE_DRAW_LIMIT}</dd></div>
           </dl>
-          <button className="reset-button" type="button" onClick={resetGame}>{t.reset}</button>
+          <button className="reset-button" type="button" onClick={() => resetGame()}>{t.reset}</button>
+          <button className="restore-game-button" type="button" onClick={restorePreviousGame} disabled={!hasPreviousGame}>{t.restorePrevious}</button>
           <button className="undo-button" type="button" onClick={undoMove} disabled={undoSnapshotIndex < 0}>{t.undo}</button>
           <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
           <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : "Make at least one move to start a review") : undefined}>

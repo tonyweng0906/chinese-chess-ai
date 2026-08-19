@@ -9,6 +9,7 @@
     "test:ai": "node scripts/ai-benchmark.mjs",
     "test:review": "node scripts/review-benchmark.mjs",
     "test:undo": "node scripts/undo-benchmark.mjs",
+    "test:backup": "node scripts/backup-benchmark.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
