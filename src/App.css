@@ -208,6 +208,27 @@
 .learning-stats span { display: flex; flex-direction: column; gap: 3px; padding: 7px; border: 1px solid #343029; border-radius: 3px; color: #5f584f; font-size: 8px; }
 .learning-stats b { color: #b5aa98; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 12px; font-weight: 500; }
 .learning-control small { display: block; margin-top: 9px; color: #575149; font-size: 8px; line-height: 1.55; }
+.self-play-training { margin-top: 12px; padding: 10px; border: 1px solid #34352f; border-radius: 4px; background: rgba(35,52,42,.12); }
+.self-play-training--running { border-color: rgba(81,151,103,.72); background: rgba(50,112,72,.1); box-shadow: inset 0 0 18px rgba(66,141,91,.04); }
+.self-play-training__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #9b927f; font-size: 9px; }
+.self-play-training__header strong { color: #b8c4b5; font-size: 10px; font-weight: 500; letter-spacing: .06em; }
+.self-play-training__header span { color: #6fa783; }
+.self-play-training--error .self-play-training__header span { color: #c27e70; }
+.self-play-training__targets { display: flex; gap: 5px; margin-top: 9px; }
+.self-play-training__targets button { flex: 1; padding: 5px; border: 1px solid #3b3b34; border-radius: 3px; color: #706f65; background: transparent; cursor: pointer; font-size: 8px; }
+.self-play-training__targets button.is-active { border-color: #557b61; color: #a8c5b0; background: rgba(72,125,89,.12); }
+.self-play-training__targets button:disabled { cursor: not-allowed; opacity: .48; }
+.self-play-training__progress { height: 3px; margin-top: 9px; overflow: hidden; border-radius: 999px; background: #292c28; }
+.self-play-training__progress div { height: 100%; border-radius: inherit; background: linear-gradient(90deg,#477758,#78b089); transition: width 280ms ease; }
+.self-play-training__stats { display: grid; grid-template-columns: .8fr .9fr 1.4fr; gap: 5px; margin-top: 9px; }
+.self-play-training__stats span { display: flex; min-width: 0; flex-direction: column; gap: 2px; color: #5f625a; font-size: 7px; }
+.self-play-training__stats b { overflow: hidden; color: #a7ada3; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 9px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.self-play-training__action { width: 100%; margin-top: 10px; padding: 7px; border: 1px solid #4e735a; border-radius: 3px; color: #a7c9b1; background: rgba(61,117,77,.12); cursor: pointer; font-size: 9px; }
+.self-play-training__action:hover:not(:disabled) { border-color: #76a984; color: #d1e3d5; background: rgba(61,117,77,.2); }
+.self-play-training__action.is-stop { border-color: #72594b; color: #c39d85; background: rgba(119,78,55,.1); }
+.self-play-training__action:disabled { cursor: not-allowed; opacity: .32; }
+.self-play-training small { margin-top: 7px; }
+.self-play-training__error { margin: 7px 0 0; color: #b87569; font-size: 8px; line-height: 1.45; }
 .learning-clear { width: 100%; margin-top: 9px; padding: 6px 8px; border: 1px solid #3a312a; border-radius: 3px; color: #746b5f; background: transparent; cursor: pointer; font-size: 9px; }
 .learning-clear:hover:not(:disabled) { border-color: #7c4c43; color: #c68f83; background: rgba(126,75,65,.08); }
 .learning-clear:disabled { cursor: not-allowed; opacity: .3; }

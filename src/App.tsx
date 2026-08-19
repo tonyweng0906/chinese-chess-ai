@@ -12,12 +12,29 @@ import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_
 import { getUndoSnapshotIndex } from "./game/undo";
 import { compactPreviousGameBackup, hasGameProgress, minimalPreviousGameBackup, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
 import { buildLearningGame, createLearningDataset, getLearningGameId, getLearningMoveHints, getLearningStats, LEARNING_STORAGE_KEY, parseLearningDataset, recordLearningGame, removeLearningGame } from "./game/learning";
+import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
   zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "学习中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "同一局面至少 3 个样本后才小幅影响 AI；吃子、将军和应将不受干扰。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？" },
   en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Learning", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "A position needs at least 3 samples before it gently affects AI; captures, checks, and check responses stay protected.", clearLearningConfirm: "Clear all AI learning data?" },
 } as const;
+
+const trainingCopy = {
+  zh: {
+    title: "AI 自我训练", idle: "准备就绪", running: "训练中", paused: "已暂停", complete: "本轮完成", error: "训练出错",
+    short: "3 局", long: "10 局", start: "开始训练", stop: "暂停训练", games: "完成局数", samples: "有效样本", total: "累计",
+    result: "红胜 / 黑胜 / 和", hint: "后台自我对弈并由当前引擎筛选步骤；正常对局需要 AI 思考时会自动暂停。",
+  },
+  en: {
+    title: "AI self-training", idle: "Ready", running: "Training", paused: "Paused", complete: "Batch complete", error: "Training error",
+    short: "3 games", long: "10 games", start: "Start training", stop: "Pause training", games: "Games", samples: "Accepted", total: "Total",
+    result: "Red / Black / Draw", hint: "Runs filtered self-play in the background and pauses automatically when the match AI needs to think.",
+  },
+} as const;
+
+type SelfPlayStatus = "idle" | "running" | "paused" | "complete" | "error";
+type SelfPlayMessage = SelfPlayProgressMessage | SelfPlayCompleteMessage | SelfPlayErrorMessage;
 
 const ruleCopy = {
   zh: {
@@ -67,10 +84,21 @@ function App() {
   const [soundVolume, setSoundVolume] = useState(0.58);
   const [learningEnabled, setLearningEnabled] = useState(true);
   const [learningDataset, setLearningDataset] = useState(() => parseLearningDataset(localStorage.getItem(LEARNING_STORAGE_KEY)));
+  const selfPlayWorkerRef = useRef<Worker | null>(null);
+  const [selfPlayStatus, setSelfPlayStatus] = useState<SelfPlayStatus>("idle");
+  const [selfPlayTarget, setSelfPlayTarget] = useState<3 | 10>(3);
+  const [selfPlayProgress, setSelfPlayProgress] = useState({ completedGames: 0, targetGames: 3, redWins: 0, blackWins: 0, draws: 0, acceptedDecisions: 0, lastGamePlies: 0 });
+  const [selfPlayError, setSelfPlayError] = useState("");
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
+  const trainingText = trainingCopy[language];
+  const selfPlayStatusText = selfPlayStatus === "running" ? trainingText.running
+    : selfPlayStatus === "paused" ? trainingText.paused
+      : selfPlayStatus === "complete" ? trainingText.complete
+        : selfPlayStatus === "error" ? trainingText.error
+          : trainingText.idle;
   const rulesText = ruleCopy[language];
   const [history, setHistory] = useState<GameSnapshot[]>([]);
   const [moveHistory, setMoveHistory] = useState<string[]>([]);
@@ -371,6 +399,19 @@ function App() {
     }
   }, [learningDataset]);
 
+  useEffect(() => () => {
+    selfPlayWorkerRef.current?.terminate();
+    selfPlayWorkerRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if ((!learningEnabled || aiThinking || mode !== "ai") && selfPlayWorkerRef.current) {
+      selfPlayWorkerRef.current.terminate();
+      selfPlayWorkerRef.current = null;
+      setSelfPlayStatus("paused");
+    }
+  }, [learningEnabled, aiThinking, mode]);
+
   useEffect(() => {
     if (mode !== "ai") return;
     const gameId = getLearningGameId(gameMoves);
@@ -414,6 +455,66 @@ function App() {
     aiWorkerRef.current?.terminate();
     aiWorkerRef.current = null;
     setAiThinking(false);
+  }
+
+  function stopSelfPlayTraining(nextStatus: SelfPlayStatus = "paused") {
+    const worker = selfPlayWorkerRef.current;
+    worker?.terminate();
+    selfPlayWorkerRef.current = null;
+    setSelfPlayStatus(nextStatus);
+  }
+
+  function startSelfPlayTraining() {
+    if (!learningEnabled || aiThinking || selfPlayWorkerRef.current) return;
+    const worker = new Worker(new URL("./game/selfPlay.worker.ts", import.meta.url), { type: "module" });
+    selfPlayWorkerRef.current = worker;
+    setSelfPlayStatus("running");
+    setSelfPlayError("");
+    setSelfPlayProgress({ completedGames: 0, targetGames: selfPlayTarget, redWins: 0, blackWins: 0, draws: 0, acceptedDecisions: 0, lastGamePlies: 0 });
+    worker.onmessage = (event: MessageEvent<SelfPlayMessage>) => {
+      if (selfPlayWorkerRef.current !== worker) return;
+      if (event.data.type === "error") {
+        worker.terminate();
+        selfPlayWorkerRef.current = null;
+        setSelfPlayError(event.data.message);
+        setSelfPlayStatus("error");
+        return;
+      }
+      setSelfPlayProgress({
+        completedGames: event.data.completedGames,
+        targetGames: event.data.targetGames,
+        redWins: event.data.redWins,
+        blackWins: event.data.blackWins,
+        draws: event.data.draws,
+        acceptedDecisions: event.data.acceptedDecisions,
+        lastGamePlies: event.data.lastGamePlies,
+      });
+      if (event.data.type === "progress") {
+        const progress = event.data;
+        setLearningDataset((current) => progress.games.reduce(
+          (dataset, game) => recordLearningGame(dataset, game),
+          current,
+        ));
+        return;
+      }
+      worker.terminate();
+      selfPlayWorkerRef.current = null;
+      setSelfPlayStatus("complete");
+    };
+    worker.onerror = () => {
+      if (selfPlayWorkerRef.current !== worker) return;
+      worker.terminate();
+      selfPlayWorkerRef.current = null;
+      setSelfPlayError(language === "zh" ? "训练线程无法继续运行" : "The training worker stopped unexpectedly");
+      setSelfPlayStatus("error");
+    };
+    worker.postMessage({
+      type: "start",
+      sessionId: `selfplay-${Date.now()}`,
+      targetGames: selfPlayTarget,
+      dataset: learningDataset,
+      seed: Date.now() >>> 0,
+    });
   }
 
   function saveCurrentGameAsPrevious() {
@@ -512,6 +613,7 @@ function App() {
   }
 
   function resetAllSettings() {
+    stopSelfPlayTraining("idle");
     localStorage.removeItem("chinese-chess-ai-game");
     localStorage.removeItem(PREVIOUS_GAME_KEY);
     setHasPreviousGame(false);
@@ -529,7 +631,10 @@ function App() {
 
   function clearLearningData() {
     if (!window.confirm(t.clearLearningConfirm)) return;
+    stopSelfPlayTraining("idle");
     setLearningDataset(createLearningDataset());
+    setSelfPlayProgress({ completedGames: 0, targetGames: selfPlayTarget, redWins: 0, blackWins: 0, draws: 0, acceptedDecisions: 0, lastGamePlies: 0 });
+    setSelfPlayError("");
   }
 
   function startAiGame(color: PieceColor) {
@@ -672,6 +777,29 @@ function App() {
                 <span>{language === "zh" ? "可信经验" : "Trusted"}<b>{learningStats.trustedMoves}</b></span>
               </div>
               <small>{t.learningHint}</small>
+              <section className={`self-play-training self-play-training--${selfPlayStatus}`}>
+                <div className="self-play-training__header">
+                  <strong>{trainingText.title}</strong>
+                  <span aria-live="polite">{selfPlayStatusText} · {trainingText.total} {learningStats.selfPlayGames}</span>
+                </div>
+                <div className="self-play-training__targets">
+                  <button className={selfPlayTarget === 3 ? "is-active" : ""} type="button" disabled={selfPlayStatus === "running"} onClick={() => setSelfPlayTarget(3)}>{trainingText.short}</button>
+                  <button className={selfPlayTarget === 10 ? "is-active" : ""} type="button" disabled={selfPlayStatus === "running"} onClick={() => setSelfPlayTarget(10)}>{trainingText.long}</button>
+                </div>
+                <div className="self-play-training__progress">
+                  <div style={{ width: `${selfPlayProgress.targetGames > 0 ? Math.min(100, selfPlayProgress.completedGames / selfPlayProgress.targetGames * 100) : 0}%` }} />
+                </div>
+                <div className="self-play-training__stats">
+                  <span>{trainingText.games}<b>{selfPlayProgress.completedGames}/{selfPlayProgress.targetGames}</b></span>
+                  <span>{trainingText.samples}<b>{selfPlayProgress.acceptedDecisions}</b></span>
+                  <span>{trainingText.result}<b>{selfPlayProgress.redWins}/{selfPlayProgress.blackWins}/{selfPlayProgress.draws}</b></span>
+                </div>
+                {selfPlayStatus === "running"
+                  ? <button className="self-play-training__action is-stop" type="button" onClick={() => stopSelfPlayTraining()}>{trainingText.stop}</button>
+                  : <button className="self-play-training__action" type="button" disabled={!learningEnabled || aiThinking} onClick={startSelfPlayTraining}>{trainingText.start}</button>}
+                <small>{trainingText.hint}</small>
+                {selfPlayError && <p className="self-play-training__error">{selfPlayError}</p>}
+              </section>
               <button className="learning-clear" type="button" onClick={clearLearningData} disabled={learningStats.games === 0}>{t.clearLearning}</button>
             </div>
           </>}

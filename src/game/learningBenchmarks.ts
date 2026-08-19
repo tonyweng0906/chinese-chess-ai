@@ -10,6 +10,7 @@ import {
   recordLearningGame,
   removeLearningGame,
 } from "./learning";
+import { buildSelfPlayLearningGames, getSelfPlayDecisionReward } from "./selfPlay";
 
 export interface LearningBenchmarkResult {
   name: string;
@@ -63,6 +64,18 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
     id: "single-loop",
     decisions: [game.decisions[0], game.decisions[0], game.decisions[0]],
   });
+  const selfPlayGames = buildSelfPlayLearningGames(
+    "training-game-1",
+    startPieces,
+    [redMove, blackMove],
+    ["teacher", "explore"],
+    "red",
+    20,
+  );
+  const selfPlayDataset = selfPlayGames.reduce(
+    (dataset, selfPlayGame) => recordLearningGame(dataset, selfPlayGame),
+    createLearningDataset(),
+  );
   let capped = createLearningDataset();
   for (let index = 0; index < MAX_LEARNING_GAMES + 5; index += 1) {
     capped = recordLearningGame(capped, { ...game, id: `game-${index}`, finishedAt: index });
@@ -83,6 +96,24 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
       name: "does-not-trust-single-game-loop",
       passed: getLearningMoveHints(loopedDataset, positionKey).length === 0
         && getLearningStats(loopedDataset).trustedMoves === 0,
+    },
+    {
+      name: "builds-independent-self-play-sides",
+      passed: selfPlayGames.length === 2
+        && selfPlayGames[0].id !== selfPlayGames[1].id
+        && selfPlayGames.every((selfPlayGame) => selfPlayGame.source === "self-play"),
+    },
+    {
+      name: "teacher-filter-overrides-raw-outcome",
+      passed: selfPlayGames.find((selfPlayGame) => selfPlayGame.aiColor === "red")?.decisions[0].reward === 1
+        && selfPlayGames.find((selfPlayGame) => selfPlayGame.aiColor === "black")?.decisions[0].reward === -1
+        && getSelfPlayDecisionReward("teacher", "loss") > 0
+        && getSelfPlayDecisionReward("explore", "win") < 0,
+    },
+    {
+      name: "counts-one-self-play-board-game",
+      passed: getLearningStats(selfPlayDataset).selfPlayGames === 1
+        && getLearningStats(parseLearningDataset(JSON.stringify(selfPlayDataset))).selfPlayGames === 1,
     },
   ];
 }

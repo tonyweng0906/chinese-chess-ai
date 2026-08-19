@@ -12,6 +12,7 @@ export interface LearningDecision {
   positionKey: string;
   moveKey: string;
   ply: number;
+  reward?: number;
 }
 
 export interface LearningGame {
@@ -20,6 +21,8 @@ export interface LearningGame {
   outcome: LearningOutcome;
   finishedAt: number;
   decisions: LearningDecision[];
+  source?: "played" | "self-play";
+  trainingGameId?: string;
 }
 
 export interface LearningDataset {
@@ -102,19 +105,24 @@ export function getLearningStats(dataset: LearningDataset) {
     });
   });
   return {
-    games: dataset.games.length,
+    games: new Set(dataset.games.map((game) => game.source === "self-play"
+      ? game.trainingGameId ?? game.id
+      : game.id)).size,
     decisions: dataset.games.reduce((total, game) => total + game.decisions.length, 0),
     wins: dataset.games.filter((game) => game.outcome === "win").length,
     draws: dataset.games.filter((game) => game.outcome === "draw").length,
     losses: dataset.games.filter((game) => game.outcome === "loss").length,
     trustedMoves: [...samplesByPositionAndMove.values()].filter((samples) => samples >= MIN_TRUSTED_SAMPLES).length,
+    selfPlayGames: new Set(dataset.games
+      .filter((game) => game.source === "self-play")
+      .map((game) => game.trainingGameId ?? game.id)).size,
   };
 }
 
 export function getLearningMoveHints(dataset: LearningDataset, positionKey: string): LearningMoveHint[] {
   const aggregates = new Map<string, { samples: number; reward: number }>();
   dataset.games.forEach((game) => {
-    const result = game.outcome === "win" ? 1 : game.outcome === "loss" ? -1 : 0;
+    const gameResult = game.outcome === "win" ? 1 : game.outcome === "loss" ? -1 : 0;
     const seenInGame = new Set<string>();
     game.decisions.forEach((decision) => {
       if (decision.positionKey !== positionKey) return;
@@ -122,7 +130,9 @@ export function getLearningMoveHints(dataset: LearningDataset, positionKey: stri
       seenInGame.add(decision.moveKey);
       const aggregate = aggregates.get(decision.moveKey) ?? { samples: 0, reward: 0 };
       aggregate.samples += 1;
-      aggregate.reward += result;
+      aggregate.reward += typeof decision.reward === "number"
+        ? Math.max(-1, Math.min(1, decision.reward))
+        : gameResult;
       aggregates.set(decision.moveKey, aggregate);
     });
   });
@@ -148,12 +158,15 @@ export function parseLearningDataset(value: string | null): LearningDataset {
       && (game.aiColor === "red" || game.aiColor === "black")
       && (game.outcome === "win" || game.outcome === "loss" || game.outcome === "draw")
       && Number.isFinite(game.finishedAt)
+      && (game.source === undefined || game.source === "played" || game.source === "self-play")
+      && (game.trainingGameId === undefined || typeof game.trainingGameId === "string")
       && Array.isArray(game.decisions)
       && game.decisions.every((decision) => decision
         && typeof decision.positionKey === "string"
         && typeof decision.moveKey === "string"
         && Number.isInteger(decision.ply)
-        && decision.ply >= 0),
+        && decision.ply >= 0
+        && (decision.reward === undefined || Number.isFinite(decision.reward))),
     ));
     return { version: 1, games: games.sort((first, second) => first.finishedAt - second.finishedAt).slice(-MAX_LEARNING_GAMES) };
   } catch {
