@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChessPiece, Language, PieceColor, PieceStyle, PieceTheme, PieceType, RecordedMove } from "../types";
 import type { MoveAnalysis } from "../game/review";
 import { getReviewBoardComparison } from "../game/reviewComparison";
+import { playGameSound } from "../audio/gameSounds";
 import { ChessBoard } from "./ChessBoard";
 
 interface GameReviewProps {
@@ -13,6 +14,8 @@ interface GameReviewProps {
   flipped: boolean;
   analysisDepth: number;
   archiveMode?: boolean;
+  soundEnabled?: boolean;
+  soundVolume?: number;
   onClose: () => void;
 }
 
@@ -102,7 +105,7 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
   </div>;
 }
 
-export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, onClose }: GameReviewProps) {
+export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, soundEnabled = true, soundVolume = 0.58, onClose }: GameReviewProps) {
   const t = copy[language];
   const heading = archiveMode
     ? language === "zh" ? { eyebrow: "AI 训练档案", title: "训练棋局回放", close: "返回存档" } : { eyebrow: "AI TRAINING ARCHIVE", title: "Training game replay", close: "Back to archives" }
@@ -112,6 +115,7 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   const [analysis, setAnalysis] = useState<MoveAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const analysisCache = useRef(new Map<string, MoveAnalysis>());
+  const previousStepRef = useRef(step);
   const activeMove = step > 0 ? moves[step - 1] : null;
   const boardPieces = step > 0 ? moves[step - 1].boardAfter : startPieces;
   const piecesBefore = step <= 1 ? startPieces : moves[step - 2].boardAfter;
@@ -128,6 +132,15 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
     }, 1700);
     return () => window.clearInterval(timer);
   }, [playing, moves.length]);
+
+  useEffect(() => {
+    const previousStep = previousStepRef.current;
+    if (soundEnabled && step !== previousStep && step > 0) {
+      const move = moves[step - 1];
+      if (move) playGameSound(move.gaveCheck ? "check" : move.capturedPiece ? "capture" : "move", soundVolume);
+    }
+    previousStepRef.current = step;
+  }, [step, moves, soundEnabled, soundVolume]);
 
   useEffect(() => {
     let cancelled = false;

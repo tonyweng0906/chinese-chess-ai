@@ -768,9 +768,9 @@ function App() {
         </div>}
       </header>
 
-      {selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode onClose={() => setSelectedTrainingArchiveId(null)} />
+      {selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedTrainingArchiveId(null)} />
         : trainingArchiveOpen ? <TrainingArchiveLibrary archives={trainingArchives.archives} language={language} onSelect={setSelectedTrainingArchiveId} onDelete={(archiveId) => setTrainingArchives((current) => removeTrainingArchive(current, archiveId))} onClear={() => setTrainingArchives(createTrainingArchiveDataset())} onClose={() => setTrainingArchiveOpen(false)} />
-          : reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} onClose={() => setReviewOpen(false)} />
+          : reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setReviewOpen(false)} />
             : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
         <div className={`board-area ${trainingBoard ? "board-area--training" : ""}`}>
           <div className="player-label player-label--black">
