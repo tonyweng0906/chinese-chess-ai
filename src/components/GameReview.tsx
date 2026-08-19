@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChessPiece, Language, PieceColor, PieceStyle, PieceTheme, PieceType, RecordedMove } from "../types";
-import { analyzeRecordedMove, type MoveAnalysis } from "../game/review";
+import type { MoveAnalysis } from "../game/review";
 import { ChessBoard } from "./ChessBoard";
 
 interface GameReviewProps {
@@ -18,28 +18,28 @@ const copy = {
   zh: {
     eyebrow: "AI 复盘室", title: "棋谱回放与逐步讲解", close: "返回棋局", opening: "初始局面", move: "第", moveUnit: "步", red: "红方", black: "黑方",
     first: "回到开局", previous: "上一步", play: "自动播放", pause: "暂停", next: "下一步", last: "跳到末局", record: "棋谱时间轴", analysis: "AI 逐步讲解", thinking: "AI 正在重新计算这一步…",
-    openingHint: "选择右侧任意一步，查看当时的棋盘和 AI 建议。", recommended: "AI 推荐", capture: "吃掉", check: "并形成将军", mate: "这一步直接结束了对局。", same: "AI 认为这一步与首选方案效果接近，棋子协调和局面安全性都较好。",
-    quality: { best: "最佳着法", good: "稳健好棋", questionable: "可以改进", mistake: "明显失误" },
-    qualityText: {
-      best: "这一步符合当前局面的主要目标，没有发现更明显的改进。",
-      good: "这一步保持了局面稳定，但 AI 找到了一种略积极的选择。",
-      questionable: "这一步会让主动权有所下降，建议比较 AI 给出的路线。",
-      mistake: "这一步明显损失了局面质量，可能忽略了吃子、将军或关键防守。",
+    openingHint: "选择右侧任意一步，查看当时的棋盘和 AI 建议。", recommended: "AI 首选路线", alternative: "AI 的另一选择", reply: "对手可能的主要应对", capture: "吃掉", check: "并形成将军", mate: "这一步直接结束了对局。", same: "在本次搜索深度内，这一步与 AI 首选一致；这不代表它是理论上的绝对最佳着。",
+    quality: { best: "AI 首选", good: "接近首选", questionable: "可以改进", mistake: "明显失误" },
+    reasonText: {
+      mate: "这一步直接形成胜势或结束对局。", capture: "这一步及时取得了子力，是当前搜索的首选。", check: "这一步利用将军争取主动，是当前搜索的首选。",
+      equivalent: "这一步不是 AI 首选，但评估差距很小，可以视为近似选择。", "missed-capture": "这一步错过了更直接的吃子机会，对手因此保留了关键子力。",
+      "missed-check": "这一步错过了可迫使对手应将的机会，主动权有所下降。", position: "继续计算对手的最佳回应后，这一步得到的局面评估低于 AI 首选。",
     },
-    localNote: "分析由本地象棋搜索完成，不上传棋局。",
+    scoreGap: "与首选差距", decisive: "决定性", confidenceLabel: "可信度", confidence: { low: "较低", medium: "中等", high: "较高" },
+    localNote: "分析由本地有限深度搜索完成，不上传棋局；“AI 首选”不等同于理论最优解。",
   },
   en: {
     eyebrow: "AI REVIEW ROOM", title: "Replay and move-by-move analysis", close: "Back to game", opening: "Starting position", move: "Move", moveUnit: "", red: "Red", black: "Black",
     first: "Start", previous: "Previous", play: "Auto play", pause: "Pause", next: "Next", last: "End", record: "Move timeline", analysis: "AI explanation", thinking: "AI is recalculating this move…",
-    openingHint: "Choose any move in the timeline to inspect the board and AI suggestion.", recommended: "AI recommends", capture: "captures", check: "and gives check", mate: "This move ends the game.", same: "The AI considers this move close to its top choice, with sound coordination and king safety.",
-    quality: { best: "Best move", good: "Good move", questionable: "Can improve", mistake: "Mistake" },
-    qualityText: {
-      best: "This move meets the position's main demand, with no clear improvement found.",
-      good: "The move keeps the position stable, though the AI found a slightly more active option.",
-      questionable: "This move gives up some initiative; compare it with the AI line.",
-      mistake: "This move significantly worsens the position and may miss a capture, check, or key defense.",
+    openingHint: "Choose any move in the timeline to inspect the board and AI suggestion.", recommended: "AI top line", alternative: "AI alternative", reply: "Likely best reply", capture: "captures", check: "and gives check", mate: "This move ends the game.", same: "This matches the AI's choice at the current search depth; it is not a claim of theoretical perfection.",
+    quality: { best: "AI top choice", good: "Close alternative", questionable: "Can improve", mistake: "Mistake" },
+    reasonText: {
+      mate: "This move creates a decisive result or ends the game.", capture: "This timely material gain is the search's top choice.", check: "This check seizes the initiative and is the search's top choice.",
+      equivalent: "This is not the AI's first choice, but its evaluation is close enough to be a sound alternative.", "missed-capture": "This misses a more direct capture and lets the opponent keep an important piece.",
+      "missed-check": "This misses a forcing check and gives up some initiative.", position: "After calculating the opponent's best reply, this position evaluates below the AI's top line.",
     },
-    localNote: "Analysis runs locally; the game record is not uploaded.",
+    scoreGap: "Gap from top", decisive: "decisive", confidenceLabel: "Confidence", confidence: { low: "low", medium: "medium", high: "high" },
+    localNote: "Analysis uses a limited-depth local search; “AI top choice” does not mean a proven theoretical best move.",
   },
 } as const;
 
@@ -57,6 +57,12 @@ function moveLabel(move: RecordedMove, language: Language) {
   return `${side} ${pieceNames[language][move.pieceType]} ${coordinate(move.from)} → ${coordinate(move.to)}`;
 }
 
+function scoreGap(scoreLoss: number, language: Language, decisive: string) {
+  if (scoreLoss >= 50_000) return decisive;
+  const pawns = scoreLoss / 100;
+  return language === "zh" ? `${pawns.toFixed(1)} 兵` : `${pawns.toFixed(1)} pawns`;
+}
+
 function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAnalysis | null; move: RecordedMove | null; language: Language; loading: boolean }) {
   const t = copy[language];
   if (!move) return <div className="review-analysis review-analysis--empty"><span>{t.analysis}</span><h3>{t.opening}</h3><p>{t.openingHint}</p></div>;
@@ -71,12 +77,21 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
     <span>{t.analysis}</span>
     <div className="review-quality-row"><b>{t.quality[analysis.quality]}</b><small>{move.mover === "red" ? t.red : t.black}</small></div>
     <h3>{moveLabel(move, language)}</h3>
-    <p>{analysis.isRecommendedMove ? t.same : t.qualityText[analysis.quality]}</p>
+    <p>{analysis.isRecommendedMove ? t.same : t.reasonText[analysis.reason]}</p>
+    <div className="review-metrics">
+      <span>{t.scoreGap}<b>{scoreGap(analysis.scoreLoss, language, t.decisive)}</b></span>
+      <span>{t.confidenceLabel}<b>{t.confidence[analysis.confidence]}</b></span>
+    </div>
     {details && <p className="review-tactical-note">{details}</p>}
     {recommendation && <div className="review-recommendation">
-      <span>{t.recommended}</span>
+      <span>{analysis.scoreLoss <= 35 ? t.alternative : t.recommended}</span>
       <strong>{pieceNames[language][recommendation.pieceType]} {coordinate(recommendation.from)} → {coordinate(recommendation.to)}</strong>
       {(recommendation.captures || recommendation.givesCheck) && <small>{[recommendation.captures ? `${t.capture} ${pieceNames[language][recommendation.captures]}` : null, recommendation.givesCheck ? t.check : null].filter(Boolean).join(language === "zh" ? "，" : ", ")}</small>}
+    </div>}
+    {analysis.reply && <div className="review-reply">
+      <span>{t.reply}</span>
+      <strong>{pieceNames[language][analysis.reply.pieceType]} {coordinate(analysis.reply.from)} → {coordinate(analysis.reply.to)}</strong>
+      {(analysis.reply.captures || analysis.reply.givesCheck) && <small>{[analysis.reply.captures ? `${t.capture} ${pieceNames[language][analysis.reply.captures]}` : null, analysis.reply.givesCheck ? t.check : null].filter(Boolean).join(language === "zh" ? "，" : ", ")}</small>}
     </div>}
   </div>;
 }
@@ -87,7 +102,7 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   const [playing, setPlaying] = useState(false);
   const [analysis, setAnalysis] = useState<MoveAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const analysisCache = useRef(new Map<number, MoveAnalysis>());
+  const analysisCache = useRef(new Map<string, MoveAnalysis>());
   const activeMove = step > 0 ? moves[step - 1] : null;
   const boardPieces = step > 0 ? moves[step - 1].boardAfter : startPieces;
   const piecesBefore = step <= 1 ? startPieces : moves[step - 2].boardAfter;
@@ -101,23 +116,30 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
         if (next >= moves.length) setPlaying(false);
         return next;
       });
-    }, 950);
+    }, 1700);
     return () => window.clearInterval(timer);
   }, [playing, moves.length]);
 
   useEffect(() => {
     if (!activeMove) { setAnalysis(null); setLoading(false); return; }
-    const cached = analysisCache.current.get(step);
+    const cacheKey = `${step}:${analysisDepth}`;
+    const cached = analysisCache.current.get(cacheKey);
     if (cached) { setAnalysis(cached); setLoading(false); return; }
     setAnalysis(null);
     setLoading(true);
-    const timer = window.setTimeout(() => {
-      const result = analyzeRecordedMove(piecesBefore, activeMove, analysisDepth);
-      analysisCache.current.set(step, result);
-      setAnalysis(result);
+    const worker = new Worker(new URL("../game/review.worker.ts", import.meta.url), { type: "module" });
+    worker.onmessage = (event: MessageEvent<MoveAnalysis>) => {
+      analysisCache.current.set(cacheKey, event.data);
+      setAnalysis(event.data);
       setLoading(false);
-    }, 40);
-    return () => window.clearTimeout(timer);
+      worker.terminate();
+    };
+    worker.onerror = () => {
+      setLoading(false);
+      worker.terminate();
+    };
+    worker.postMessage({ piecesBefore, move: activeMove, depth: analysisDepth });
+    return () => worker.terminate();
   }, [step, activeMove, piecesBefore, analysisDepth]);
 
   const lastMove = activeMove ? { from: activeMove.from, to: activeMove.to } : null;

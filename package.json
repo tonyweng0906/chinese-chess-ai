@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test:ai": "node scripts/ai-benchmark.mjs",
+    "test:review": "node scripts/review-benchmark.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

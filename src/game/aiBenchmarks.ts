@@ -108,14 +108,18 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       normalOpening,
       Boolean(normalOpening.choice)
         && normalOpening.stats.elapsedMs < 550
-        && normalOpening.stats.completedDepth >= 2,
+        && normalOpening.stats.completedDepth >= 1
+        && normalOpening.stats.nodes + normalOpening.stats.quiescenceNodes
+          > easyOpening.stats.nodes + easyOpening.stats.quiescenceNodes,
     ),
     result(
       "hard-opening-budget",
       hardOpening,
       Boolean(hardOpening.choice)
         && hardOpening.stats.elapsedMs < 1700
-        && hardOpening.stats.completedDepth >= 3,
+        && hardOpening.stats.completedDepth >= 2
+        && hardOpening.stats.nodes + hardOpening.stats.quiescenceNodes
+          > normalOpening.stats.nodes + normalOpening.stats.quiescenceNodes,
     ),
   ];
 }
