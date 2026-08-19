@@ -1,7 +1,8 @@
 import { initialPieces } from "../data/initialPieces";
 import type { ChessPiece, PieceColor } from "../types";
 import { applyAiMove, searchBestMove, type AiSearchResult } from "./ai";
-import { isInCheck } from "./rules";
+import { getAllLegalMoves, isInCheck } from "./rules";
+import { getPositionKey } from "./adjudication";
 
 export interface AiBenchmarkResult {
   name: string;
@@ -87,6 +88,35 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
   const normalOpening = searchBestMove(initialPieces, "red", 4, 400);
   const hardOpening = searchBestMove(initialPieces, "red", 6, 1500);
 
+  const quietPosition = [
+    piece("bg", "general", "black", 0, 4),
+    piece("rg", "general", "red", 9, 4),
+    piece("block", "soldier", "black", 5, 4),
+    piece("rr", "rook", "red", 9, 0),
+  ];
+  const baselineRepeat = searchBestMove(quietPosition, "red", 1, 220);
+  const repeatedBoard = baselineRepeat.choice
+    ? applyAiMove(quietPosition, baselineRepeat.choice.piece.id, baselineRepeat.choice.move.row, baselineRepeat.choice.move.col)
+    : quietPosition;
+  const repeatedKey = getPositionKey(repeatedBoard, "black");
+  const repetitionAware = searchBestMove(quietPosition, "red", 1, 220, {
+    positionHistory: [getPositionKey(quietPosition, "red"), repeatedKey],
+    ruleMoves: [],
+  });
+  const repetitionAwareKey = repetitionAware.choice
+    ? getPositionKey(
+        applyAiMove(quietPosition, repetitionAware.choice.piece.id, repetitionAware.choice.move.row, repetitionAware.choice.move.col),
+        "black",
+      )
+    : repeatedKey;
+
+  const allNextPositions = getAllLegalMoves("red", quietPosition).map(({ piece, move }) =>
+    getPositionKey(applyAiMove(quietPosition, piece.id, move.row, move.col), "black"));
+  const forcedRepeat = searchBestMove(quietPosition, "red", 1, 220, {
+    positionHistory: [getPositionKey(quietPosition, "red"), ...allNextPositions],
+    ruleMoves: [],
+  });
+
   return [
     result("capture-hanging-rook", rookSearch, Boolean(rookPassed)),
     result("cannon-screen-capture", cannonSearch, Boolean(cannonPassed)),
@@ -120,6 +150,16 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
         && hardOpening.stats.completedDepth >= 2
         && hardOpening.stats.nodes + hardOpening.stats.quiescenceNodes
           > normalOpening.stats.nodes + normalOpening.stats.quiescenceNodes,
+    ),
+    result(
+      "avoid-meaningless-repeat",
+      repetitionAware,
+      Boolean(baselineRepeat.choice && repetitionAware.choice) && repetitionAwareKey !== repeatedKey,
+    ),
+    result(
+      "allow-forced-repeat",
+      forcedRepeat,
+      Boolean(forcedRepeat.choice),
     ),
   ];
 }
