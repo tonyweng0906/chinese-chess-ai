@@ -130,26 +130,29 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   }, [playing, moves.length]);
 
   useEffect(() => {
-    if (!activeMove) { setAnalysis(null); setLoading(false); return; }
-    const cacheKey = `${step}:${analysisDepth}`;
+    let cancelled = false;
+    if (!activeMove) { setAnalysis(null); setLoading(false); return () => { cancelled = true; }; }
+    const cacheKey = `${activeMove.id}:${analysisDepth}`;
     const cached = analysisCache.current.get(cacheKey);
     if (cached) { setAnalysis(cached); setLoading(false); return; }
     setAnalysis(null);
     setLoading(true);
     const worker = new Worker(new URL("../game/review.worker.ts", import.meta.url), { type: "module" });
     worker.onmessage = (event: MessageEvent<MoveAnalysis>) => {
+      if (cancelled) return;
       analysisCache.current.set(cacheKey, event.data);
       setAnalysis(event.data);
       setLoading(false);
       worker.terminate();
     };
     worker.onerror = () => {
+      if (cancelled) return;
       setLoading(false);
       worker.terminate();
     };
     worker.postMessage({ piecesBefore, move: activeMove, depth: analysisDepth });
-    return () => worker.terminate();
-  }, [step, activeMove, piecesBefore, analysisDepth]);
+    return () => { cancelled = true; worker.terminate(); };
+  }, [step, activeMove?.id, piecesBefore, analysisDepth]);
 
   const lastMove = activeMove ? { from: activeMove.from, to: activeMove.to } : null;
   const reviewComparison = getReviewBoardComparison(analysis, activeMove);
