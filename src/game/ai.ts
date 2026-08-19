@@ -14,6 +14,7 @@ const pieceValues: Record<PieceType, number> = {
 
 const MATE_SCORE = 1_000_000;
 const MAX_QUIESCENCE_DEPTH = 4;
+const OPENING_PLY_LIMIT = 20;
 const TIMEOUT = Symbol("ai-search-timeout");
 
 export interface AiChoice {
@@ -104,12 +105,7 @@ export function getRecentMovePenalty(
 ) {
   const ownMoves = recentMoves.filter((move) => move.mover === color);
   const lastOwnMove = ownMoves.at(-1);
-  if (
-    !lastOwnMove
-    || lastOwnMove.pieceId !== candidate.piece.id
-    || !samePosition(lastOwnMove.to, candidate.piece)
-    || !samePosition(lastOwnMove.from, candidate.move)
-  ) return 0;
+  if (!lastOwnMove || lastOwnMove.pieceId !== candidate.piece.id || !samePosition(lastOwnMove.to, candidate.piece)) return 0;
 
   const captured = pieces.some((piece) => piece.color !== color && samePosition(piece, candidate.move));
   const nextPieces = applyAiMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
@@ -117,13 +113,21 @@ export function getRecentMovePenalty(
   if (captured || givesCheck || isInCheck(color, pieces) || isPieceUnderAttack(pieces, candidate.piece)) return 0;
 
   const previousOwnMove = ownMoves.at(-2);
+  const returnsImmediately = samePosition(lastOwnMove.from, candidate.move);
   const continuesShuttle = Boolean(
-    previousOwnMove
+    returnsImmediately
+    && previousOwnMove
     && previousOwnMove.pieceId === candidate.piece.id
     && samePosition(previousOwnMove.from, candidate.piece)
     && samePosition(previousOwnMove.to, candidate.move)
   );
-  return continuesShuttle ? 140 : 65;
+  if (returnsImmediately) return continuesShuttle ? 140 : 65;
+
+  const opening = recentMoves.length < OPENING_PLY_LIMIT && pieces.length >= 26;
+  if (!opening || lastOwnMove.capturedPiece || lastOwnMove.gaveCheck) return 0;
+  const movedSamePieceTwice = previousOwnMove?.pieceId === candidate.piece.id;
+  const movesBackward = color === "red" ? candidate.move.row > candidate.piece.row : candidate.move.row < candidate.piece.row;
+  return (movedSamePieceTwice ? 100 : 55) + (movesBackward ? 25 : 0);
 }
 
 function checkTime(context: SearchContext, quiescence = false) {
@@ -132,18 +136,73 @@ function checkTime(context: SearchContext, quiescence = false) {
   if (performance.now() >= context.deadline) throw TIMEOUT;
 }
 
+function strategicPieceBonus(piece: ChessPiece, pieces: ChessPiece[], enemyGeneral: ChessPiece | undefined) {
+  const homeRow = piece.color === "red" ? 9 : 0;
+  const progress = piece.color === "red" ? 9 - piece.row : piece.row;
+  const center = 4 - Math.abs(piece.col - 4);
+  const developed = piece.row !== homeRow;
+  let moves: Position[] = [];
+  if (piece.type === "rook" || piece.type === "horse" || piece.type === "cannon") {
+    moves = getPseudoLegalMoves(piece, pieces);
+  }
+
+  let bonus = 0;
+  switch (piece.type) {
+    case "rook":
+      bonus += moves.length * 1.5;
+      if (developed) bonus += 10;
+      if (progress >= 5) bonus += 10;
+      break;
+    case "horse":
+      bonus += moves.length * 3.5 + center * 5 + progress * 2;
+      if (developed) bonus += 16;
+      if (piece.col === 0 || piece.col === 8) bonus -= 10;
+      break;
+    case "cannon":
+      bonus += moves.length * 1.25 + center * 4 + progress * 1.5;
+      if (piece.col === 4) bonus += 8;
+      break;
+    case "soldier": {
+      const crossed = piece.color === "red" ? piece.row <= 4 : piece.row >= 5;
+      bonus += progress * 5 + center * 1.5;
+      if (crossed) bonus += 45;
+      break;
+    }
+    case "general":
+      if (progress > 0) bonus -= 6;
+      break;
+    case "advisor":
+    case "elephant":
+      bonus += center;
+      break;
+  }
+
+  if (enemyGeneral && moves.length > 0) {
+    const pressure = moves.reduce((total, move) => {
+      const distance = Math.abs(move.row - enemyGeneral.row) + Math.abs(move.col - enemyGeneral.col);
+      if (distance === 0) return total + 16;
+      if (distance <= 2) return total + 3;
+      return total;
+    }, 0);
+    bonus += Math.min(18, pressure);
+  }
+  return bonus;
+}
+
+function evaluateSide(pieces: ChessPiece[], color: PieceColor) {
+  const enemyGeneral = pieces.find((piece) => piece.type === "general" && piece.color !== color);
+  return pieces
+    .filter((piece) => piece.color === color)
+    .reduce((total, piece) => total + pieceValues[piece.type] + strategicPieceBonus(piece, pieces, enemyGeneral), 0);
+}
+
 function evaluate(pieces: ChessPiece[], color: PieceColor) {
   const opponent = opposite(color);
   const ownGeneral = pieces.some((piece) => piece.type === "general" && piece.color === color);
   const enemyGeneral = pieces.some((piece) => piece.type === "general" && piece.color === opponent);
   if (!ownGeneral) return -MATE_SCORE;
   if (!enemyGeneral) return MATE_SCORE;
-
-  return pieces.reduce((total, piece) => {
-    const crossedBonus = piece.type === "soldier" && (piece.color === "red" ? piece.row <= 4 : piece.row >= 5) ? 45 : 0;
-    const value = pieceValues[piece.type] + crossedBonus;
-    return total + (piece.color === color ? value : -value);
-  }, 0);
+  return evaluateSide(pieces, color) - evaluateSide(pieces, opponent);
 }
 
 function rememberKiller(context: SearchContext, ply: number, key: string) {

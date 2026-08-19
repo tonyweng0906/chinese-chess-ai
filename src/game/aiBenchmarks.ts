@@ -1,5 +1,5 @@
 import { initialPieces } from "../data/initialPieces";
-import type { ChessPiece, PieceColor } from "../types";
+import type { ChessPiece, PieceColor, RecordedMove } from "../types";
 import { applyAiMove, getRecentMovePenalty, searchBestMove, type AiSearchResult } from "./ai";
 import { getAllLegalMoves, isInCheck } from "./rules";
 import { getPositionKey } from "./adjudication";
@@ -10,6 +10,7 @@ export interface AiBenchmarkResult {
   elapsedMs: number;
   completedDepth: number;
   nodes: number;
+  detail?: string;
 }
 
 function piece(
@@ -38,7 +39,7 @@ function recordedMove(
   row: number,
   col: number,
   index: number,
-) {
+): RecordedMove {
   const movingPiece = piecesBefore.find((item) => item.id === pieceId)!;
   const capturedPiece = piecesBefore.find((item) => item.row === row && item.col === col) ?? null;
   const boardAfter = applyAiMove(piecesBefore, pieceId, row, col);
@@ -52,6 +53,45 @@ function recordedMove(
     capturedPiece,
     gaveCheck: isInCheck(movingPiece.color === "red" ? "black" : "red", boardAfter),
     boardAfter,
+  };
+}
+
+function simulateOpening(plies: number) {
+  let board = initialPieces.map((piece) => ({ ...piece }));
+  let turn: PieceColor = "red";
+  const moves: RecordedMove[] = [];
+  const positionHistory = [getPositionKey(board, turn)];
+  const lastPieceByColor: Partial<Record<PieceColor, string>> = {};
+  const movedPieces = { red: new Set<string>(), black: new Set<string>() };
+  let repeatedQuietMoves = 0;
+  let developingMoves = 0;
+  let latestSearch: AiSearchResult | null = null;
+
+  for (let ply = 0; ply < plies; ply += 1) {
+    latestSearch = searchBestMove(board, turn, 2, 90, { positionHistory, ruleMoves: [], moves });
+    if (!latestSearch.choice) break;
+    const wasUnderAttack = getAllLegalMoves(turn === "red" ? "black" : "red", board)
+      .some(({ move }) => move.row === latestSearch!.choice!.piece.row && move.col === latestSearch!.choice!.piece.col);
+    const move = recordedMove(board, latestSearch.choice.piece.id, latestSearch.choice.move.row, latestSearch.choice.move.col, 100 + ply);
+    const movedTowardEnemy = move.mover === "red" ? move.to.row < move.from.row : move.to.row > move.from.row;
+    const movedTowardCenter = Math.abs(move.to.col - 4) < Math.abs(move.from.col - 4);
+    if (movedTowardEnemy || movedTowardCenter || move.capturedPiece || move.gaveCheck) developingMoves += 1;
+    if (lastPieceByColor[turn] === move.pieceId && !move.capturedPiece && !move.gaveCheck && !wasUnderAttack) repeatedQuietMoves += 1;
+    lastPieceByColor[turn] = move.pieceId;
+    movedPieces[turn].add(move.pieceId);
+    moves.push(move);
+    board = move.boardAfter;
+    turn = turn === "red" ? "black" : "red";
+    positionHistory.push(getPositionKey(board, turn));
+  }
+
+  return {
+    latestSearch,
+    moves,
+    movedPieces,
+    repeatedQuietMoves,
+    developingMoves,
+    detail: moves.map((move) => `${move.mover[0]}:${move.pieceType}:${move.from.row},${move.from.col}-${move.to.row},${move.to.col}`).join(" | "),
   };
 }
 
@@ -180,6 +220,25 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
     ruleMoves: [],
     moves: [rookOut],
   });
+  const horseOut = recordedMove(initialPieces, "red-horse-1", 7, 2, 20);
+  const repeatedHorsePenalty = getRecentMovePenalty(
+    horseOut.boardAfter,
+    { piece: horseOut.boardAfter.find((item) => item.id === "red-horse-1")!, move: { row: 5, col: 3 } },
+    "red",
+    [horseOut],
+  );
+  const opening = simulateOpening(10);
+  const openingDevelopment = result(
+    "opening-develops-without-shuffling",
+    opening.latestSearch ?? normalOpening,
+    opening.moves.length === 10
+      && opening.repeatedQuietMoves === 0
+      && opening.developingMoves >= 6
+      && opening.movedPieces.red.size >= 3
+      && opening.movedPieces.black.size >= 3
+      && opening.moves.slice(0, 2).every((move) => move.pieceType === "horse" || move.pieceType === "cannon" || move.pieceType === "soldier"),
+  );
+  openingDevelopment.detail = opening.detail;
 
   return [
     result("capture-hanging-rook", rookSearch, Boolean(rookPassed)),
@@ -247,5 +306,11 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       shuttleAware,
       defensiveReturnPenalty === 0,
     ),
+    result(
+      "penalize-consecutive-opening-piece",
+      shuttleAware,
+      repeatedHorsePenalty === 55,
+    ),
+    openingDevelopment,
   ];
 }
