@@ -12,7 +12,7 @@ import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_
 import { getUndoSnapshotIndex } from "./game/undo";
 import { compactPreviousGameBackup, hasGameProgress, minimalPreviousGameBackup, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
 import { buildLearningGame, createLearningDataset, getLearningGameId, getLearningMoveHints, getLearningStats, LEARNING_STORAGE_KEY, parseLearningDataset, recordLearningGame, removeLearningGame } from "./game/learning";
-import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
+import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayPreviewMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
@@ -24,17 +24,19 @@ const trainingCopy = {
   zh: {
     title: "AI 自我训练", idle: "准备就绪", running: "训练中", paused: "已暂停", complete: "本轮完成", error: "训练出错",
     short: "3 局", long: "10 局", start: "开始训练", stop: "暂停训练", games: "完成局数", samples: "有效样本", total: "累计",
-    result: "红胜 / 黑胜 / 和", hint: "后台自我对弈并由当前引擎筛选步骤；正常对局需要 AI 思考时会自动暂停。",
+    result: "红胜 / 黑胜 / 和", watching: "训练观战", game: "第", gameUnit: "局", ply: "手", toMove: "行棋",
+    hint: "后台自我对弈并由当前引擎筛选步骤；正常对局需要 AI 思考时会自动暂停。",
   },
   en: {
     title: "AI self-training", idle: "Ready", running: "Training", paused: "Paused", complete: "Batch complete", error: "Training error",
     short: "3 games", long: "10 games", start: "Start training", stop: "Pause training", games: "Games", samples: "Accepted", total: "Total",
-    result: "Red / Black / Draw", hint: "Runs filtered self-play in the background and pauses automatically when the match AI needs to think.",
+    result: "Red / Black / Draw", watching: "Training live", game: "Game", gameUnit: "", ply: "ply", toMove: "to move",
+    hint: "Runs filtered self-play in the background and pauses automatically when the match AI needs to think.",
   },
 } as const;
 
 type SelfPlayStatus = "idle" | "running" | "paused" | "complete" | "error";
-type SelfPlayMessage = SelfPlayProgressMessage | SelfPlayCompleteMessage | SelfPlayErrorMessage;
+type SelfPlayMessage = SelfPlayProgressMessage | SelfPlayCompleteMessage | SelfPlayErrorMessage | SelfPlayPreviewMessage;
 
 const ruleCopy = {
   zh: {
@@ -89,6 +91,7 @@ function App() {
   const [selfPlayTarget, setSelfPlayTarget] = useState<3 | 10>(3);
   const [selfPlayProgress, setSelfPlayProgress] = useState({ completedGames: 0, targetGames: 3, redWins: 0, blackWins: 0, draws: 0, acceptedDecisions: 0, lastGamePlies: 0 });
   const [selfPlayError, setSelfPlayError] = useState("");
+  const [selfPlayPreview, setSelfPlayPreview] = useState<SelfPlayPreviewMessage | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -138,6 +141,7 @@ function App() {
     () => learningEnabled ? getLearningMoveHints(learningDataset, getPositionKey(pieces, aiColor)) : [],
     [learningEnabled, learningDataset, pieces, aiColor],
   );
+  const trainingBoard = selfPlayStatus === "running" ? selfPlayPreview : null;
 
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
@@ -409,6 +413,7 @@ function App() {
       selfPlayWorkerRef.current.terminate();
       selfPlayWorkerRef.current = null;
       setSelfPlayStatus("paused");
+      setSelfPlayPreview(null);
     }
   }, [learningEnabled, aiThinking, mode]);
 
@@ -462,6 +467,7 @@ function App() {
     worker?.terminate();
     selfPlayWorkerRef.current = null;
     setSelfPlayStatus(nextStatus);
+    setSelfPlayPreview(null);
   }
 
   function startSelfPlayTraining() {
@@ -470,14 +476,20 @@ function App() {
     selfPlayWorkerRef.current = worker;
     setSelfPlayStatus("running");
     setSelfPlayError("");
+    setSelfPlayPreview(null);
     setSelfPlayProgress({ completedGames: 0, targetGames: selfPlayTarget, redWins: 0, blackWins: 0, draws: 0, acceptedDecisions: 0, lastGamePlies: 0 });
     worker.onmessage = (event: MessageEvent<SelfPlayMessage>) => {
       if (selfPlayWorkerRef.current !== worker) return;
+      if (event.data.type === "preview") {
+        setSelfPlayPreview(event.data);
+        return;
+      }
       if (event.data.type === "error") {
         worker.terminate();
         selfPlayWorkerRef.current = null;
         setSelfPlayError(event.data.message);
         setSelfPlayStatus("error");
+        setSelfPlayPreview(null);
         return;
       }
       setSelfPlayProgress({
@@ -500,6 +512,7 @@ function App() {
       worker.terminate();
       selfPlayWorkerRef.current = null;
       setSelfPlayStatus("complete");
+      setSelfPlayPreview(null);
     };
     worker.onerror = () => {
       if (selfPlayWorkerRef.current !== worker) return;
@@ -507,6 +520,7 @@ function App() {
       selfPlayWorkerRef.current = null;
       setSelfPlayError(language === "zh" ? "训练线程无法继续运行" : "The training worker stopped unexpectedly");
       setSelfPlayStatus("error");
+      setSelfPlayPreview(null);
     };
     worker.postMessage({
       type: "start",
@@ -724,13 +738,18 @@ function App() {
       </header>
 
       {reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} onClose={() => setReviewOpen(false)} /> : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
-        <div className="board-area">
+        <div className={`board-area ${trainingBoard ? "board-area--training" : ""}`}>
           <div className="player-label player-label--black">
             <span className="player-dot" />
             {flipped ? t.red : t.black}
           </div>
-          <ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={invalidPieceId} hintPieceIds={hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup"} />
-          {mode !== "setup" && (winner || draw) && (
+          {trainingBoard && <div className="training-board-status" role="status">
+            <i aria-hidden="true" />
+            <strong>{trainingText.watching}</strong>
+            <span>{trainingText.game} {trainingBoard.gameNumber}/{trainingBoard.targetGames} {trainingText.gameUnit} · {trainingBoard.ply} {trainingText.ply} · {trainingBoard.turn === "red" ? t.red : t.black} {trainingText.toMove}</span>
+          </div>}
+          <ChessBoard pieces={trainingBoard?.pieces ?? pieces} selectedId={trainingBoard ? null : selectedId} legalMoves={trainingBoard ? [] : legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={trainingBoard?.lastMove ?? lastMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={trainingBoard ? null : invalidPieceId} hintPieceIds={trainingBoard ? new Set<string>() : hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup" && !trainingBoard} disabled={Boolean(trainingBoard)} />
+          {!trainingBoard && mode !== "setup" && (winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
               <strong>{winner ? (winner === "red" ? t.redWin : t.blackWin) : t.drawTitle}</strong>

@@ -37,7 +37,17 @@ export interface SelfPlayErrorMessage {
   message: string;
 }
 
-type SelfPlayWorkerMessage = SelfPlayProgressMessage | SelfPlayCompleteMessage | SelfPlayErrorMessage;
+export interface SelfPlayPreviewMessage {
+  type: "preview";
+  gameNumber: number;
+  targetGames: number;
+  ply: number;
+  pieces: ChessPiece[];
+  turn: PieceColor;
+  lastMove: { from: { row: number; col: number }; to: { row: number; col: number } } | null;
+}
+
+type SelfPlayWorkerMessage = SelfPlayProgressMessage | SelfPlayCompleteMessage | SelfPlayErrorMessage | SelfPlayPreviewMessage;
 
 const MAX_SELF_PLAY_PLIES = 60;
 const EXPLORATION_RATE = 0.12;
@@ -89,6 +99,7 @@ function playTrainingGame(
   trainingGameId: string,
   dataset: LearningDataset,
   random: () => number,
+  onPreview: (preview: Omit<SelfPlayPreviewMessage, "type" | "gameNumber" | "targetGames">) => void,
 ) {
   const startPieces = initialPieces.map((piece) => ({ ...piece }));
   let pieces = startPieces;
@@ -100,6 +111,7 @@ function playTrainingGame(
   const labels: SelfPlayDecisionLabel[] = [];
   const positionHistory = [getPositionKey(pieces, turn)];
   const ruleMoves: RuleMoveRecord[] = [];
+  onPreview({ ply: 0, pieces, turn, lastMove: null });
 
   for (let ply = 0; ply < MAX_SELF_PLAY_PLIES && !winner && !draw; ply += 1) {
     const legalMoves = getAllLegalMoves(turn, pieces);
@@ -153,6 +165,12 @@ function playTrainingGame(
       else if (repetition?.result === "draw" || noCapturePlyCount >= NO_CAPTURE_DRAW_LIMIT) draw = true;
     }
     turn = nextTurn;
+    onPreview({
+      ply: ply + 1,
+      pieces,
+      turn,
+      lastMove: { from: recordedMove.from, to: recordedMove.to },
+    });
   }
 
   const learningGames = buildSelfPlayLearningGames(trainingGameId, startPieces, moves, labels, winner);
@@ -173,7 +191,15 @@ self.onmessage = (event: MessageEvent<SelfPlayRequest>) => {
   try {
     for (let index = 0; index < targetGames; index += 1) {
       const trainingGameId = `${event.data.sessionId}-${index}`;
-      const result = playTrainingGame(trainingGameId, dataset, random);
+      const result = playTrainingGame(trainingGameId, dataset, random, (preview) => {
+        const message: SelfPlayWorkerMessage = {
+          type: "preview",
+          gameNumber: index + 1,
+          targetGames,
+          ...preview,
+        };
+        self.postMessage(message);
+      });
       result.learningGames.forEach((game) => { dataset = recordLearningGame(dataset, game); });
       if (result.winner === "red") redWins += 1;
       else if (result.winner === "black") blackWins += 1;
@@ -212,4 +238,3 @@ self.onmessage = (event: MessageEvent<SelfPlayRequest>) => {
     self.postMessage(message);
   }
 };
-

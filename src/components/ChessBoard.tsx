@@ -115,9 +115,10 @@ interface ChessBoardProps {
   onBoardDrop: (event: DragEvent<HTMLDivElement>) => void;
   setupMode: boolean;
   reviewComparison?: ReviewBoardComparison | null;
+  disabled?: boolean;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null, disabled = false }: ChessBoardProps) {
   const markerKey = useId().replace(/:/g, "");
   const actualMarkerId = `review-actual-${markerKey}`;
   const recommendedMarkerId = `review-recommended-${markerKey}`;
@@ -129,7 +130,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
   const actualRoute = reviewComparison ? routePath(reviewComparison.actual.from, reviewComparison.actual.to, comparisonHasSharedOrigin ? -9 : 0) : "";
   const recommendedRoute = reviewComparison ? routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, comparisonHasSharedOrigin ? 9 : 0) : "";
   return (
-    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={onBoardClick} onDragOver={(event) => event.preventDefault()} onDrop={onBoardDrop}>
+    <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={disabled ? undefined : onBoardClick} onDragOver={disabled ? undefined : (event) => event.preventDefault()} onDrop={disabled ? undefined : onBoardDrop}>
       <BoardLines />
       {lastMove && (
         <svg className="move-trail" viewBox="0 0 800 890" aria-hidden="true">
@@ -166,13 +167,14 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
             className={`piece piece--${piece.color} ${pieceStyle === "symbols" ? "piece--symbols" : ""} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""} ${isActualPiece ? "piece--review-actual" : ""} ${isRecommendedPiece ? "piece--review-recommended" : ""}`}
             key={piece.id}
             type="button"
+            disabled={disabled}
             style={{
               left: `${(x(piece.col) / 800) * 100}%`,
               top: `${(y(piece.row) / 890) * 100}%`,
             }}
             aria-label={`${piece.color === "red" ? (language === "zh" ? "红方" : "Red") : (language === "zh" ? "黑方" : "Black")} ${pieceName(piece, language)}`}
             onClick={(event) => { event.stopPropagation(); onPieceClick(piece); }}
-            draggable={setupMode}
+            draggable={setupMode && !disabled}
             onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ id: piece.id }))}
           >
             {pieceStyle === "symbols" ? <PieceIcon type={piece.type} /> : <span>{pieceText(piece, language)}</span>}
@@ -186,6 +188,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
             className={`move-target ${occupied ? "move-target--capture" : ""}`}
             key={`${position.row},${position.col}`}
             type="button"
+            disabled={disabled}
             style={{ left: `${(x(position.col) / 800) * 100}%`, top: `${(y(position.row) / 890) * 100}%` }}
             aria-label={occupied ? "吃子" : "移动到此处"}
             onClick={(event) => { event.stopPropagation(); onMove(position); }}
@@ -197,6 +200,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
           className="move-target move-target--invalid"
           key={`invalid-${position.row},${position.col}`}
           type="button"
+          disabled={disabled}
           style={{ left: `${(x(position.col) / 800) * 100}%`, top: `${(y(position.row) / 890) * 100}%` }}
           aria-label={invalidMoveLabel}
           onClick={(event) => { event.stopPropagation(); onInvalidMove?.(position); }}
