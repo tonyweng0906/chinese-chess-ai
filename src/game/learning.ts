@@ -3,6 +3,8 @@ import { getPositionKey } from "./adjudication";
 
 export const LEARNING_STORAGE_KEY = "chinese-chess-ai-learning-v1";
 export const MAX_LEARNING_GAMES = 200;
+export const MIN_TRUSTED_SAMPLES = 3;
+export const MAX_LEARNING_BONUS = 40;
 
 export type LearningOutcome = "win" | "loss" | "draw";
 
@@ -25,6 +27,13 @@ export interface LearningDataset {
   games: LearningGame[];
 }
 
+export interface LearningMoveHint {
+  moveKey: string;
+  bonus: number;
+  samples: number;
+  confidence: number;
+}
+
 export function createLearningDataset(): LearningDataset {
   return { version: 1, games: [] };
 }
@@ -33,8 +42,12 @@ export function getLearningGameId(moves: RecordedMove[]) {
   return moves[0]?.id ?? null;
 }
 
-function learningMoveKey(move: RecordedMove) {
-  return `${move.pieceType}:${move.from.row},${move.from.col}->${move.to.row},${move.to.col}`;
+export function getLearningMoveKey(
+  pieceType: RecordedMove["pieceType"],
+  from: { row: number; col: number },
+  to: { row: number; col: number },
+) {
+  return `${pieceType}:${from.row},${from.col}->${to.row},${to.col}`;
 }
 
 export function buildLearningGame(
@@ -52,7 +65,7 @@ export function buildLearningGame(
     if (move.mover === aiColor) {
       decisions.push({
         positionKey: getPositionKey(board, aiColor),
-        moveKey: learningMoveKey(move),
+        moveKey: getLearningMoveKey(move.pieceType, move.from, move.to),
         ply,
       });
     }
@@ -78,13 +91,50 @@ export function removeLearningGame(dataset: LearningDataset, gameId: string): Le
 }
 
 export function getLearningStats(dataset: LearningDataset) {
+  const samplesByPositionAndMove = new Map<string, number>();
+  dataset.games.forEach((game) => {
+    const seenInGame = new Set<string>();
+    game.decisions.forEach((decision) => {
+      const key = `${decision.positionKey}::${decision.moveKey}`;
+      if (seenInGame.has(key)) return;
+      seenInGame.add(key);
+      samplesByPositionAndMove.set(key, (samplesByPositionAndMove.get(key) ?? 0) + 1);
+    });
+  });
   return {
     games: dataset.games.length,
     decisions: dataset.games.reduce((total, game) => total + game.decisions.length, 0),
     wins: dataset.games.filter((game) => game.outcome === "win").length,
     draws: dataset.games.filter((game) => game.outcome === "draw").length,
     losses: dataset.games.filter((game) => game.outcome === "loss").length,
+    trustedMoves: [...samplesByPositionAndMove.values()].filter((samples) => samples >= MIN_TRUSTED_SAMPLES).length,
   };
+}
+
+export function getLearningMoveHints(dataset: LearningDataset, positionKey: string): LearningMoveHint[] {
+  const aggregates = new Map<string, { samples: number; reward: number }>();
+  dataset.games.forEach((game) => {
+    const result = game.outcome === "win" ? 1 : game.outcome === "loss" ? -1 : 0;
+    const seenInGame = new Set<string>();
+    game.decisions.forEach((decision) => {
+      if (decision.positionKey !== positionKey) return;
+      if (seenInGame.has(decision.moveKey)) return;
+      seenInGame.add(decision.moveKey);
+      const aggregate = aggregates.get(decision.moveKey) ?? { samples: 0, reward: 0 };
+      aggregate.samples += 1;
+      aggregate.reward += result;
+      aggregates.set(decision.moveKey, aggregate);
+    });
+  });
+
+  return [...aggregates.entries()].flatMap(([moveKey, aggregate]) => {
+    if (aggregate.samples < MIN_TRUSTED_SAMPLES) return [];
+    const confidence = Math.min(1, (aggregate.samples - MIN_TRUSTED_SAMPLES + 1) / 8);
+    const smoothedReward = aggregate.reward / (aggregate.samples + 2);
+    const bonus = Math.max(-MAX_LEARNING_BONUS, Math.min(MAX_LEARNING_BONUS, Math.round(smoothedReward * MAX_LEARNING_BONUS * confidence)));
+    if (bonus === 0) return [];
+    return [{ moveKey, bonus, samples: aggregate.samples, confidence }];
+  }).sort((first, second) => second.bonus - first.bonus);
 }
 
 export function parseLearningDataset(value: string | null): LearningDataset {

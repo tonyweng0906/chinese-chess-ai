@@ -1,6 +1,7 @@
 import { getAllLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./rules";
 import type { ChessPiece, PieceColor, PieceType, RecordedMove } from "../types";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, type RuleMoveRecord } from "./adjudication";
+import { getLearningMoveKey, MAX_LEARNING_BONUS, type LearningMoveHint } from "./learning";
 
 const pieceValues: Record<PieceType, number> = {
   general: 100000,
@@ -42,6 +43,7 @@ export interface AiSearchHistory {
   positionHistory: string[];
   ruleMoves: RuleMoveRecord[];
   moves?: RecordedMove[];
+  learningHints?: LearningMoveHint[];
 }
 
 interface OrderedMove extends AiChoice {
@@ -72,6 +74,7 @@ interface SearchContext {
   positionCounts: Map<string, number>;
   ruleMoves: RuleMoveRecord[];
   recentMoves: RecordedMove[];
+  learningBonuses: Map<string, number>;
 }
 
 function opposite(color: PieceColor): PieceColor {
@@ -105,26 +108,34 @@ export function getRecentMovePenalty(
 ) {
   const ownMoves = recentMoves.filter((move) => move.mover === color);
   const lastOwnMove = ownMoves.at(-1);
-  if (!lastOwnMove || lastOwnMove.pieceId !== candidate.piece.id || !samePosition(lastOwnMove.to, candidate.piece)) return 0;
+  const pieceMoves = ownMoves.filter((move) => move.pieceId === candidate.piece.id);
+  const lastPieceMove = pieceMoves.at(-1);
+  if (!lastPieceMove || !samePosition(lastPieceMove.to, candidate.piece)) return 0;
+
+  const pieceMoveIndex = ownMoves.lastIndexOf(lastPieceMove);
+  const ownMovesSincePieceMoved = ownMoves.length - pieceMoveIndex - 1;
+  const returnsImmediately = samePosition(lastPieceMove.from, candidate.move);
+  const opening = recentMoves.length < OPENING_PLY_LIMIT && pieces.length >= 26;
+  const continuesWithSamePiece = lastOwnMove?.pieceId === candidate.piece.id && opening;
+  const isRecentReturn = returnsImmediately && ownMovesSincePieceMoved <= 2;
+  if (!continuesWithSamePiece && !isRecentReturn) return 0;
 
   const captured = pieces.some((piece) => piece.color !== color && samePosition(piece, candidate.move));
   const nextPieces = applyAiMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
   const givesCheck = isInCheck(opposite(color), nextPieces);
   if (captured || givesCheck || isInCheck(color, pieces) || isPieceUnderAttack(pieces, candidate.piece)) return 0;
 
-  const previousOwnMove = ownMoves.at(-2);
-  const returnsImmediately = samePosition(lastOwnMove.from, candidate.move);
+  const previousPieceMove = pieceMoves.at(-2);
   const continuesShuttle = Boolean(
     returnsImmediately
-    && previousOwnMove
-    && previousOwnMove.pieceId === candidate.piece.id
-    && samePosition(previousOwnMove.from, candidate.piece)
-    && samePosition(previousOwnMove.to, candidate.move)
+    && previousPieceMove
+    && samePosition(previousPieceMove.from, candidate.piece)
+    && samePosition(previousPieceMove.to, candidate.move)
   );
-  if (returnsImmediately) return continuesShuttle ? 140 : 65;
+  if (isRecentReturn) return continuesShuttle ? 140 : ownMovesSincePieceMoved === 0 ? 65 : 45;
 
-  const opening = recentMoves.length < OPENING_PLY_LIMIT && pieces.length >= 26;
-  if (!opening || lastOwnMove.capturedPiece || lastOwnMove.gaveCheck) return 0;
+  if (!opening || lastOwnMove?.pieceId !== candidate.piece.id || lastOwnMove.capturedPiece || lastOwnMove.gaveCheck) return 0;
+  const previousOwnMove = ownMoves.at(-2);
   const movedSamePieceTwice = previousOwnMove?.pieceId === candidate.piece.id;
   const movesBackward = color === "red" ? candidate.move.row > candidate.piece.row : candidate.move.row < candidate.piece.row;
   return (movedSamePieceTwice ? 100 : 55) + (movesBackward ? 25 : 0);
@@ -348,6 +359,8 @@ function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, cont
   let best = moves[0];
   let bestScore = -Infinity;
   const rootKey = getPositionKey(pieces, color);
+  const canUseLearning = !isInCheck(color, pieces)
+    && !moves.some((candidate) => candidate.captured || candidate.givesCheck);
   const hasFreshMove = moves.some((candidate) =>
     (context.positionCounts.get(getPositionKey(candidate.nextPieces, opposite(color))) ?? 0) === 0);
   for (let index = 0; index < moves.length; index += 1) {
@@ -374,6 +387,10 @@ function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, cont
       score -= 35;
     }
     score -= getRecentMovePenalty(pieces, candidate, color, context.recentMoves);
+    if (canUseLearning) {
+      const learningKey = getLearningMoveKey(candidate.piece.type, candidate.piece, candidate.move);
+      score += context.learningBonuses.get(learningKey) ?? 0;
+    }
     if (score > bestScore) { bestScore = score; best = candidate; }
     if (score > alpha) alpha = score;
   }
@@ -385,7 +402,7 @@ export function searchBestMove(
   color: PieceColor = "black",
   maxDepth = 4,
   timeLimit = 700,
-  searchHistory: AiSearchHistory = { positionHistory: [], ruleMoves: [], moves: [] },
+  searchHistory: AiSearchHistory = { positionHistory: [], ruleMoves: [], moves: [], learningHints: [] },
 ): AiSearchResult {
   const startedAt = performance.now();
   const legalMoves = getAllLegalMoves(color, pieces);
@@ -401,10 +418,43 @@ export function searchBestMove(
     counts.set(key, (counts.get(key) ?? 0) + 1);
     return counts;
   }, new Map<string, number>());
-  const fallback = legalMoves.find(({ piece, move }) => {
+  const learningBonuses = new Map((searchHistory.learningHints ?? []).map((hint) => [
+    hint.moveKey,
+    Math.max(-MAX_LEARNING_BONUS, Math.min(MAX_LEARNING_BONUS, hint.bonus)),
+  ]));
+  const isFreshMove = ({ piece, move }: AiChoice) => {
     const nextPieces = applyAiMove(pieces, piece.id, move.row, move.col);
     return !positionCounts.has(getPositionKey(nextPieces, opposite(color)));
-  }) ?? legalMoves[0];
+  };
+  const firstFreshMove = legalMoves.find(isFreshMove);
+  let fallback = firstFreshMove ?? legalMoves[0];
+  if (getRecentMovePenalty(pieces, fallback, color, searchHistory.moves ?? []) > 0) {
+    fallback = legalMoves.find((candidate) =>
+      (!firstFreshMove || isFreshMove(candidate))
+      && getRecentMovePenalty(pieces, candidate, color, searchHistory.moves ?? []) === 0) ?? fallback;
+  }
+  const fallbackCaptured = pieces.some((piece) => piece.color !== color && samePosition(piece, fallback.move));
+  const fallbackBoard = applyAiMove(pieces, fallback.piece.id, fallback.move.row, fallback.move.col);
+  const fallbackGivesCheck = isInCheck(opposite(color), fallbackBoard);
+  const freshLearningMoves = learningBonuses.size > 0 ? legalMoves.filter(isFreshMove) : [];
+  const fallbackCandidates = freshLearningMoves.length > 0 ? freshLearningMoves : legalMoves;
+  const hasFallbackTactic = learningBonuses.size > 0 && fallbackCandidates.some((candidate) => {
+    if (pieces.some((piece) => piece.color !== color && samePosition(piece, candidate.move))) return true;
+    const nextPieces = applyAiMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
+    return isInCheck(opposite(color), nextPieces);
+  });
+  if (learningBonuses.size > 0 && !hasFallbackTactic && !fallbackCaptured && !fallbackGivesCheck && !isInCheck(color, pieces)) {
+    const fallbackBonus = learningBonuses.get(getLearningMoveKey(fallback.piece.type, fallback.piece, fallback.move)) ?? 0;
+    const learnedFallback = fallbackCandidates
+      .filter((candidate) => (learningBonuses.get(getLearningMoveKey(candidate.piece.type, candidate.piece, candidate.move)) ?? 0) > fallbackBonus)
+      .find((candidate) => {
+        const captured = pieces.some((piece) => piece.color !== color && samePosition(piece, candidate.move));
+        if (captured) return false;
+        const nextPieces = applyAiMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
+        return !isInCheck(opposite(color), nextPieces);
+      });
+    if (learnedFallback) fallback = learnedFallback;
+  }
   const context: SearchContext = {
     deadline: startedAt + Math.max(20, timeLimit),
     nodes: 0,
@@ -418,6 +468,7 @@ export function searchBestMove(
     positionCounts,
     ruleMoves: searchHistory.ruleMoves,
     recentMoves: searchHistory.moves ?? [],
+    learningBonuses,
   };
   let choice: AiChoice = fallback;
   let score = evaluate(applyAiMove(pieces, fallback.piece.id, fallback.move.row, fallback.move.col), color);

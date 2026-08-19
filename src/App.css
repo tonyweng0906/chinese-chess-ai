@@ -204,7 +204,7 @@
 .learning-control__header i { color: #63b27c; font-size: 12px; font-style: normal; }
 .learning-control__header button { padding: 4px 8px; border: 1px solid #3b342b; border-radius: 999px; color: #786f62; background: transparent; cursor: pointer; font-size: 9px; }
 .learning-control__header button.is-active { border-color: #4f8c66; color: #9fd6af; background: rgba(70,139,91,.12); }
-.learning-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin-top: 11px; }
+.learning-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; margin-top: 11px; }
 .learning-stats span { display: flex; flex-direction: column; gap: 3px; padding: 7px; border: 1px solid #343029; border-radius: 3px; color: #5f584f; font-size: 8px; }
 .learning-stats b { color: #b5aa98; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 12px; font-weight: 500; }
 .learning-control small { display: block; margin-top: 9px; color: #575149; font-size: 8px; line-height: 1.55; }

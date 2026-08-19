@@ -11,12 +11,12 @@ import { playGameSound, type GameSound } from "./audio/gameSounds";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
 import { getUndoSnapshotIndex } from "./game/undo";
 import { compactPreviousGameBackup, hasGameProgress, minimalPreviousGameBackup, parsePreviousGameBackup, PREVIOUS_GAME_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
-import { buildLearningGame, createLearningDataset, getLearningGameId, getLearningStats, LEARNING_STORAGE_KEY, parseLearningDataset, recordLearningGame, removeLearningGame } from "./game/learning";
+import { buildLearningGame, createLearningDataset, getLearningGameId, getLearningMoveHints, getLearningStats, LEARNING_STORAGE_KEY, parseLearningDataset, recordLearningGame, removeLearningGame } from "./game/learning";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "记录中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "第 1 阶段：只积累完整对局样本，尚不改变 AI 选择。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Recording", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "Stage 1: collects completed-game samples without changing AI choices yet.", clearLearningConfirm: "Clear all AI learning data?" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", undo: "悔棋", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "学习中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "同一局面至少 3 个样本后才小幅影响 AI；吃子、将军和应将不受干扰。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", undo: "Undo", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Learning", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "A position needs at least 3 samples before it gently affects AI; captures, checks, and check responses stay protected.", clearLearningConfirm: "Clear all AI learning data?" },
 } as const;
 
 const ruleCopy = {
@@ -106,6 +106,10 @@ function App() {
   const endReasonText = endReason ? rulesText.reasons[endReason] : null;
   const undoSnapshotIndex = getUndoSnapshotIndex(history, mode, playerColor);
   const learningStats = useMemo(() => getLearningStats(learningDataset), [learningDataset]);
+  const learningHints = useMemo(
+    () => learningEnabled ? getLearningMoveHints(learningDataset, getPositionKey(pieces, aiColor)) : [],
+    [learningEnabled, learningDataset, pieces, aiColor],
+  );
 
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
@@ -348,7 +352,7 @@ function App() {
         if (fallback) applyMove(fallback.piece, fallback.move);
         setAiThinking(false);
       };
-      worker.postMessage({ pieces, color: aiColor, maxDepth: depth, timeLimit: aiTimeLimit, positionHistory, ruleMoves, moves: gameMoves });
+      worker.postMessage({ pieces, color: aiColor, maxDepth: depth, timeLimit: aiTimeLimit, positionHistory, ruleMoves, moves: gameMoves, learningHints });
     }, 350);
     aiTimerRef.current = timer;
     return () => {
@@ -357,7 +361,7 @@ function App() {
       if (aiTimerRef.current === timer) aiTimerRef.current = null;
       if (aiWorkerRef.current === worker) aiWorkerRef.current = null;
     };
-  }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit, positionHistory, ruleMoves, gameMoves]);
+  }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit, positionHistory, ruleMoves, gameMoves, learningHints]);
 
   useEffect(() => {
     try {
@@ -665,6 +669,7 @@ function App() {
               <div className="learning-stats">
                 <span>{t.learnedGames}<b>{learningStats.games}</b></span>
                 <span>{t.learnedMoves}<b>{learningStats.decisions}</b></span>
+                <span>{language === "zh" ? "可信经验" : "Trusted"}<b>{learningStats.trustedMoves}</b></span>
               </div>
               <small>{t.learningHint}</small>
               <button className="learning-clear" type="button" onClick={clearLearningData} disabled={learningStats.games === 0}>{t.clearLearning}</button>

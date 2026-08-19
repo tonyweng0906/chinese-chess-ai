@@ -4,6 +4,7 @@ import {
   buildLearningGame,
   createLearningDataset,
   getLearningStats,
+  getLearningMoveHints,
   MAX_LEARNING_GAMES,
   parseLearningDataset,
   recordLearningGame,
@@ -46,6 +47,22 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
   const firstDataset = recordLearningGame(createLearningDataset(), game);
   const replacement = recordLearningGame(firstDataset, { ...game, outcome: "loss", finishedAt: 11 });
   const removed = removeLearningGame(replacement, game.id);
+  const samePositionWins = [0, 1, 2].reduce(
+    (dataset, index) => recordLearningGame(dataset, { ...game, id: `win-${index}`, finishedAt: index, outcome: "win" }),
+    createLearningDataset(),
+  );
+  const samePositionLosses = [0, 1, 2].reduce(
+    (dataset, index) => recordLearningGame(dataset, { ...game, id: `loss-${index}`, finishedAt: index, outcome: "loss" }),
+    createLearningDataset(),
+  );
+  const positionKey = game.decisions[0].positionKey;
+  const winningHint = getLearningMoveHints(samePositionWins, positionKey)[0];
+  const losingHint = getLearningMoveHints(samePositionLosses, positionKey)[0];
+  const loopedDataset = recordLearningGame(createLearningDataset(), {
+    ...game,
+    id: "single-loop",
+    decisions: [game.decisions[0], game.decisions[0], game.decisions[0]],
+  });
   let capped = createLearningDataset();
   for (let index = 0; index < MAX_LEARNING_GAMES + 5; index += 1) {
     capped = recordLearningGame(capped, { ...game, id: `game-${index}`, finishedAt: index });
@@ -58,5 +75,14 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
     { name: "caps-learning-history", passed: capped.games.length === MAX_LEARNING_GAMES && capped.games[0].id === "game-5" },
     { name: "rejects-invalid-dataset", passed: getLearningStats(parseLearningDataset('{"version":2,"games":[]}')).games === 0 },
     { name: "round-trips-dataset", passed: getLearningStats(parseLearningDataset(JSON.stringify(firstDataset))).decisions === 1 },
+    { name: "requires-minimum-trusted-samples", passed: getLearningMoveHints(firstDataset, positionKey).length === 0 },
+    { name: "rewards-repeated-winning-choice", passed: Boolean(winningHint && winningHint.bonus > 0 && winningHint.samples === 3) },
+    { name: "discourages-repeated-losing-choice", passed: Boolean(losingHint && losingHint.bonus < 0 && losingHint.samples === 3) },
+    { name: "reports-trusted-experience", passed: getLearningStats(samePositionWins).trustedMoves === 1 },
+    {
+      name: "does-not-trust-single-game-loop",
+      passed: getLearningMoveHints(loopedDataset, positionKey).length === 0
+        && getLearningStats(loopedDataset).trustedMoves === 0,
+    },
   ];
 }

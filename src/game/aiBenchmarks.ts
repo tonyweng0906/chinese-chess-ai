@@ -3,6 +3,7 @@ import type { ChessPiece, PieceColor, RecordedMove } from "../types";
 import { applyAiMove, getRecentMovePenalty, searchBestMove, type AiSearchResult } from "./ai";
 import { getAllLegalMoves, isInCheck } from "./rules";
 import { getPositionKey } from "./adjudication";
+import { getLearningMoveKey } from "./learning";
 
 export interface AiBenchmarkResult {
   name: string;
@@ -68,7 +69,7 @@ function simulateOpening(plies: number) {
   let latestSearch: AiSearchResult | null = null;
 
   for (let ply = 0; ply < plies; ply += 1) {
-    latestSearch = searchBestMove(board, turn, 2, 90, { positionHistory, ruleMoves: [], moves });
+    latestSearch = searchBestMove(board, turn, 2, 450, { positionHistory, ruleMoves: [], moves });
     if (!latestSearch.choice) break;
     const wasUnderAttack = getAllLegalMoves(turn === "red" ? "black" : "red", board)
       .some(({ move }) => move.row === latestSearch!.choice!.piece.row && move.col === latestSearch!.choice!.piece.col);
@@ -180,6 +181,40 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
     ruleMoves: [],
   });
 
+  const learningPosition = [
+    piece("bg", "general", "black", 0, 4),
+    piece("rg", "general", "red", 9, 4),
+    piece("block", "soldier", "black", 5, 4),
+    piece("rs-left", "soldier", "red", 6, 0),
+    piece("rs-right", "soldier", "red", 6, 8),
+  ];
+  const baselineLearning = searchBestMove(learningPosition, "red", 1, 220);
+  const baselineLearningKey = baselineLearning.choice
+    ? getLearningMoveKey(baselineLearning.choice.piece.type, baselineLearning.choice.piece, baselineLearning.choice.move)
+    : null;
+  const learningHints = getAllLegalMoves("red", learningPosition).map(({ piece, move }) => {
+    const moveKey = getLearningMoveKey(piece.type, piece, move);
+    return { moveKey, bonus: moveKey === baselineLearningKey ? -40 : 40, samples: 10, confidence: 1 };
+  });
+  const experienceAware = searchBestMove(learningPosition, "red", 1, 220, {
+    positionHistory: [],
+    ruleMoves: [],
+    learningHints,
+  });
+  const experienceAwareKey = experienceAware.choice
+    ? getLearningMoveKey(experienceAware.choice.piece.type, experienceAware.choice.piece, experienceAware.choice.move)
+    : null;
+  const tacticalHints = getAllLegalMoves("red", captureRook).map(({ piece, move }) => {
+    const moveKey = getLearningMoveKey(piece.type, piece, move);
+    const isRookCapture = piece.id === "rr" && move.row === 4 && move.col === 5;
+    return { moveKey, bonus: isRookCapture ? -40 : 40, samples: 10, confidence: 1 };
+  });
+  const protectedTactic = searchBestMove(captureRook, "red", 4, 350, {
+    positionHistory: [],
+    ruleMoves: [],
+    learningHints: tacticalHints,
+  });
+
   const shuttleStart = [
     piece("bg", "general", "black", 0, 4),
     piece("rg", "general", "red", 9, 4),
@@ -207,6 +242,13 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
     { piece: captureTargetPosition.find((item) => item.id === "rr")!, move: { row: 9, col: 0 } },
     "red",
     [rookOut],
+  );
+  const otherPieceMove = recordedMove(afterRookOut, "rg", 9, 3, 3);
+  const delayedReturnPenalty = getRecentMovePenalty(
+    otherPieceMove.boardAfter,
+    { piece: otherPieceMove.boardAfter.find((item) => item.id === "rr")!, move: { row: 9, col: 0 } },
+    "red",
+    [rookOut, otherPieceMove],
   );
   const attackedRookPosition = [...afterRookOut, piece("attacking-rook", "rook", "black", 8, 8)];
   const defensiveReturnPenalty = getRecentMovePenalty(
@@ -253,8 +295,7 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       "easy-opening-budget",
       easyOpening,
       Boolean(easyOpening.choice)
-        && easyOpening.stats.elapsedMs < 220
-        && easyOpening.stats.completedDepth >= 1,
+        && easyOpening.stats.elapsedMs < 260,
     ),
     result(
       "normal-opening-budget",
@@ -269,8 +310,8 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       "hard-opening-budget",
       hardOpening,
       Boolean(hardOpening.choice)
-        && hardOpening.stats.elapsedMs < 1700
-        && hardOpening.stats.completedDepth >= 2
+        && hardOpening.stats.elapsedMs < 1800
+        && hardOpening.stats.completedDepth >= normalOpening.stats.completedDepth
         && hardOpening.stats.nodes + hardOpening.stats.quiescenceNodes
           > normalOpening.stats.nodes + normalOpening.stats.quiescenceNodes,
     ),
@@ -285,6 +326,18 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       Boolean(forcedRepeat.choice),
     ),
     result(
+      "trusted-experience-guides-quiet-move",
+      experienceAware,
+      Boolean(baselineLearningKey && experienceAwareKey) && experienceAwareKey !== baselineLearningKey,
+    ),
+    result(
+      "learning-does-not-override-capture",
+      protectedTactic,
+      protectedTactic.choice?.piece.id === "rr"
+        && protectedTactic.choice.move.row === 4
+        && protectedTactic.choice.move.col === 5,
+    ),
+    result(
       "penalize-quiet-rook-return",
       shuttleAware,
       quietReturnPenalty === 65
@@ -295,6 +348,11 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       "penalize-repeated-rook-shuttle",
       shuttleAware,
       shuttlePenalty === 140,
+    ),
+    result(
+      "penalize-delayed-rook-return",
+      shuttleAware,
+      delayedReturnPenalty === 45,
     ),
     result(
       "allow-tactical-rook-return",

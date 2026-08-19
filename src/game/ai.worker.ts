@@ -1,6 +1,7 @@
 import type { ChessPiece, PieceColor, RecordedMove } from "../types";
 import { searchBestMove } from "./ai";
 import type { RuleMoveRecord } from "./adjudication";
+import type { LearningMoveHint } from "./learning";
 
 interface AiWorkerRequest {
   pieces: ChessPiece[];
@@ -10,9 +11,10 @@ interface AiWorkerRequest {
   positionHistory: string[];
   ruleMoves: RuleMoveRecord[];
   moves: RecordedMove[];
+  learningHints: LearningMoveHint[];
 }
 
 self.onmessage = (event: MessageEvent<AiWorkerRequest>) => {
-  const { pieces, color, maxDepth, timeLimit, positionHistory, ruleMoves, moves } = event.data;
-  self.postMessage(searchBestMove(pieces, color, maxDepth, timeLimit, { positionHistory, ruleMoves, moves }));
+  const { pieces, color, maxDepth, timeLimit, positionHistory, ruleMoves, moves, learningHints } = event.data;
+  self.postMessage(searchBestMove(pieces, color, maxDepth, timeLimit, { positionHistory, ruleMoves, moves, learningHints }));
 };
