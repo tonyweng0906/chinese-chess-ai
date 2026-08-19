@@ -195,6 +195,18 @@
 .settings-row > span { min-width: 42px; letter-spacing: 0.08em; }
 .settings-row button { padding: 4px 8px; border: 1px solid #3a3128; border-radius: 3px; color: #847866; background: transparent; cursor: pointer; font-size: 10px; }
 .settings-row button:hover, .settings-row button.is-active { border-color: #9b794f; color: #e0c79b; background: rgba(185, 132, 61, 0.12); }
+.panel-disclosure { margin: 10px 0 14px; border: 1px solid #342d25; border-radius: 5px; background: rgba(255,255,255,.014); }
+.panel-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; color: #a18a69; cursor: pointer; font-size: 10px; letter-spacing: .1em; list-style: none; }
+.panel-disclosure > summary::-webkit-details-marker { display: none; }
+.panel-disclosure > summary::after { content: "+"; color: #76634c; font-size: 15px; font-weight: 300; line-height: 1; }
+.panel-disclosure[open] > summary { border-bottom: 1px solid #302920; color: #d2b786; }
+.panel-disclosure[open] > summary::after { content: "−"; }
+.panel-disclosure > summary b { margin-left: auto; color: #655c50; font-size: 8px; font-weight: 400; letter-spacing: .04em; }
+.panel-disclosure__body { padding: 12px; }
+.panel-disclosure--learning { border-color: rgba(67,119,87,.42); }
+.panel-disclosure--learning > summary { color: #88ae91; }
+.panel-disclosure--learning .learning-control { margin: 0; padding: 0; border: 0; background: transparent; }
+.panel-disclosure--tools { margin-top: 14px; }
 .sound-control { margin: 13px 0 19px; padding: 11px 12px; border: 1px solid #342d25; border-radius: 4px; color: #756a5a; background: rgba(255,255,255,.015); transition: border-color 180ms ease, background 180ms ease; }
 .sound-control--active { border-color: #4d3e2e; background: rgba(185,132,61,.035); }
 .sound-control__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 10px; letter-spacing: .08em; }

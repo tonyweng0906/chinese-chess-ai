@@ -18,8 +18,8 @@ import { createTrainingArchiveDataset, parseTrainingArchiveDataset, recordTraini
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", undo: "悔棋", historyActions: "局面操作", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "学习中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "同一局面至少 3 个样本后才小幅影响 AI；吃子、将军和应将不受干扰。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", undo: "Undo", historyActions: "Position actions", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Learning", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "A position needs at least 3 samples before it gently affects AI; captures, checks, and check responses stay protected.", clearLearningConfirm: "Clear all AI learning data?" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", undo: "悔棋", historyActions: "局面操作", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", appearance: "外观与音效", tools: "工具与记录", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "学习中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "同一局面至少 3 个样本后才小幅影响 AI；吃子、将军和应将不受干扰。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", undo: "Undo", historyActions: "Position actions", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", appearance: "Appearance & sound", tools: "Tools & records", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Learning", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "A position needs at least 3 samples before it gently affects AI; captures, checks, and check responses stay protected.", clearLearningConfirm: "Clear all AI learning data?" },
 } as const;
 
 const trainingCopy = {
@@ -819,7 +819,9 @@ function App() {
               <button className={playerColor === "red" ? "is-active" : ""} type="button" onClick={() => startAiGame("red")}>{t.redSide}</button>
               <button className={playerColor === "black" ? "is-active" : ""} type="button" onClick={() => startAiGame("black")}>{t.blackSide}</button>
             </div>
-            <div className={`learning-control ${learningEnabled ? "learning-control--active" : ""}`}>
+            <details className="panel-disclosure panel-disclosure--learning">
+              <summary><span>{t.learning}</span><b>{learningEnabled ? t.learningOn : t.learningOff}</b></summary>
+              <div className={`learning-control ${learningEnabled ? "learning-control--active" : ""}`}>
               <div className="learning-control__header">
                 <span><i aria-hidden="true">◈</i>{t.learning}</span>
                 <button className={learningEnabled ? "is-active" : ""} type="button" aria-pressed={learningEnabled} onClick={() => setLearningEnabled((current) => !current)}>{learningEnabled ? t.learningOn : t.learningOff}</button>
@@ -858,7 +860,8 @@ function App() {
                 {selfPlayError && <p className="self-play-training__error">{selfPlayError}</p>}
               </section>
               <button className="learning-clear" type="button" onClick={clearLearningData} disabled={learningStats.games === 0}>{t.clearLearning}</button>
-            </div>
+              </div>
+            </details>
           </>}
           {mode === "setup" && <div className="setup-panel">
             <p className="editor-help">{t.editorHelp}</p>
@@ -883,6 +886,9 @@ function App() {
             {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
           </div>}
           {mode !== "setup" && <>
+          <details className="panel-disclosure">
+            <summary><span>{t.appearance}</span><b>{language === "zh" ? "展开" : "Open"}</b></summary>
+            <div className="panel-disclosure__body">
           <div className="settings-row">
             <span>{t.language}</span>
             <button className={language === "zh" ? "is-active" : ""} type="button" onClick={() => setLanguage("zh")}>中文</button>
@@ -916,6 +922,8 @@ function App() {
           {language === "en" && pieceStyle === "hanzi" && <div className="piece-legend">
             {(Object.keys(setupNames) as PieceType[]).map((type) => <span key={type}><b>{englishBoardMarks[type]}</b> {setupNames[type]}</span>)}
           </div>}
+            </div>
+          </details>
           <p className="panel-kicker">{t.current}</p>
           <h2>{winner ? (winner === "red" ? t.redWin : t.blackWin) : draw ? t.drawTitle : `${turnName} ${t.turn}`}</h2>
           <div className="turn-card">
@@ -938,6 +946,9 @@ function App() {
             <button className="restore-game-button" type="button" onClick={restorePreviousGame} disabled={!hasPreviousGame}>{t.restorePrevious}</button>
             <button className="undo-button" type="button" onClick={undoMove} disabled={undoSnapshotIndex < 0}>{t.undo}</button>
           </div>
+          <details className="panel-disclosure panel-disclosure--tools">
+            <summary><span>{t.tools}</span><b>{language === "zh" ? "展开" : "Open"}</b></summary>
+            <div className="panel-disclosure__body">
           <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
           <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : "Make at least one move to start a review") : undefined}>
             <span>{language === "zh" ? "AI 复盘讲解" : "AI game review"}</span><i>→</i>
@@ -947,6 +958,8 @@ function App() {
             <p>{t.log}</p>
             {moveHistory.length === 0 ? <span>{t.noLog}</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
           </div>
+            </div>
+          </details>
           <p className="coming-soon">已支持基础走法与将军限制</p>
           </>}
         </aside>
