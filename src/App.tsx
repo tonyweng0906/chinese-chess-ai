@@ -103,6 +103,10 @@ const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
   red: { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" },
   black: { general: "将", advisor: "士", elephant: "象", horse: "马", rook: "车", cannon: "炮", soldier: "卒" },
 };
+const koreanSetupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
+  red: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "병" },
+  black: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "졸" },
+};
 
 const englishBoardMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
 
@@ -915,7 +919,7 @@ function App() {
               <div className="setup-piece-tray">
                 {(Object.keys(setupNames) as PieceType[]).map((type) => <div className="setup-piece-option" key={`${color}-${type}`}>
                   <button className={`setup-token setup-token--${color} ${pieceStyle === "symbols" ? "setup-token--symbols" : ""} ${setupColor === color && setupType === type ? "is-active" : ""}`} type="button" draggable onClick={() => { setSetupColor(color); setSetupType(type); }} onDragStart={(event) => event.dataTransfer.setData("application/x-chess-piece", JSON.stringify({ type, color }))} aria-label={`${color === "red" ? t.red : t.black} ${setupNames[type]}`}>
-                    {pieceStyle === "symbols" ? <PieceIcon type={type} /> : language === "en" ? englishBoardMarks[type] : setupGlyphs[color][type]}
+                    {pieceStyle === "symbols" ? <PieceIcon type={type} /> : language === "en" ? englishBoardMarks[type] : language === "ko" ? koreanSetupGlyphs[color][type] : setupGlyphs[color][type]}
                   </button>
                   <span>{setupNames[type]}</span>
                 </div>)}
@@ -941,7 +945,7 @@ function App() {
             <button className={pieceTheme === "flat" ? "is-active" : ""} type="button" onClick={() => setPieceTheme("flat")}>{t.flat}</button>
           </div>
           <div className="settings-row">
-            <span>{language === "zh" ? "棋子" : "Pieces"}</span>
+            <span>{language === "zh" ? "棋子" : language === "ko" ? "기물" : "Pieces"}</span>
             <button className={pieceStyle === "hanzi" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("hanzi")}>{t.chinese}</button>
             <button className={pieceStyle === "symbols" ? "is-active" : ""} type="button" onClick={() => setPieceStyle("symbols")}>{t.symbols}</button>
           </div>

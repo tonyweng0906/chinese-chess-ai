@@ -58,7 +58,13 @@ const copy = {
     eyebrow: "AI 복기실", title: "기보 리플레이 및 수별 해설", close: "대국으로 돌아가기", opening: "초기 국면", move: "제", moveUnit: "수", red: "홍", black: "흑",
     first: "처음", previous: "이전 수", play: "자동 재생", pause: "일시정지", next: "다음 수", last: "마지막", record: "기보 타임라인", analysis: "AI 수별 해설", thinking: "AI가 이 수를 다시 계산하는 중…",
     openingHint: "타임라인에서 수를 선택하면 당시 국면과 AI 제안을 볼 수 있습니다.", recommended: "AI 추천 수", alternative: "AI의 다른 선택", reply: "상대의 주요 대응", capture: "잡고", check: "장군", mate: "이 수로 대국이 끝납니다.",
-    quality: { best: "AI 추천", good: "추천에 근접", questionable: "개선 가능", mistake: "큰 실수" }, scoreGap: "추천 수와 차이", decisive: "결정적", confidenceLabel: "신뢰도", confidence: { low: "낮음", medium: "중간", high: "높음" },
+    quality: { best: "AI 추천", good: "추천에 근접", questionable: "개선 가능", mistake: "큰 실수" },
+    reasonText: {
+      mate: "이 수는 결정적인 우세를 만들거나 대국을 끝냅니다.", capture: "중요한 기물을 제때 잡아 현재 탐색의 추천 수가 되었습니다.", check: "장군으로 주도권을 잡아 현재 탐색의 추천 수가 되었습니다.",
+      equivalent: "AI의 첫 선택은 아니지만 평가 차이가 작아 충분히 좋은 선택입니다.", "missed-capture": "더 직접적인 포획 기회를 놓쳐 상대에게 중요한 기물을 남겼습니다.",
+      "missed-check": "상대에게 응수를 강요할 장군 기회를 놓쳐 주도권이 줄었습니다.", position: "상대의 최선 응수까지 계산하면 이 국면은 AI 추천보다 평가가 낮습니다.",
+    },
+    same: "현재 탐색 깊이에서 AI의 추천 수와 같습니다. 이 설명은 이론상 절대 최선이라는 뜻은 아닙니다.", scoreGap: "추천 수와 차이", decisive: "결정적", confidenceLabel: "신뢰도", confidence: { low: "낮음", medium: "중간", high: "높음" },
     actualRoute: "문제 수", recommendedRoute: "AI 제안", comparisonHint: "현재 리플레이 국면: 빨간 ×는 잘못된 도착점", badMove: "문제 수", localNote: "해설은 제한된 깊이의 로컬 검색으로 계산됩니다.",
   },
 } as const;
@@ -93,7 +99,7 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
     analysis.captured ? `${t.capture} ${pieceNames[language][analysis.captured]}` : null,
     analysis.gaveCheck ? t.check : null,
     analysis.isMate ? t.mate : null,
-  ].filter(Boolean).join(language === "zh" ? "，" : ", ");
+  ].filter(Boolean).join(language === "en" ? ", " : "，");
   return <div className={`review-analysis review-analysis--${analysis.quality}`}>
     <span>{t.analysis}</span>
     <div className="review-quality-row"><b>{t.quality[analysis.quality]}</b><small>{move.mover === "red" ? t.red : t.black}</small></div>
@@ -107,12 +113,12 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
     {recommendation && <div className="review-recommendation">
       <span>{analysis.scoreLoss <= 35 ? t.alternative : t.recommended}</span>
       <strong>{pieceNames[language][recommendation.pieceType]} {coordinate(recommendation.from)} → {coordinate(recommendation.to)}</strong>
-      {(recommendation.captures || recommendation.givesCheck) && <small>{[recommendation.captures ? `${t.capture} ${pieceNames[language][recommendation.captures]}` : null, recommendation.givesCheck ? t.check : null].filter(Boolean).join(language === "zh" ? "，" : ", ")}</small>}
+      {(recommendation.captures || recommendation.givesCheck) && <small>{[recommendation.captures ? `${t.capture} ${pieceNames[language][recommendation.captures]}` : null, recommendation.givesCheck ? t.check : null].filter(Boolean).join(language === "en" ? ", " : "，")}</small>}
     </div>}
     {analysis.reply && <div className="review-reply">
       <span>{t.reply}</span>
       <strong>{pieceNames[language][analysis.reply.pieceType]} {coordinate(analysis.reply.from)} → {coordinate(analysis.reply.to)}</strong>
-      {(analysis.reply.captures || analysis.reply.givesCheck) && <small>{[analysis.reply.captures ? `${t.capture} ${pieceNames[language][analysis.reply.captures]}` : null, analysis.reply.givesCheck ? t.check : null].filter(Boolean).join(language === "zh" ? "，" : ", ")}</small>}
+      {(analysis.reply.captures || analysis.reply.givesCheck) && <small>{[analysis.reply.captures ? `${t.capture} ${pieceNames[language][analysis.reply.captures]}` : null, analysis.reply.givesCheck ? t.check : null].filter(Boolean).join(language === "en" ? ", " : "，")}</small>}
     </div>}
   </div>;
 }

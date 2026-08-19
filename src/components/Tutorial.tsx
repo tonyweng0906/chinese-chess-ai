@@ -82,16 +82,31 @@ const tutorialCopyKo = {
   eyebrow: "초보자 안내", title: "첫 수부터 중국 장기 배우기", intro: "보드, 기물, 장군, 외통수와 끝내기를 다섯 개의 대화형 수업으로 배워 보세요.", backGame: "대국으로 돌아가기", progress: "학습 진행", completed: "완료", start: "학습 시작", continue: "계속하기", review: "다시 보기", startHere: "여기서 시작", unlocked: "잠금 해제", locked: "이전 수업을 완료하세요", done: "완료", overview: "수업 개요", finish: "수업 완료", nextChapter: "다음 장: ", finishCourse: "과정 완료", nextExercise: "다음 문제", exercise: "연습", testQuestion: "테스트", wrongMove: "정답이 아닙니다. 다시 선택하세요", testComplete: "테스트 완료",
   lessons: [["보드 익히기", "궁, 강과 양쪽 진영 알아보기"], ["기물 익히기", "일곱 종류 기물의 기본 이동 연습"], ["포획과 장군", "포획으로 상대 장군 만들기"], ["첫 승리", "세 가지 한 수 외통수 풀기"], ["끝내기 테스트", "방어, 포대와 외통수 문제 풀기"]],
   lessonLabels: ["첫 번째 수업", "두 번째 수업", "세 번째 수업", "네 번째 수업", "다섯 번째 수업"],
+  boardIntro: "중국 장기의 기물은 선이 만나는 교차점에 놓습니다. 먼저 아래 세 영역을 익히면 보드를 쉽게 읽을 수 있습니다.",
+  boardFacts: [["아홉 세로선과 열 가로선", "보드는 9개의 세로선과 10개의 가로선으로 이루어져 총 90개의 교차점이 있습니다."], ["강", "강이 홍과 흑의 진영을 나누며 병·졸과 상의 이동 방식에도 영향을 줍니다."], ["양쪽 궁", "양 끝의 격자 영역이 궁입니다. 장과 사는 각자의 궁 안에 있어야 합니다."]],
   boardTop: "흑 진영", river: "강", boardBottom: "홍 진영", piecesIntro: "원하는 기물을 선택해 이동, 포획과 규칙을 익혀 보세요.", tapTarget: "금색 도착점을 누르세요", practiced: "좋아요. 올바른 수입니다", nextPiece: "다음 기물", finishPieces: "기물 연습 완료",
-  displaySettings: "튜토리얼 기물 설정", pieceForm: "기물 형태", hanziStyle: "문자", symbolStyle: "기호", pieceThemeLabel: "기물 테마", choosePiece: "배울 기물을 선택하세요", choosePieceHint: "각 기물에는 여러 사례가 있습니다.", movementTab: "이동 예시", captureTab: "포획 예시", viewed: "연습 완료", freePractice: "자유 연습이 활성화되었습니다", movesMade: "둔 수", moveUnit: "수", restartExample: "예시 다시 놓기",
+  pieceNames: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "병" },
+  pieceTips: { general: "장은 한 칸씩 이동하며 궁을 벗어날 수 없습니다.", advisor: "사는 대각선으로 한 칸 이동하며 궁 안에 머뭅니다.", elephant: "상은 대각선 두 칸을 이동하고 강을 건널 수 없으며 중간이 막히면 움직일 수 없습니다.", horse: "마는 L자 모양으로 이동하며 첫 직선 칸이 막히면 이동할 수 없습니다.", rook: "차는 가로 또는 세로로 이동하며 기물을 뛰어넘을 수 없습니다.", cannon: "포는 이동할 때 차처럼 움직이고 포획할 때 정확히 하나의 포대를 뛰어넘습니다.", soldier: "병은 앞으로 이동하고 강을 건넌 뒤에는 좌우로도 이동하지만 뒤로 갈 수 없습니다." },
+  pieceGoals: { general: "강조된 궁 안에서 한 칸 이동", advisor: "궁의 대각선으로 한 칸 이동", elephant: "막힌 상의 눈을 피하기", horse: "막힌 마의 다리를 피하기", rook: "막힌 기물 앞에서 멈추기", cannon: "포대 너머의 흑 병을 포획하기", soldier: "강을 건넌 뒤 세 방향을 확인하기" },
+  pieceNotes: { general: "장은 궁의 아홉 지점 안에 있어야 합니다.", advisor: "사는 궁 안의 대각선으로만 이동합니다.", elephant: "회색 기물이 상의 눈을 막아 × 위치로 갈 수 없습니다.", horse: "마는 먼저 직선 한 칸을 이동합니다. 그 칸이 막히면 두 이동이 모두 막힙니다.", rook: "차는 기물을 뛰어넘을 수 없습니다.", cannon: "포와 목표 사이에 포대가 정확히 하나 있어야 포획할 수 있습니다.", soldier: "강을 건넌 병은 앞으로와 좌우로 한 칸 이동할 수 있습니다." },
+  ruleFocus: "핵심 규칙", legendMove: "합법적인 이동", legendBlocked: "막힘 / 금지", legendEnemy: "포획 가능한 상대", screen: "포대", captureTarget: "흑 병을 눌러 포대를 넘어 포획하세요", captureDone: "좋아요! 포가 포대를 넘어 병을 포획했습니다", cannonSteps: ["포와 목표를 같은 선에 놓기", "사이에 포대를 정확히 하나 두기", "상대 기물을 눌러 포대를 넘어 포획하기"],
+  moveExample: "예시 1 · 이동", captureExample: "예시 2 · 포획", tapMoveExample: "보드의 금색 도착점을 누르세요", tapCaptureExample: "빨간 표시가 있는 상대 기물을 누르세요", moveComplete: "이동 예시 완료", captureComplete: "포획 예시 완료", nextCapture: "포획 예시로 이동", exampleProgress: "기물 진행",
+  displaySettings: "튜토리얼 기물 설정", pieceForm: "기물 형태", hanziStyle: "문자", symbolStyle: "기호", pieceThemeLabel: "기물 테마", themeNames: { wood: "나무", jade: "옥", flat: "플랫" }, choosePiece: "배울 기물을 선택하세요", choosePieceHint: "각 기물에는 여러 사례가 있습니다.", movementTab: "이동 예시", captureTab: "포획 예시", viewed: "연습 완료", freePractice: "자유 연습이 활성화되었습니다", movesMade: "둔 수", moveUnit: "수", restartExample: "예시 다시 놓기",
+  moveExamples: { general: "장을 궁 안에서 한 칸 앞으로 이동하세요.", advisor: "사를 궁의 모서리에서 중앙으로 대각선 이동하세요.", elephant: "상을 자기 진영 안에서 대각선 두 칸 이동하세요.", horse: "마를 L자 모양으로 이동하세요.", rook: "차를 열린 세로선으로 여러 칸 이동하세요.", cannon: "포는 포획하지 않을 때 차처럼 직선으로 이동합니다.", soldier: "강을 건너기 전 병은 앞으로만 이동합니다." },
+  captureExamples: { general: "궁 안에서 장으로 인접한 흑 병을 포획하세요.", advisor: "사로 궁의 중앙에 있는 흑 병을 포획하세요.", elephant: "상의 눈이 비어 있으므로 대각선 두 칸으로 포획하세요.", horse: "마의 다리가 비어 있을 때 L자 이동으로 포획하세요.", rook: "차로 직선 끝의 흑 병을 포획하세요.", cannon: "포와 흑 병 사이에 포대가 하나 있어 포획할 수 있습니다.", soldier: "강을 건넌 병으로 오른쪽의 흑 병을 포획하세요." },
+  captureIntro: "홍 차를 선택한 뒤 유일한 금색 도착점을 누르세요.", captureGoal: "목표: 병을 포획하고 장군하기", captureSuccess: "완료! 병이 잡히고 흑 장이 장군 상태입니다.", selectRook: "먼저 홍 차를 선택하세요", mateIntro: "한 수 외통수 국면입니다. 홍 병과 마가 탈출로를 막고 있습니다.", mateGoal: "목표: 한 수로 외통수 만들기", mateSuccess: "외통수! 흑에게 합법적인 대응이 없습니다.",
 } as const;
 type TutorialText = (typeof tutorialCopy)[TutorialContentLanguage];
 function contentLanguage(language: Language): TutorialContentLanguage {
   return language === "zh" ? "zh" : "en";
 }
+function isCaptureScenario(id: string) {
+  return id.includes("capture") || id.includes("screen") || id.includes("no-screen") || id.includes("two-screens");
+}
 const pieceOrder: PieceType[] = ["general", "advisor", "elephant", "horse", "rook", "cannon", "soldier"];
 const tutorialGlyphs: Record<PieceType, string> = { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" };
 const tutorialEnglishMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
+const tutorialKoreanMarks: Record<PieceType, string> = { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "병" };
 interface PieceScenario { id: string; valid: boolean; freeMove?: boolean; pieces: ChessPiece[]; actorId: string; target: Position; }
 interface ScenarioText { tab: string; description: string; focus: string; instruction: string; success: string; }
 const blackGeneral = (): ChessPiece => ({ id: "lesson-black-general", type: "general", color: "black", row: 0, col: 3 });
@@ -210,14 +225,22 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
   const [freeMoveCount, setFreeMoveCount] = useState(0);
   const pieceIndex = pieceOrder.indexOf(type);
   const scenario = pieceScenarios[type][exampleIndex];
-  const scenarioText = pieceScenarioCopy[scenario.id][contentLanguage(language)];
+  const scenarioText = language === "ko"
+    ? {
+      tab: isCaptureScenario(scenario.id) ? t.captureTab : t.movementTab,
+      description: isCaptureScenario(scenario.id) ? t.captureExamples[type] : t.moveExamples[type],
+      focus: t.pieceNotes[type],
+      instruction: scenario.valid ? t.pieceGoals[type] : t.pieceNotes[type],
+      success: `${t.pieceNames[type]} 연습 완료`,
+    }
+    : pieceScenarioCopy[scenario.id][contentLanguage(language)];
   const selectedPiece = pieces.find((piece) => piece.id === selectedId) ?? null;
   const availableMoves = useMemo(() => selectedPiece ? getLegalMoves(selectedPiece, pieces).filter((move) => !pieces.some((piece) => piece.row === move.row && piece.col === move.col && piece.type === "general")) : [], [selectedPiece, pieces]);
   const targetIsLegal = availableMoves.some((move) => move.row === scenario.target.row && move.col === scenario.target.col);
   const guidedMoves = selectedPiece && scenario.freeMove && practiced ? availableMoves : selectedPiece && !practiced && scenario.valid && targetIsLegal ? [scenario.target] : [];
   const guidedInvalidMoves = selectedPiece && !practiced && !scenario.valid && !targetIsLegal ? [scenario.target] : [];
   const detailHintIds = useMemo(() => new Set(pieces.filter((piece) => piece.id.startsWith("lesson-eye") || piece.id.startsWith("lesson-leg") || piece.id.startsWith("lesson-rook-block") || piece.id.startsWith("lesson-screen")).map((piece) => piece.id)), [pieces]);
-  const lessonGlyph = language === "zh" ? tutorialGlyphs[type] : tutorialEnglishMarks[type];
+  const lessonGlyph = language === "zh" ? tutorialGlyphs[type] : language === "ko" ? tutorialKoreanMarks[type] : tutorialEnglishMarks[type];
   const totalExamples = pieceOrder.reduce((total, pieceType) => total + pieceScenarios[pieceType].length, 0);
   function loadScenario(nextType: PieceType, nextExampleIndex: number) { const nextScenario = pieceScenarios[nextType][nextExampleIndex]; if (!nextScenario) return; setType(nextType); setExampleIndex(nextExampleIndex); setPieces(nextScenario.pieces); setSelectedId(nextScenario.actorId); setPracticed(false); setLastMove(null); setFreeMoveCount(0); }
   function markPracticed() { setPracticed(true); setCompletedExamples((current) => new Set(current).add(scenario.id)); }
@@ -239,7 +262,7 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
       <div className="piece-library-heading"><div><strong>{t.choosePiece}</strong><span>{t.choosePieceHint}</span></div><small>{completedExamples.size} / {totalExamples} {t.viewed}</small></div>
       <div className="piece-library-list">{pieceOrder.map((pieceType) => {
         const complete = pieceScenarios[pieceType].every((item) => completedExamples.has(item.id));
-        const glyph = language === "zh" ? tutorialGlyphs[pieceType] : tutorialEnglishMarks[pieceType];
+        const glyph = language === "zh" ? tutorialGlyphs[pieceType] : language === "ko" ? tutorialKoreanMarks[pieceType] : tutorialEnglishMarks[pieceType];
         return <button className={`${type === pieceType ? "is-active" : ""} ${complete ? "is-complete" : ""}`} type="button" key={pieceType} onClick={() => loadScenario(pieceType, 0)} aria-pressed={type === pieceType}>
           <span className={`piece-library-token piece-library-token--${pieceTheme} ${pieceStyle === "symbols" ? "is-symbol" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type={pieceType} /> : glyph}</span>
           <b>{t.pieceNames[pieceType]}</b>{complete && <i>✓</i>}
@@ -252,8 +275,8 @@ function PieceLesson({ t, language, pieceStyle, pieceTheme, onComplete, onNext }
         <span className="piece-lesson-count">{String(pieceIndex + 1).padStart(2, "0")} / 07</span>
         <div className={`piece-lesson-icon piece-lesson-icon--${pieceTheme} ${pieceStyle === "symbols" ? "is-symbol" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type={type} /> : <span>{lessonGlyph}</span>}</div>
         <h3>{t.pieceNames[type]}</h3>
-        <div className="piece-example-tabs" aria-label={t.exampleProgress}>{pieceScenarios[type].map((item, index) => <button className={exampleIndex === index ? "is-active" : ""} type="button" key={item.id} onClick={() => loadScenario(type, index)}>{completedExamples.has(item.id) && <span>✓</span>}{pieceScenarioCopy[item.id][contentLanguage(language)].tab}</button>)}</div>
-        <span className={`piece-practice-goal ${scenario.valid ? "" : "is-rule-test"}`}>{scenario.valid ? (language === "zh" ? "可行走法" : "LEGAL MOVE") : (language === "zh" ? "规则辨析" : "RULE CHECK")}</span><p>{scenarioText.description}</p>
+        <div className="piece-example-tabs" aria-label={t.exampleProgress}>{pieceScenarios[type].map((item, index) => <button className={exampleIndex === index ? "is-active" : ""} type="button" key={item.id} onClick={() => loadScenario(type, index)}>{completedExamples.has(item.id) && <span>✓</span>}{language === "ko" ? (isCaptureScenario(item.id) ? t.captureTab : t.movementTab) : pieceScenarioCopy[item.id][contentLanguage(language)].tab}</button>)}</div>
+        <span className={`piece-practice-goal ${scenario.valid ? "" : "is-rule-test"}`}>{scenario.valid ? (language === "zh" ? "可行走法" : language === "ko" ? "합법적인 수" : "LEGAL MOVE") : (language === "zh" ? "规则辨析" : language === "ko" ? "규칙 확인" : "RULE CHECK")}</span><p>{scenarioText.description}</p>
         <div className="piece-rule-focus"><b>{t.ruleFocus}</b><p>{scenarioText.focus}</p></div>
         {scenario.id === "cannon-screen" && <ol className="cannon-rule-steps">{t.cannonSteps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol>}
         <strong className={practiced ? "is-done" : scenario.valid ? "" : "is-warning"}>{practiced && scenario.freeMove ? <><span>✓ {t.freePractice}</span><small>{t.movesMade}: {freeMoveCount} {t.moveUnit}</small></> : practiced ? `✓ ${scenarioText.success}` : scenarioText.instruction}</strong>
@@ -300,12 +323,24 @@ function puzzleSucceeded(validation: PuzzleValidation, pieces: ChessPiece[]) {
   return true;
 }
 
+const koreanPuzzleCopy: Record<string, PuzzleText> = {
+  "check-rook": { title: "차로 장군", goal: "흑 병을 포획하고 장군하기", instruction: "홍 차를 선택해 세로선의 흑 병을 포획하세요.", success: "완료! 홍 차가 흑 장을 장군합니다." },
+  "check-cannon": { title: "포대 장군", goal: "포대 하나로 장군하기", instruction: "홍 포를 흑 장의 세로선으로 이동해 말이 포대가 되게 하세요.", success: "완료! 말 하나를 사이에 둔 포 장군입니다." },
+  "escape-check": { title: "장군 풀기", goal: "흑 차의 장군 풀기", instruction: "홍 차로 공격선을 막아 홍 장을 구하세요.", success: "완료! 홍 차가 공격선을 막았습니다." },
+  "mate-center": { title: "중앙 차 외통수", goal: "한 수 외통수", instruction: "홍 병이 양쪽을 막고 마가 공격점을 지킵니다. 홍 차의 승리 수를 찾으세요.", success: "외통수! 흑 장의 탈출로가 모두 막혔습니다." },
+  "mate-edge": { title: "궁 가장자리 외통수", goal: "궁 가장자리에서 외통수", instruction: "궁 가장자리의 탈출로를 읽고 홍 차의 수를 찾으세요.", success: "외통수! 궁 가장자리가 탈출로를 줄였습니다." },
+  "mate-cannon": { title: "포대 궁 잠금", goal: "상대 기물로 외통수", instruction: "흑 병을 포대로 활용해 홍 포를 올바른 선으로 이동하세요.", success: "외통수! 흑 병이 포대이자 탈출로를 막습니다." },
+  "test-defense": { title: "문제 1: 먼저 장군 풀기", goal: "유일한 막기 위치 찾기", instruction: "홍 장이 장군을 받고 있습니다. 공격을 막을 수를 찾으세요.", success: "정답입니다! 장군의 안전이 먼저입니다." },
+  "test-cannon": { title: "문제 2: 포대 찾기", goal: "먼 흑 차 포획하기", instruction: "보드의 포대를 이용해 흑 차를 포획하세요.", success: "정답입니다! 홍 마가 유일한 포대입니다." },
+  "test-mate": { title: "문제 3: 외통수 찾기", goal: "한 수로 끝내기", instruction: "궁의 탈출로와 보호 관계를 읽고 외통수를 찾으세요.", success: "정답입니다! 스스로 외통수를 찾았습니다." },
+};
+
 function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, onNext }: { kind: "capture" | "mate"; t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void; onNext: () => void }) {
   const puzzles = chapterPuzzles[kind];
   const lessonIndex = kind === "capture" ? 2 : 3;
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const puzzle = puzzles[puzzleIndex];
-  const copy = puzzle.copy[contentLanguage(language)];
+  const copy = language === "ko" ? koreanPuzzleCopy[puzzle.id] : puzzle.copy[contentLanguage(language)];
   const [pieces, setPieces] = useState<ChessPiece[]>(puzzle.pieces);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -322,7 +357,7 @@ function PuzzleLesson({ kind, t, language, pieceStyle, pieceTheme, onComplete, o
   function nextPuzzle() { const nextIndex = puzzleIndex + 1; const next = puzzles[nextIndex]; setPuzzleIndex(nextIndex); setPieces(next.pieces); setSelectedId(null); setLastMove(null); setSolved(false); }
   const lastPuzzle = puzzleIndex === puzzles.length - 1;
   return <>
-    <LessonHeading number={lessonIndex + 1} title={t.lessons[lessonIndex][0]} intro={kind === "capture" ? (language === "zh" ? "依次练习车将军、炮架将军，以及被将军后的防守。" : "Practice rook check, cannon-screen check, and defending against check.") : (language === "zh" ? "完成中路、边线和炮架三种一步将死。" : "Solve central, edge, and cannon-screen mates in one.")} label={t.lessonLabels[lessonIndex]} />
+    <LessonHeading number={lessonIndex + 1} title={t.lessons[lessonIndex][0]} intro={kind === "capture" ? (language === "zh" ? "依次练习车将军、炮架将军，以及被将军后的防守。" : language === "ko" ? "차 장군, 포대 장군과 장군 방어를 차례로 연습하세요." : "Practice rook check, cannon-screen check, and defending against check.") : (language === "zh" ? "完成中路、边线和炮架三种一步将死。" : language === "ko" ? "중앙, 가장자리와 포대 외통수를 연습하세요." : "Solve central, edge, and cannon-screen mates in one.")} label={t.lessonLabels[lessonIndex]} />
     <div className="puzzle-stepper">{puzzles.map((item, index) => <span className={index < puzzleIndex ? "is-done" : index === puzzleIndex ? "is-active" : ""} key={item.id}>{index < puzzleIndex ? "✓" : index + 1}</span>)}</div>
     <div className="puzzle-lesson-layout">
       <div className="tutorial-puzzle-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={guidedMoves} onPieceClick={selectPiece} onMove={move} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={null} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
@@ -342,7 +377,7 @@ const endgameTests: GuidedPuzzle[] = [
 function EndgameTestLesson({ t, language, pieceStyle, pieceTheme, onComplete }: { t: TutorialText; language: Language; pieceStyle: PieceStyle; pieceTheme: PieceTheme; onComplete: () => void }) {
   const [testIndex, setTestIndex] = useState(0);
   const test = endgameTests[testIndex];
-  const copy = test.copy[contentLanguage(language)];
+  const copy = language === "ko" ? koreanPuzzleCopy[test.id] : test.copy[contentLanguage(language)];
   const [pieces, setPieces] = useState<ChessPiece[]>(test.pieces);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -363,11 +398,11 @@ function EndgameTestLesson({ t, language, pieceStyle, pieceTheme, onComplete }: 
   function nextTest() { const nextIndex = testIndex + 1; const next = endgameTests[nextIndex]; setTestIndex(nextIndex); setPieces(next.pieces); setSelectedId(null); setLastMove(null); setSolved(false); setWrong(false); setInvalidPieceId(null); }
   const finished = solved && testIndex === endgameTests.length - 1;
   return <>
-    <LessonHeading number={5} title={t.lessons[4][0]} intro={language === "zh" ? "三道题不再指定棋子：独立观察局面并找出正确走法。" : "Three puzzles remove piece hints so you can solve each position independently."} label={t.lessonLabels[4]} />
+    <LessonHeading number={5} title={t.lessons[4][0]} intro={language === "zh" ? "三道题不再指定棋子：独立观察局面并找出正确走法。" : language === "ko" ? "세 문제에서 기물 힌트 없이 국면을 보고 정답을 찾으세요." : "Three puzzles remove piece hints so you can solve each position independently."} label={t.lessonLabels[4]} />
     <div className="test-progressbar"><span>{t.testQuestion} {testIndex + 1} / {endgameTests.length}</span></div>
     <div className="puzzle-lesson-layout">
       <div className="tutorial-puzzle-board"><ChessBoard pieces={pieces} selectedId={selectedId} legalMoves={legalMoves} onPieceClick={selectPiece} onMove={move} language={language} pieceStyle={pieceStyle} lastMove={lastMove} pieceTheme={pieceTheme} flipped={false} invalidPieceId={invalidPieceId} hintPieceIds={new Set()} onInvalidAction={() => undefined} onBoardClick={() => undefined} onBoardDrop={() => undefined} setupMode={false} /></div>
-      <div className="puzzle-instructions test-instructions"><span>{copy.goal}</span><h3>{finished ? t.testComplete : solved ? copy.success : copy.title}</h3><p>{finished ? (language === "zh" ? "你已经完成全部三道残局题，可以返回课程总览。" : "You completed all three endgame puzzles and can return to the course overview.") : copy.instruction}</p>{wrong && <strong className="test-wrong">{t.wrongMove}</strong>}{solved && !finished && <button className="puzzle-next-button" type="button" onClick={nextTest}>{t.nextExercise} →</button>}{finished && <LessonNavigation t={t} onComplete={onComplete} final />}</div>
+      <div className="puzzle-instructions test-instructions"><span>{copy.goal}</span><h3>{finished ? t.testComplete : solved ? copy.success : copy.title}</h3><p>{finished ? (language === "zh" ? "你已经完成全部三道残局题，可以返回课程总览。" : language === "ko" ? "세 가지 끝내기 문제를 모두 완료했습니다." : "You completed all three endgame puzzles and can return to the course overview.") : copy.instruction}</p>{wrong && <strong className="test-wrong">{t.wrongMove}</strong>}{solved && !finished && <button className="puzzle-next-button" type="button" onClick={nextTest}>{t.nextExercise} →</button>}{finished && <LessonNavigation t={t} onComplete={onComplete} final />}</div>
     </div>
   </>;
 }
@@ -397,7 +432,7 @@ export function Tutorial({ language, pieceStyle, pieceTheme, onPieceStyleChange,
   return <section className="tutorial-shell" aria-label={t.eyebrow}>
     <div className="tutorial-topbar"><span>{t.eyebrow}</span><button type="button" onClick={onClose}>← {t.backGame}</button></div>
     <TutorialDisplayControls t={t} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={onPieceStyleChange} onPieceThemeChange={onPieceThemeChange} />
-    <div className="tutorial-intro"><div><p>{t.eyebrow}</p><h2>{t.title}</h2><span>{t.intro}</span><button type="button" onClick={() => setActiveLesson(firstIncomplete)}>{completedLessons.length === 5 ? t.review : completedLessons.length ? t.continue : t.start} <b>→</b></button></div><div className="tutorial-emblem" aria-hidden="true"><span>帥</span><i /><span>將</span></div></div>
+    <div className="tutorial-intro"><div><p>{t.eyebrow}</p><h2>{t.title}</h2><span>{t.intro}</span><button type="button" onClick={() => setActiveLesson(firstIncomplete)}>{completedLessons.length === 5 ? t.review : completedLessons.length ? t.continue : t.start} <b>→</b></button></div><div className="tutorial-emblem" aria-hidden="true"><span>{language === "zh" ? "帥" : language === "ko" ? "장" : "K"}</span><i /><span>{language === "zh" ? "將" : language === "ko" ? "장" : "K"}</span></div></div>
     <div className="tutorial-progress"><div><span>{t.progress}</span><strong>{completedLessons.length} / 5 {t.completed}</strong></div><div className="tutorial-progress-track"><i style={{ width: `${completedLessons.length * 20}%` }} /></div></div>
     <div className="tutorial-path">{t.lessons.map(([title, description], index) => {
       const complete = completedLessons.includes(index); const unlocked = index === 0 || completedLessons.includes(index - 1);
