@@ -1,6 +1,6 @@
 import "./App.css";
 import { ChessBoard } from "./components/ChessBoard";
-import { useEffect, useMemo, useState, type DragEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent } from "react";
 import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
 import type { AiSearchResult } from "./game/ai";
@@ -9,6 +9,7 @@ import { Tutorial } from "./components/Tutorial";
 import { GameReview } from "./components/GameReview";
 import { playGameSound, type GameSound } from "./audio/gameSounds";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, NO_CAPTURE_DRAW_LIMIT, type RuleMoveRecord } from "./game/adjudication";
+import { getUndoSnapshotIndex } from "./game/undo";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copy = {
@@ -67,6 +68,8 @@ function App() {
   const [pieceStyle, setPieceStyle] = useState<PieceStyle>("hanzi");
   const [mode, setMode] = useState<"local" | "ai" | "setup">("local");
   const [aiThinking, setAiThinking] = useState(false);
+  const aiWorkerRef = useRef<Worker | null>(null);
+  const aiTimerRef = useRef<number | null>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [playerColor, setPlayerColor] = useState<PieceColor>("red");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("wood");
@@ -108,6 +111,7 @@ function App() {
   const currentPositionOccurrences = currentPositionKey ? positionHistory.filter((position) => position === currentPositionKey).length : 0;
   const ruleWarning = noCapturePlyCount >= 80 ? rulesText.noCaptureWarning : currentPositionOccurrences >= 2 ? rulesText.repeatWarning : null;
   const endReasonText = endReason ? rulesText.reasons[endReason] : null;
+  const undoSnapshotIndex = getUndoSnapshotIndex(history, mode, playerColor);
 
   const setupNames: Record<PieceType, string> = language === "zh"
     ? { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马/馬", rook: "车/車", cannon: "炮", soldier: "卒/兵" }
@@ -331,31 +335,45 @@ function App() {
     setAiThinking(true);
     let worker: Worker | null = null;
     const timer = window.setTimeout(() => {
+      aiTimerRef.current = null;
       worker = new Worker(new URL("./game/ai.worker.ts", import.meta.url), { type: "module" });
+      aiWorkerRef.current = worker;
       worker.onmessage = (event: MessageEvent<AiSearchResult>) => {
+        if (aiWorkerRef.current !== worker) return;
+        aiWorkerRef.current = null;
+        worker?.terminate();
         if (event.data.choice) applyMove(event.data.choice.piece, event.data.choice.move);
         setAiThinking(false);
-        worker?.terminate();
       };
       worker.onerror = () => {
+        if (aiWorkerRef.current !== worker) return;
+        aiWorkerRef.current = null;
+        worker?.terminate();
         const fallback = getAllLegalMoves(aiColor, pieces)[0];
         if (fallback) applyMove(fallback.piece, fallback.move);
         setAiThinking(false);
-        worker?.terminate();
       };
       worker.postMessage({ pieces, color: aiColor, maxDepth: depth, timeLimit: aiTimeLimit });
     }, 350);
+    aiTimerRef.current = timer;
     return () => {
       window.clearTimeout(timer);
       worker?.terminate();
+      if (aiTimerRef.current === timer) aiTimerRef.current = null;
+      if (aiWorkerRef.current === worker) aiWorkerRef.current = null;
     };
   }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit]);
 
   function undoMove() {
-    const previous = history.at(-1);
+    const previous = history[undoSnapshotIndex];
     if (!previous) return;
+    if (aiTimerRef.current !== null) window.clearTimeout(aiTimerRef.current);
+    aiTimerRef.current = null;
+    aiWorkerRef.current?.terminate();
+    aiWorkerRef.current = null;
+    setAiThinking(false);
     setPieces(previous.pieces);
-    setHistory((current) => current.slice(0, -1));
+    setHistory((current) => current.slice(0, undoSnapshotIndex));
     setMoveHistory(previous.moveHistory);
     setPositionHistory(previous.positionHistory);
     setRuleMoves(previous.ruleMoves);
@@ -612,7 +630,7 @@ function App() {
             <div><dt>{rulesText.noCapture}</dt><dd>{noCapturePlyCount} / {NO_CAPTURE_DRAW_LIMIT}</dd></div>
           </dl>
           <button className="reset-button" type="button" onClick={resetGame}>{t.reset}</button>
-          <button className="undo-button" type="button" onClick={undoMove} disabled={history.length === 0}>{t.undo}</button>
+          <button className="undo-button" type="button" onClick={undoMove} disabled={undoSnapshotIndex < 0}>{t.undo}</button>
           <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
           <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : "Make at least one move to start a review") : undefined}>
             <span>{language === "zh" ? "AI 复盘讲解" : "AI game review"}</span><i>→</i>
