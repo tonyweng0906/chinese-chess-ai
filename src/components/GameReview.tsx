@@ -31,7 +31,7 @@ const copy = {
       "missed-check": "这一步错过了可迫使对手应将的机会，主动权有所下降。", position: "继续计算对手的最佳回应后，这一步得到的局面评估低于 AI 首选。",
     },
     scoreGap: "与首选差距", decisive: "决定性", confidenceLabel: "可信度", confidence: { low: "较低", medium: "中等", high: "较高" },
-    actualRoute: "问题着法", recommendedRoute: "AI 建议", comparisonHint: "落子前局面：红色 × 为错误落点",
+    actualRoute: "问题着法", recommendedRoute: "AI 建议", comparisonHint: "当前回放局面：红色 × 为错误落点",
     badMove: "问题着法",
     localNote: "分析由本地有限深度搜索完成，不上传棋局；“AI 首选”不等同于理论最优解。",
   },
@@ -46,7 +46,7 @@ const copy = {
       "missed-check": "This misses a forcing check and gives up some initiative.", position: "After calculating the opponent's best reply, this position evaluates below the AI's top line.",
     },
     scoreGap: "Gap from top", decisive: "decisive", confidenceLabel: "Confidence", confidence: { low: "low", medium: "medium", high: "high" },
-    actualRoute: "Problem move", recommendedRoute: "AI suggestion", comparisonHint: "Position before the move: the red × marks the wrong destination",
+    actualRoute: "Problem move", recommendedRoute: "AI suggestion", comparisonHint: "Current replay position: the red × marks the wrong destination",
     badMove: "Problem move",
     localNote: "Analysis uses a limited-depth local search; “AI top choice” does not mean a proven theoretical best move.",
   },
@@ -169,7 +169,9 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
 
   const lastMove = activeMove ? { from: activeMove.from, to: activeMove.to } : null;
   const reviewComparison = getReviewBoardComparison(analysis, activeMove);
-  const displayedPieces = reviewComparison ? piecesBefore : boardPieces;
+  // Keep the board on the replayed position while analysis arrives. The comparison
+  // arrows are an overlay; switching back to piecesBefore here made bad moves jump.
+  const displayedPieces = boardPieces;
   const progress = moves.length === 0 ? 0 : (step / moves.length) * 100;
   const timelineStyle = useMemo(() => ({ "--review-progress": `${progress}%` } as React.CSSProperties), [progress]);
 

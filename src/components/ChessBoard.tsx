@@ -160,7 +160,10 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
         </svg>
       )}
       {pieces.map((piece) => {
-        const isActualPiece = reviewComparison?.actual.from.row === piece.row && reviewComparison.actual.from.col === piece.col;
+        const isActualPiece = Boolean(reviewComparison && (
+          (reviewComparison.actual.from.row === piece.row && reviewComparison.actual.from.col === piece.col)
+          || (reviewComparison.actual.to.row === piece.row && reviewComparison.actual.to.col === piece.col)
+        ));
         const isRecommendedPiece = reviewComparison?.recommended.from.row === piece.row && reviewComparison.recommended.from.col === piece.col;
         return (
           <button
