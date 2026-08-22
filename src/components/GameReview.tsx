@@ -85,6 +85,10 @@ function moveLabel(move: RecordedMove, language: Language) {
   return `${side} ${pieceNames[language][move.pieceType]} ${coordinate(move.from)} → ${coordinate(move.to)}`;
 }
 
+function analysisCacheKey(moveId: string, depth: number) {
+  return `${moveId}:${depth}`;
+}
+
 function scoreGap(scoreLoss: number, language: Language, decisive: string) {
   if (scoreLoss >= 50_000) return decisive;
   const pawns = scoreLoss / 100;
@@ -136,6 +140,7 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   const [analysis, setAnalysis] = useState<MoveAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const analysisCache = useRef(new Map<string, MoveAnalysis>());
+  const [analysisResults, setAnalysisResults] = useState<Record<string, MoveAnalysis>>({});
   const previousStepRef = useRef(step);
   const activeMove = step > 0 ? moves[step - 1] : null;
   const boardPieces = step > 0 ? moves[step - 1].boardAfter : startPieces;
@@ -166,7 +171,7 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   useEffect(() => {
     let cancelled = false;
     if (!activeMove) { setAnalysis(null); setLoading(false); return () => { cancelled = true; }; }
-    const cacheKey = `${activeMove.id}:${analysisDepth}`;
+    const cacheKey = analysisCacheKey(activeMove.id, analysisDepth);
     const cached = analysisCache.current.get(cacheKey);
     if (cached) { setAnalysis(cached); setLoading(false); return; }
     setAnalysis(null);
@@ -175,6 +180,7 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
     worker.onmessage = (event: MessageEvent<MoveAnalysis>) => {
       if (cancelled) return;
       analysisCache.current.set(cacheKey, event.data);
+      setAnalysisResults((current) => ({ ...current, [cacheKey]: event.data }));
       setAnalysis(event.data);
       setLoading(false);
       worker.terminate();
@@ -187,6 +193,44 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
     worker.postMessage({ piecesBefore, move: activeMove, depth: analysisDepth });
     return () => { cancelled = true; worker.terminate(); };
   }, [step, activeMove?.id, piecesBefore, analysisDepth]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let worker: Worker | null = null;
+    const pendingMoves = moves.filter((move) => !analysisCache.current.has(analysisCacheKey(move.id, analysisDepth)));
+    let cursor = 0;
+
+    const analyzeNext = () => {
+      if (cancelled || cursor >= pendingMoves.length) return;
+      const move = pendingMoves[cursor];
+      cursor += 1;
+      const moveIndex = moves.findIndex((candidate) => candidate.id === move.id);
+      const movePiecesBefore = moveIndex <= 0 ? startPieces : moves[moveIndex - 1].boardAfter;
+      const cacheKey = analysisCacheKey(move.id, analysisDepth);
+      worker = new Worker(new URL("../game/review.worker.ts", import.meta.url), { type: "module" });
+      worker.onmessage = (event: MessageEvent<MoveAnalysis>) => {
+        if (cancelled) return;
+        analysisCache.current.set(cacheKey, event.data);
+        setAnalysisResults((current) => ({ ...current, [cacheKey]: event.data }));
+        worker?.terminate();
+        worker = null;
+        analyzeNext();
+      };
+      worker.onerror = () => {
+        if (cancelled) return;
+        worker?.terminate();
+        worker = null;
+        analyzeNext();
+      };
+      worker.postMessage({ piecesBefore: movePiecesBefore, move, depth: analysisDepth });
+    };
+
+    analyzeNext();
+    return () => {
+      cancelled = true;
+      worker?.terminate();
+    };
+  }, [moves, startPieces, analysisDepth]);
 
   const lastMove = activeMove ? { from: activeMove.from, to: activeMove.to } : null;
   const reviewComparison = getReviewBoardComparison(analysis, activeMove);
@@ -227,10 +271,10 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
       <aside className="review-sidebar">
         <AnalysisCard analysis={analysis} move={activeMove} language={language} loading={loading} />
         <div className="review-move-list">
-          <div className="review-move-list__heading"><span>{t.record}</span><b>{moves.length}</b></div>
+          <div className="review-move-list__heading"><span>{t.record}</span><b>{moves.length === 0 ? 0 : `${Object.keys(analysisResults).filter((key) => key.endsWith(`:${analysisDepth}`)).length}/${moves.length}`}</b></div>
           <button className={step === 0 ? "is-active" : ""} type="button" onClick={() => chooseStep(0)}><i>00</i><span>{t.opening}</span></button>
           {moves.map((move, index) => {
-            const moveAnalysis = analysisCache.current.get(`${move.id}:${analysisDepth}`);
+            const moveAnalysis = analysisResults[analysisCacheKey(move.id, analysisDepth)];
             const isBadMove = moveAnalysis?.quality === "questionable" || moveAnalysis?.quality === "mistake";
             return <button className={`${step === index + 1 ? "is-active" : ""} ${isBadMove ? "has-review-warning" : ""} ${moveAnalysis?.quality === "mistake" ? "has-review-mistake" : moveAnalysis?.quality === "questionable" ? "has-review-questionable" : ""}`} type="button" key={move.id} onClick={() => chooseStep(index + 1)}>
               <i>{String(index + 1).padStart(2, "0")}</i>

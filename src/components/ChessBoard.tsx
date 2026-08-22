@@ -1,5 +1,5 @@
 import type { ChessPiece, Language, PieceStyle, PieceTheme, PieceType } from "../types";
-import { useId, type DragEvent, type MouseEvent } from "react";
+import { type DragEvent, type MouseEvent } from "react";
 import type { Position } from "../game/rules";
 import type { ReviewBoardComparison } from "../game/reviewComparison";
 import { PieceIcon } from "./PieceIcon";
@@ -49,7 +49,7 @@ function pieceName(piece: ChessPiece, language: Language) {
 const x = (col: number) => 40 + col * 90;
 const y = (row: number) => 40 + row * 90;
 
-function routePath(from: Position, to: Position, bend: number) {
+function routePath(from: Position, to: Position) {
   const x1 = x(from.col);
   const y1 = y(from.row);
   const x2 = x(to.col);
@@ -63,11 +63,7 @@ function routePath(from: Position, to: Position, bend: number) {
   const startY = y1 + directionY * startInset;
   const endX = x2 - directionX * endInset;
   const endY = y2 - directionY * endInset;
-  const normalX = -(y2 - y1) / distance;
-  const normalY = (x2 - x1) / distance;
-  const controlX = (startX + endX) / 2 + normalX * bend;
-  const controlY = (startY + endY) / 2 + normalY * bend;
-  return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`;
+  return `M ${startX} ${startY} L ${endX} ${endY}`;
 }
 
 function BoardLines() {
@@ -124,16 +120,8 @@ interface ChessBoardProps {
 }
 
 export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null, disabled = false }: ChessBoardProps) {
-  const markerKey = useId().replace(/:/g, "");
-  const actualMarkerId = `review-actual-${markerKey}`;
-  const recommendedMarkerId = `review-recommended-${markerKey}`;
-  const comparisonHasSharedOrigin = Boolean(
-    reviewComparison
-    && reviewComparison.actual.from.row === reviewComparison.recommended.from.row
-    && reviewComparison.actual.from.col === reviewComparison.recommended.from.col
-  );
-  const actualRoute = reviewComparison ? routePath(reviewComparison.actual.from, reviewComparison.actual.to, comparisonHasSharedOrigin ? -9 : 0) : "";
-  const recommendedRoute = reviewComparison ? routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, comparisonHasSharedOrigin ? 9 : 0) : "";
+  const actualRoute = reviewComparison ? routePath(reviewComparison.actual.from, reviewComparison.actual.to) : "";
+  const recommendedRoute = reviewComparison ? routePath(reviewComparison.recommended.from, reviewComparison.recommended.to) : "";
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={disabled ? undefined : onBoardClick} onDragOver={disabled ? undefined : (event) => event.preventDefault()} onDrop={disabled ? undefined : onBoardDrop}>
       <BoardLines />
@@ -146,18 +134,10 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
       )}
       {reviewComparison && (
         <svg className="review-comparison-overlay" viewBox="0 0 800 890" aria-hidden="true">
-          <defs>
-            <marker id={actualMarkerId} markerWidth="22" markerHeight="22" refX="19" refY="11" orient="auto" markerUnits="userSpaceOnUse">
-              <path className="review-arrowhead review-arrowhead--actual" d="M 2 2 L 20 11 L 2 20 z" />
-            </marker>
-            <marker id={recommendedMarkerId} markerWidth="22" markerHeight="22" refX="19" refY="11" orient="auto" markerUnits="userSpaceOnUse">
-              <path className="review-arrowhead review-arrowhead--recommended" d="M 2 2 L 20 11 L 2 20 z" />
-            </marker>
-          </defs>
           <path className="review-route-backdrop" d={actualRoute} />
           <path className="review-route-backdrop" d={recommendedRoute} />
-          <path className="review-route review-route--actual" d={actualRoute} markerEnd={`url(#${actualMarkerId})`} />
-          <path className="review-route review-route--recommended" d={recommendedRoute} markerEnd={`url(#${recommendedMarkerId})`} />
+          <path className="review-route review-route--actual" d={actualRoute} />
+          <path className="review-route review-route--recommended" d={recommendedRoute} />
           <circle className="review-route-point review-route-point--actual" cx={x(reviewComparison.actual.to.col)} cy={y(reviewComparison.actual.to.row)} r="14" />
           <path className="review-bad-move-cross" d={`M ${x(reviewComparison.actual.to.col) - 6} ${y(reviewComparison.actual.to.row) - 6} L ${x(reviewComparison.actual.to.col) + 6} ${y(reviewComparison.actual.to.row) + 6} M ${x(reviewComparison.actual.to.col) + 6} ${y(reviewComparison.actual.to.row) - 6} L ${x(reviewComparison.actual.to.col) - 6} ${y(reviewComparison.actual.to.row) + 6}`} />
           <circle className="review-route-point review-route-point--recommended" cx={x(reviewComparison.recommended.to.col)} cy={y(reviewComparison.recommended.to.row)} r="14" />

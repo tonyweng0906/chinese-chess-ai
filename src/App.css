@@ -415,7 +415,7 @@
 .review-legend-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
 .review-legend-dot--actual { color: #e36f5d; background: currentColor; }
 .review-legend-dot--recommended { color: #2ee68d; background: currentColor; }
-.review-comparison-overlay { position: absolute; inset: 0; z-index: 5; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.review-comparison-overlay { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .review-route-backdrop { fill: none; stroke: rgba(24,28,24,.82); stroke-width: 11; stroke-linecap: round; }
 .review-route { fill: none; stroke-width: 5.5; stroke-linecap: round; stroke-dasharray: 900; animation: review-route-draw 520ms cubic-bezier(.2,.72,.26,1) both; }
 .review-route--actual { stroke: #ff806b; filter: drop-shadow(0 1px 3px rgba(86,26,20,.72)); }
