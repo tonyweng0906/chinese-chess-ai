@@ -47,15 +47,15 @@
 
 .game-layout {
   display: grid;
-  grid-template-columns: minmax(360px, 720px) minmax(220px, 290px);
-  gap: clamp(38px, 6vw, 82px);
-  align-items: center;
+  grid-template-columns: minmax(205px, 260px) minmax(420px, 720px) minmax(205px, 260px);
+  gap: clamp(24px, 4vw, 58px);
+  align-items: start;
   justify-content: center;
-  max-width: 1120px;
+  max-width: 1510px;
   margin: 0 auto;
 }
 
-.board-area { min-width: 0; }
+.board-area { grid-column: 2; grid-row: 1; width: 100%; min-width: 0; align-self: start; justify-self: center; }
 .board-area--training .board-shell { pointer-events: none; }
 .board-area--training .piece { transition-duration: 120ms,120ms,100ms,100ms; }
 .board-area--training .piece:disabled { cursor: default; opacity: 1; }
@@ -190,9 +190,18 @@
 .player-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 
 .game-panel {
-  padding: 5px 0;
-  align-self: center;
+  display: contents;
 }
+.game-panel-column {
+  grid-row: 1;
+  min-width: 0;
+  padding: 5px 0;
+  align-self: start;
+}
+.game-panel-column--left { grid-column: 1; }
+.game-panel-column--right { grid-column: 3; }
+.game-panel-column--right .panel-kicker { margin-top: 24px; }
+.game-panel-column--right .game-action-group { margin-top: 18px; }
 
 .settings-row { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; color: #756a5a; font-size: 10px; }
 .settings-row > span { min-width: 42px; letter-spacing: 0.08em; }
@@ -676,6 +685,7 @@
 @media (max-width: 850px) {
   .app { padding-top: 28px; }
   .game-layout { grid-template-columns: minmax(0, 680px); }
+  .board-area { grid-column: 1; }
   .game-panel { display: none; }
   .hero { margin-bottom: 24px; }
   .language-switcher { top: -8px; right: 0; }
@@ -697,6 +707,19 @@
   .review-sidebar { display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,.8fr); gap: 14px; }
   .review-move-list { margin-top: 0; max-height: 320px; }
   .review-local-note { grid-column: 1 / -1; }
+}
+
+@media (max-width: 1120px) and (min-width: 851px) {
+  .game-layout { grid-template-columns: minmax(0, 720px); }
+  .board-area { grid-column: 1; }
+  .game-panel {
+    display: grid;
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+  .game-panel-column { grid-column: auto; grid-row: auto; padding: 0; }
 }
 
 @media (max-width: 440px) {

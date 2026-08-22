@@ -905,6 +905,7 @@ function App() {
         </div>
 
         <aside className="game-panel">
+          <div className="game-panel-column game-panel-column--left">
           <div className="settings-row">
             <span>{t.mode}</span>
             <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => setMode("local")}>{t.local}</button>
@@ -993,6 +994,8 @@ function App() {
             <button className="finish-setup-button" type="button" onClick={finishSetup} disabled={!setupReady}>{t.finishSetup}</button>
             {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
           </div>}
+          </div>
+          <div className="game-panel-column game-panel-column--right">
           {mode !== "setup" && <>
           <details className="panel-disclosure">
             <summary><span>{t.appearance}</span><b>{language === "zh" ? "展开" : language === "ko" ? "열기" : "Open"}</b></summary>
@@ -1067,6 +1070,7 @@ function App() {
           </details>
           <p className="coming-soon">已支持基础走法与将军限制</p>
           </>}
+          </div>
         </aside>
       </section>}
     </main>
