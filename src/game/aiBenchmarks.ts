@@ -4,6 +4,7 @@ import { applyAiMove, getRecentMovePenalty, searchBestMove, type AiSearchResult 
 import { getAllLegalMoves, isInCheck } from "./rules";
 import { getPositionKey } from "./adjudication";
 import { getLearningMoveKey } from "./learning";
+import { getOpeningBookMove, getOpeningBookSize } from "./openingBook";
 
 export interface AiBenchmarkResult {
   name: string;
@@ -94,6 +95,20 @@ function simulateOpening(plies: number) {
     developingMoves,
     detail: moves.map((move) => `${move.mover[0]}:${move.pieceType}:${move.from.row},${move.from.col}-${move.to.row},${move.to.col}`).join(" | "),
   };
+}
+
+function simulateOpeningBook(plies: number) {
+  let board = initialPieces.map((piece) => ({ ...piece }));
+  let turn: PieceColor = "red";
+  const moves: string[] = [];
+  for (let ply = 0; ply < plies; ply += 1) {
+    const choice = getOpeningBookMove(board, turn);
+    if (!choice) break;
+    moves.push(`${turn[0]}:${choice.piece.type}:${choice.piece.row},${choice.piece.col}-${choice.move.row},${choice.move.col}`);
+    board = applyAiMove(board, choice.piece.id, choice.move.row, choice.move.col);
+    turn = turn === "red" ? "black" : "red";
+  }
+  return moves;
 }
 
 export function runAiBenchmarks(): AiBenchmarkResult[] {
@@ -270,6 +285,13 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
     [horseOut],
   );
   const opening = simulateOpening(10);
+  const bookLine = simulateOpeningBook(12);
+  const openingBookCoverage = result(
+    "opening-book-covers-first-plies",
+    normalOpening,
+    getOpeningBookSize() >= 10 && bookLine.length >= 10 && bookLine.every((move, index) => index === 0 || move !== bookLine[index - 1]),
+  );
+  openingBookCoverage.detail = `${getOpeningBookSize()} positions / ${bookLine.length} plies: ${bookLine.join(" | ")}`;
   const openingDevelopment = result(
     "opening-develops-without-shuffling",
     opening.latestSearch ?? normalOpening,
@@ -370,5 +392,6 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       repeatedHorsePenalty === 55,
     ),
     openingDevelopment,
+    openingBookCoverage,
   ];
 }

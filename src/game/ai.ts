@@ -2,6 +2,7 @@ import { getAllLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from 
 import type { ChessPiece, PieceColor, PieceType, RecordedMove } from "../types";
 import { adjudicateRepetition, describeMoveForRules, getPositionKey, type RuleMoveRecord } from "./adjudication";
 import { getLearningMoveKey, MAX_LEARNING_BONUS, type LearningMoveHint } from "./learning";
+import { getOpeningBookMove, OPENING_BOOK_PLY_LIMIT } from "./openingBook";
 
 const pieceValues: Record<PieceType, number> = {
   general: 100000,
@@ -438,6 +439,8 @@ export function searchBestMove(
   const fallbackGivesCheck = isInCheck(opposite(color), fallbackBoard);
   const freshLearningMoves = learningBonuses.size > 0 ? legalMoves.filter(isFreshMove) : [];
   const fallbackCandidates = freshLearningMoves.length > 0 ? freshLearningMoves : legalMoves;
+  const movesPlayed = searchHistory.moves?.length ?? 0;
+  const openingBookChoice = movesPlayed < OPENING_BOOK_PLY_LIMIT ? getOpeningBookMove(pieces, color) : null;
   const hasFallbackTactic = learningBonuses.size > 0 && fallbackCandidates.some((candidate) => {
     if (pieces.some((piece) => piece.color !== color && samePosition(piece, candidate.move))) return true;
     const nextPieces = applyAiMove(pieces, candidate.piece.id, candidate.move.row, candidate.move.col);
@@ -470,7 +473,7 @@ export function searchBestMove(
     recentMoves: searchHistory.moves ?? [],
     learningBonuses,
   };
-  let choice: AiChoice = fallback;
+  let choice: AiChoice = openingBookChoice ?? fallback;
   let score = evaluate(applyAiMove(pieces, fallback.piece.id, fallback.move.row, fallback.move.col), color);
   let completedDepth = 0;
   let preferredMoveKey: string | null = null;
@@ -490,6 +493,11 @@ export function searchBestMove(
       timedOut = true;
       break;
     }
+  }
+
+  if (openingBookChoice) {
+    choice = openingBookChoice;
+    score = evaluate(applyAiMove(pieces, openingBookChoice.piece.id, openingBookChoice.move.row, openingBookChoice.move.col), color);
   }
 
   return {
