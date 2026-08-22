@@ -111,6 +111,7 @@ interface ChessBoardProps {
   lastMove: { from: Position; to: Position } | null;
   pieceTheme: PieceTheme;
   flipped: boolean;
+  hintMove?: { piece: ChessPiece; move: Position } | null;
   invalidPieceId: string | null;
   hintPieceIds: Set<string>;
   onInvalidAction: () => void;
@@ -121,7 +122,7 @@ interface ChessBoardProps {
   disabled?: boolean;
 }
 
-export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null, disabled = false }: ChessBoardProps) {
+export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, hintMove = null, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null, disabled = false }: ChessBoardProps) {
   const sharedOrigin = Boolean(
     reviewComparison
     && reviewComparison.actual.from.row === reviewComparison.recommended.from.row
@@ -137,6 +138,13 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
           <line x1={x(lastMove.from.col)} y1={y(lastMove.from.row)} x2={x(lastMove.to.col)} y2={y(lastMove.to.row)} />
           <circle cx={x(lastMove.from.col)} cy={y(lastMove.from.row)} r="10" className="trail-origin" />
           <circle cx={x(lastMove.to.col)} cy={y(lastMove.to.row)} r="17" className="trail-destination" />
+        </svg>
+      )}
+      {hintMove && (
+        <svg className="hint-trail" viewBox="0 0 800 890" aria-hidden="true">
+          <line x1={x(hintMove.piece.col)} y1={y(hintMove.piece.row)} x2={x(hintMove.move.col)} y2={y(hintMove.move.row)} />
+          <circle cx={x(hintMove.piece.col)} cy={y(hintMove.piece.row)} r="10" className="hint-origin" />
+          <circle cx={x(hintMove.move.col)} cy={y(hintMove.move.row)} r="16" className="hint-destination" />
         </svg>
       )}
       {reviewComparison && (
@@ -159,7 +167,7 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
         const isRecommendedPiece = reviewComparison?.recommended.from.row === piece.row && reviewComparison.recommended.from.col === piece.col;
         return (
           <button
-            className={`piece piece--${piece.color} ${pieceStyle === "symbols" ? "piece--symbols" : ""} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""} ${isActualPiece ? "piece--review-actual" : ""} ${isRecommendedPiece ? "piece--review-recommended" : ""}`}
+            className={`piece piece--${piece.color} ${pieceStyle === "symbols" ? "piece--symbols" : ""} ${selectedId === piece.id ? "piece--selected" : ""} ${invalidPieceId === piece.id ? "piece--invalid" : ""} ${hintPieceIds.has(piece.id) ? "piece--escape-hint" : ""} ${hintMove?.piece.id === piece.id ? "piece--hint-source" : ""} ${isActualPiece ? "piece--review-actual" : ""} ${isRecommendedPiece ? "piece--review-recommended" : ""}`}
             key={piece.id}
             type="button"
             disabled={disabled}

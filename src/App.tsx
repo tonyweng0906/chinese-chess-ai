@@ -3,7 +3,7 @@ import { ChessBoard } from "./components/ChessBoard";
 import { useEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent } from "react";
 import { getAllLegalMoves, getLegalMoves, getPseudoLegalMoves, isInCheck, type Position } from "./game/rules";
 import { initialPieces } from "./data/initialPieces";
-import type { AiSearchResult } from "./game/ai";
+import type { AiChoice, AiSearchResult } from "./game/ai";
 import { PieceIcon } from "./components/PieceIcon";
 import { Tutorial } from "./components/Tutorial";
 import { GameReview } from "./components/GameReview";
@@ -39,9 +39,9 @@ const copy = {
 } as const;
 
 const actionCopy = {
-  zh: { offerDraw: "求和", resign: "认输", offerDrawConfirm: "确定向对方提出和棋吗？确认后本局将结束。", resignConfirm: "确定认输吗？本局将判负。", agreedDraw: "双方同意和棋", resignation: "认输结束" },
-  en: { offerDraw: "Offer draw", resign: "Resign", offerDrawConfirm: "Offer a draw and end this game?", resignConfirm: "Resign this game? It will count as a loss.", agreedDraw: "Draw by agreement", resignation: "Resignation" },
-  ko: { offerDraw: "무승부 제안", resign: "기권", offerDrawConfirm: "무승부로 대국을 끝낼까요?", resignConfirm: "기권할까요? 이 대국은 패배로 기록됩니다.", agreedDraw: "합의 무승부", resignation: "기권 종료" },
+  zh: { offerDraw: "求和", resign: "认输", offerDrawConfirm: "确定向对方提出和棋吗？确认后本局将结束。", resignConfirm: "确定认输吗？本局将判负。", agreedDraw: "双方同意和棋", resignation: "认输结束", hint: "AI提示", hintThinking: "AI计算中...", hintReady: "已标出推荐着法" },
+  en: { offerDraw: "Offer draw", resign: "Resign", offerDrawConfirm: "Offer a draw and end this game?", resignConfirm: "Resign this game? It will count as a loss.", agreedDraw: "Draw by agreement", resignation: "Resignation", hint: "AI hint", hintThinking: "AI is calculating...", hintReady: "Recommended move is highlighted" },
+  ko: { offerDraw: "무승부 제안", resign: "기권", offerDrawConfirm: "무승부로 대국을 끝낼까요?", resignConfirm: "기권할까요? 이 대국은 패배로 기록됩니다.", agreedDraw: "합의 무승부", resignation: "기권 종료", hint: "AI 추천", hintThinking: "AI 계산 중...", hintReady: "추천 수가 강조되었습니다" },
 } as const;
 
 const trainingCopyBase = {
@@ -129,6 +129,9 @@ function App() {
   const [aiThinking, setAiThinking] = useState(false);
   const aiWorkerRef = useRef<Worker | null>(null);
   const aiTimerRef = useRef<number | null>(null);
+  const [hintMove, setHintMove] = useState<AiChoice | null>(null);
+  const [hintThinking, setHintThinking] = useState(false);
+  const hintWorkerRef = useRef<Worker | null>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [playerColor, setPlayerColor] = useState<PieceColor>("red");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("wood");
@@ -253,6 +256,8 @@ function App() {
   }
 
   function applyMove(piece: ChessPiece, position: Position) {
+    cancelHintCalculation();
+    setHintMove(null);
     const capturedPiece = pieces.find((item) => item.row === position.row && item.col === position.col);
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
@@ -403,6 +408,9 @@ function App() {
 
   function startSetupMode() {
     saveCurrentGameAsPrevious();
+    cancelAiCalculation();
+    cancelHintCalculation();
+    setHintMove(null);
     localStorage.removeItem(RESTORE_UNDO_KEY);
     setRestoreUndoBackup(null);
     setMode("setup");
@@ -422,6 +430,8 @@ function App() {
 
   function finishSetup() {
     if (!setupReady) return;
+    cancelHintCalculation();
+    setHintMove(null);
     setMode("local");
     setSelectedId(null);
     setWinner(null);
@@ -500,6 +510,11 @@ function App() {
     selfPlayWorkerRef.current = null;
   }, []);
 
+  useEffect(() => () => {
+    hintWorkerRef.current?.terminate();
+    hintWorkerRef.current = null;
+  }, []);
+
   useEffect(() => {
     if ((!learningEnabled || aiThinking || mode !== "ai") && selfPlayWorkerRef.current) {
       selfPlayWorkerRef.current.terminate();
@@ -547,6 +562,8 @@ function App() {
   function offerDraw() {
     if (mode === "setup" || winner || draw || aiThinking) return;
     if (!window.confirm(actionText.offerDrawConfirm)) return;
+    cancelHintCalculation();
+    setHintMove(null);
     setWinner(null);
     setDraw(true);
     setEndReason("agreed-draw");
@@ -560,6 +577,8 @@ function App() {
   function resignGame() {
     if (mode === "setup" || winner || draw || aiThinking) return;
     if (!window.confirm(actionText.resignConfirm)) return;
+    cancelHintCalculation();
+    setHintMove(null);
     const resigningColor = mode === "ai" ? playerColor : turn;
     setWinner(resigningColor === "red" ? "black" : "red");
     setDraw(false);
@@ -575,6 +594,8 @@ function App() {
     const previous = history[undoSnapshotIndex];
     if (!previous) return;
     cancelAiCalculation();
+    cancelHintCalculation();
+    setHintMove(null);
     setPieces(previous.pieces);
     setHistory((current) => current.slice(0, undoSnapshotIndex));
     setMoveHistory(previous.moveHistory);
@@ -600,6 +621,45 @@ function App() {
     aiWorkerRef.current?.terminate();
     aiWorkerRef.current = null;
     setAiThinking(false);
+  }
+
+  function cancelHintCalculation() {
+    hintWorkerRef.current?.terminate();
+    hintWorkerRef.current = null;
+    setHintThinking(false);
+  }
+
+  function requestAiHint() {
+    if (mode === "setup" || winner || draw || aiThinking || hintThinking) return;
+    cancelHintCalculation();
+    setHintMove(null);
+    setHintThinking(true);
+    const worker = new Worker(new URL("./game/ai.worker.ts", import.meta.url), { type: "module" });
+    hintWorkerRef.current = worker;
+    worker.onmessage = (event: MessageEvent<AiSearchResult>) => {
+      if (hintWorkerRef.current !== worker) return;
+      hintWorkerRef.current = null;
+      worker.terminate();
+      setHintMove(event.data.choice);
+      setHintThinking(false);
+    };
+    worker.onerror = () => {
+      if (hintWorkerRef.current !== worker) return;
+      hintWorkerRef.current = null;
+      worker.terminate();
+      setHintMove(null);
+      setHintThinking(false);
+    };
+    worker.postMessage({
+      pieces,
+      color: turn,
+      maxDepth: depth,
+      timeLimit: aiTimeLimit,
+      positionHistory,
+      ruleMoves,
+      moves: gameMoves,
+      learningHints: mode === "ai" ? learningHints : [],
+    });
   }
 
   function stopSelfPlayTraining(nextStatus: SelfPlayStatus = "paused") {
@@ -739,6 +799,8 @@ function App() {
 
   function applyPreviousGameBackup(backup: PreviousGameBackup) {
     cancelAiCalculation();
+    cancelHintCalculation();
+    setHintMove(null);
     setPieces(backup.pieces);
     setTurn(backup.turn);
     setMoveHistory(backup.moveHistory);
@@ -819,6 +881,8 @@ function App() {
     localStorage.removeItem(RESTORE_UNDO_KEY);
     setRestoreUndoBackup(null);
     cancelAiCalculation();
+    cancelHintCalculation();
+    setHintMove(null);
     setPieces(initialPieces);
     setTurn("red");
     setSelectedId(null);
@@ -874,6 +938,8 @@ function App() {
   function startAiGame(color: PieceColor) {
     saveCurrentGameAsPrevious();
     cancelAiCalculation();
+    cancelHintCalculation();
+    setHintMove(null);
     setMode("ai");
     setPlayerColor(color);
     setPieces(initialPieces);
@@ -982,7 +1048,7 @@ function App() {
             <strong>{trainingText.watching}</strong>
             <span>{trainingText.game} {trainingBoard.gameNumber}/{trainingBoard.targetGames} {trainingText.gameUnit} · {trainingBoard.ply} {trainingText.ply} · {trainingBoard.turn === "red" ? t.red : t.black} {trainingText.toMove}</span>
           </div>}
-          <ChessBoard pieces={trainingBoard?.pieces ?? pieces} selectedId={trainingBoard ? null : selectedId} legalMoves={trainingBoard ? [] : legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={trainingBoard?.lastMove ?? lastMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={trainingBoard ? null : invalidPieceId} hintPieceIds={trainingBoard ? new Set<string>() : hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup" && !trainingBoard} disabled={Boolean(trainingBoard)} />
+          <ChessBoard pieces={trainingBoard?.pieces ?? pieces} selectedId={trainingBoard ? null : selectedId} legalMoves={trainingBoard ? [] : legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={trainingBoard?.lastMove ?? lastMove} hintMove={trainingBoard ? null : hintMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={trainingBoard ? null : invalidPieceId} hintPieceIds={trainingBoard ? new Set<string>() : hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup" && !trainingBoard} disabled={Boolean(trainingBoard)} />
           {!trainingBoard && mode !== "setup" && (winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
@@ -1000,7 +1066,7 @@ function App() {
           <div className="game-panel-column game-panel-column--left">
           <div className="settings-row">
             <span>{t.mode}</span>
-            <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => setMode("local")}>{t.local}</button>
+            <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => { cancelAiCalculation(); cancelHintCalculation(); setHintMove(null); setMode("local"); }}>{t.local}</button>
             <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => startAiGame(playerColor)}>{t.ai}</button>
             <button className={mode === "setup" ? "is-active" : ""} type="button" onClick={startSetupMode}>{t.setup}</button>
           </div>
@@ -1163,6 +1229,10 @@ function App() {
             <button className="undo-button" type="button" onClick={undoMove} disabled={undoSnapshotIndex < 0}>{t.undo}</button>
             <small className="restore-shortcut-hint">{t.restoreUndoShortcut}</small>
           </div>
+          <button className="hint-button" type="button" onClick={requestAiHint} disabled={Boolean(winner || draw || aiThinking || hintThinking)}>
+            {hintThinking ? actionText.hintThinking : actionText.hint}
+          </button>
+          {hintMove && <p className="hint-note" role="status">{actionText.hintReady}</p>}
           <div className="game-concession-group">
             <button className="offer-draw-button" type="button" onClick={offerDraw} disabled={Boolean(winner || draw || aiThinking)}>{actionText.offerDraw}</button>
             <button className="resign-button" type="button" onClick={resignGame} disabled={Boolean(winner || draw || aiThinking)}>{actionText.resign}</button>
