@@ -5,7 +5,7 @@ import type { Position } from "./rules";
 export const PREVIOUS_GAME_KEY = "chinese-chess-ai-previous-game";
 export const RESTORE_UNDO_KEY = "chinese-chess-ai-restore-undo";
 
-export type GameEndReason = "general-captured" | "checkmate" | "stalemate" | "repetition" | "perpetual-check" | "perpetual-chase" | "no-capture-limit";
+export type GameEndReason = "general-captured" | "checkmate" | "stalemate" | "repetition" | "perpetual-check" | "perpetual-chase" | "no-capture-limit" | "agreed-draw" | "resignation";
 
 export interface GameSnapshot {
   pieces: ChessPiece[];
@@ -66,7 +66,7 @@ export function parsePreviousGameBackup(value: string | null): PreviousGameBacku
     if (data.playerColor !== "red" && data.playerColor !== "black") return null;
     if (data.difficulty !== "easy" && data.difficulty !== "normal" && data.difficulty !== "hard") return null;
     if (data.winner !== null && data.winner !== "red" && data.winner !== "black") return null;
-    const endReasons: Array<GameEndReason | null> = [null, "general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit"];
+    const endReasons: Array<GameEndReason | null> = [null, "general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit", "agreed-draw", "resignation"];
     if (!endReasons.includes(data.endReason ?? null)) return null;
     if (!Number.isInteger(data.noCapturePlyCount) || (data.noCapturePlyCount ?? -1) < 0) return null;
     return data as PreviousGameBackup;

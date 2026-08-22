@@ -364,6 +364,12 @@
 .undo-button:hover:not(:disabled) { border-color: #806748; color: #d6bd91; }
 .undo-button:disabled { cursor: not-allowed; opacity: 0.35; }
 .restore-shortcut-hint { color: #665b4d; font-size: 9px; line-height: 1.5; text-align: center; }
+.game-concession-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 12px; }
+.game-concession-group button { min-height: 30px; padding: 7px 9px; border: 1px solid #4b4034; border-radius: 3px; color: #a99475; background: rgba(255,255,255,.018); cursor: pointer; font-size: 10px; }
+.game-concession-group button:hover:not(:disabled) { border-color: #8e6b41; color: #e1c18d; background: rgba(185,132,61,.1); }
+.game-concession-group button:disabled { cursor: not-allowed; opacity: .32; }
+.game-concession-group .resign-button { border-color: #5b3e39; color: #b77c72; }
+.game-concession-group .resign-button:hover:not(:disabled) { border-color: #96594f; color: #d79a8e; background: rgba(148,73,61,.12); }
 .move-log { display: flex; flex-direction: column; gap: 6px; margin-top: 23px; color: #756a5c; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
 .move-log p { margin: 0 0 3px; color: #9b876a; font-family: "Noto Serif SC", serif; font-size: 11px; letter-spacing: 0.12em; }
 .move-log span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -385,6 +391,7 @@
 .training-archive-result { padding: 3px 7px; border: 1px solid #554837; border-radius: 999px; color: #b69a72; background: rgba(185,132,61,.06); font-size: 8px; letter-spacing: .07em; }
 .training-archive-result--red { border-color: #70463e; color: #cf8b7e; background: rgba(133,67,57,.1); }
 .training-archive-result--black { border-color: #52534e; color: #aaa99e; background: rgba(115,117,108,.08); }
+.training-archive-result--abandoned { border-color: #655d50; color: #b0a38f; background: rgba(133,121,100,.1); }
 .training-archive-card__delete { width: 100%; padding: 8px 12px; border: 0; border-top: 1px solid #302920; color: #655b4f; background: rgba(0,0,0,.08); cursor: pointer; font-size: 8px; }
 .training-archive-card__delete:hover { color: #c47d70; background: rgba(133,67,57,.08); }
 .training-archive-clear { display: block; margin: 22px auto 0; padding: 8px 13px; border: 1px solid #493630; border-radius: 3px; color: #8e665e; background: transparent; cursor: pointer; font-size: 9px; }

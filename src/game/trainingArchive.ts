@@ -1,5 +1,6 @@
 import { initialPieces } from "../data/initialPieces";
 import type { ChessPiece, PieceColor, PieceType, RecordedMove } from "../types";
+import type { GameEndReason } from "./backup";
 
 export const TRAINING_ARCHIVE_STORAGE_KEY = "chinese-chess-ai-training-archives-v1";
 export const MAX_TRAINING_ARCHIVES = 24;
@@ -19,6 +20,8 @@ export interface TrainingArchive {
   finishedAt: number;
   winner: PieceColor | null;
   draw: boolean;
+  endReason?: GameEndReason;
+  abandoned?: boolean;
   moves: ArchivedTrainingMove[];
 }
 
@@ -37,12 +40,16 @@ export function buildTrainingArchive(
   winner: PieceColor | null,
   draw: boolean,
   finishedAt = Date.now(),
+  endReason?: GameEndReason,
+  abandoned = false,
 ): TrainingArchive {
   return {
     id,
     finishedAt,
     winner,
     draw,
+    ...(endReason ? { endReason } : {}),
+    ...(abandoned ? { abandoned: true } : {}),
     moves: moves.map((move) => ({
       mover: move.mover,
       pieceId: move.pieceId,
@@ -121,6 +128,8 @@ export function parseTrainingArchiveDataset(value: string | null): TrainingArchi
       && archive.finishedAt <= 8.64e15
       && (archive.winner === null || archive.winner === "red" || archive.winner === "black")
       && typeof archive.draw === "boolean"
+      && (archive.endReason === undefined || typeof archive.endReason === "string")
+      && (archive.abandoned === undefined || typeof archive.abandoned === "boolean")
       && Array.isArray(archive.moves)
       && archive.moves.every((move) => move
         && (move.mover === "red" || move.mover === "black")

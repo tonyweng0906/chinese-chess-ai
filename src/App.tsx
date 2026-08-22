@@ -38,6 +38,12 @@ const copy = {
   },
 } as const;
 
+const actionCopy = {
+  zh: { offerDraw: "求和", resign: "认输", offerDrawConfirm: "确定向对方提出和棋吗？确认后本局将结束。", resignConfirm: "确定认输吗？本局将判负。", agreedDraw: "双方同意和棋", resignation: "认输结束" },
+  en: { offerDraw: "Offer draw", resign: "Resign", offerDrawConfirm: "Offer a draw and end this game?", resignConfirm: "Resign this game? It will count as a loss.", agreedDraw: "Draw by agreement", resignation: "Resignation" },
+  ko: { offerDraw: "무승부 제안", resign: "기권", offerDrawConfirm: "무승부로 대국을 끝낼까요?", resignConfirm: "기권할까요? 이 대국은 패배로 기록됩니다.", agreedDraw: "합의 무승부", resignation: "기권 종료" },
+} as const;
+
 const trainingCopyBase = {
   zh: {
     title: "AI 自我训练", idle: "准备就绪", running: "训练中", paused: "已暂停", complete: "本轮完成", error: "训练出错",
@@ -98,7 +104,7 @@ const ruleCopy = {
 } as const;
 
 type EndReason = GameEndReason;
-const endReasons: EndReason[] = ["general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit"];
+const endReasons: EndReason[] = ["general-captured", "checkmate", "stalemate", "repetition", "perpetual-check", "perpetual-chase", "no-capture-limit", "agreed-draw", "resignation"];
 
 const setupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
   red: { general: "帅", advisor: "仕", elephant: "相", horse: "馬", rook: "車", cannon: "炮", soldier: "兵" },
@@ -146,6 +152,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
+  const actionText = actionCopy[language];
   const trainingText = trainingCopy[language];
   const selfPlayStatusText = selfPlayStatus === "running" ? trainingText.running
     : selfPlayStatus === "paused" ? trainingText.paused
@@ -185,7 +192,11 @@ function App() {
   const currentPositionKey = positionHistory.at(-1);
   const currentPositionOccurrences = currentPositionKey ? positionHistory.filter((position) => position === currentPositionKey).length : 0;
   const ruleWarning = noCapturePlyCount >= 80 ? rulesText.noCaptureWarning : currentPositionOccurrences >= 2 ? rulesText.repeatWarning : null;
-  const endReasonText = endReason ? rulesText.reasons[endReason] : null;
+  const endReasonText = endReason === "agreed-draw"
+    ? actionText.agreedDraw
+    : endReason === "resignation"
+      ? actionText.resignation
+      : endReason ? rulesText.reasons[endReason] : null;
   const undoSnapshotIndex = getUndoSnapshotIndex(history, mode, playerColor);
   const learningStats = useMemo(() => getLearningStats(learningDataset), [learningDataset]);
   const learningHints = useMemo(
@@ -514,11 +525,51 @@ function App() {
 
   useEffect(() => {
     if (mode !== "ai" || (!winner && !draw)) return;
+    savePlayedArchive();
+  }, [mode, winner, draw, gameMoves, endReason]);
+
+  function savePlayedArchive(abandoned = false) {
+    if (mode !== "ai" || gameMoves.length === 0 || (abandoned && (winner || draw))) return;
     const gameId = getLearningGameId(gameMoves);
     if (!gameId) return;
-    const archive = buildTrainingArchive(`played-${gameId}`, gameMoves, winner, draw);
+    const archive = buildTrainingArchive(
+      `played-${gameId}${abandoned ? "-abandoned" : ""}`,
+      gameMoves,
+      abandoned ? null : winner,
+      abandoned ? false : draw,
+      Date.now(),
+      abandoned ? undefined : endReason ?? undefined,
+      abandoned,
+    );
     setPlayedArchives((current) => recordPlayedArchive(current, archive));
-  }, [mode, winner, draw, gameMoves]);
+  }
+
+  function offerDraw() {
+    if (mode === "setup" || winner || draw || aiThinking) return;
+    if (!window.confirm(actionText.offerDrawConfirm)) return;
+    setWinner(null);
+    setDraw(true);
+    setEndReason("agreed-draw");
+    setSelectedId(null);
+    setInvalidPieceId(null);
+    setInvalidNotice(false);
+    setInvalidAttempts(0);
+    if (soundEnabled) playGameSound("draw", soundVolume);
+  }
+
+  function resignGame() {
+    if (mode === "setup" || winner || draw || aiThinking) return;
+    if (!window.confirm(actionText.resignConfirm)) return;
+    const resigningColor = mode === "ai" ? playerColor : turn;
+    setWinner(resigningColor === "red" ? "black" : "red");
+    setDraw(false);
+    setEndReason("resignation");
+    setSelectedId(null);
+    setInvalidPieceId(null);
+    setInvalidNotice(false);
+    setInvalidAttempts(0);
+    if (soundEnabled) playGameSound("win", soundVolume);
+  }
 
   function undoMove() {
     const previous = history[undoSnapshotIndex];
@@ -761,7 +812,10 @@ function App() {
   }, [mode, playedArchiveOpen, reviewOpen, restoreUndoBackup, trainingArchiveOpen, tutorialOpen, undoSnapshotIndex]);
 
   function resetGame(savePrevious = true) {
-    if (savePrevious) saveCurrentGameAsPrevious();
+    if (savePrevious) {
+      savePlayedArchive(true);
+      saveCurrentGameAsPrevious();
+    }
     localStorage.removeItem(RESTORE_UNDO_KEY);
     setRestoreUndoBackup(null);
     cancelAiCalculation();
@@ -1108,6 +1162,10 @@ function App() {
             <button className="restore-undo-button" type="button" onClick={undoRestorePreviousGame} disabled={!restoreUndoBackup} title={t.restoreUndoShortcut}>{t.restoreUndo}</button>
             <button className="undo-button" type="button" onClick={undoMove} disabled={undoSnapshotIndex < 0}>{t.undo}</button>
             <small className="restore-shortcut-hint">{t.restoreUndoShortcut}</small>
+          </div>
+          <div className="game-concession-group">
+            <button className="offer-draw-button" type="button" onClick={offerDraw} disabled={Boolean(winner || draw || aiThinking)}>{actionText.offerDraw}</button>
+            <button className="resign-button" type="button" onClick={resignGame} disabled={Boolean(winner || draw || aiThinking)}>{actionText.resign}</button>
           </div>
           <p className="coming-soon">已支持基础走法与将军限制</p>
           </>}

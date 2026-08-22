@@ -91,6 +91,7 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
     capped = recordLearningGame(capped, { ...game, id: `game-${index}`, finishedAt: index });
   }
   const archive = buildTrainingArchive("archive-1", [redMove, blackMove], "black", false, 30);
+  const abandonedArchive = buildTrainingArchive("archive-abandoned", [redMove], null, false, 31, undefined, true);
   const restoredMoves = reconstructTrainingMoves(archive, startPieces);
   const archiveDataset = recordTrainingArchive(createTrainingArchiveDataset(), archive);
   const parsedArchives = parseTrainingArchiveDataset(JSON.stringify(archiveDataset));
@@ -151,6 +152,11 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
     {
       name: "removes-training-archive",
       passed: removeTrainingArchive(archiveDataset, archive.id).archives.length === 0,
+    },
+    {
+      name: "preserves-abandoned-archive-status",
+      passed: abandonedArchive.abandoned === true
+        && parseTrainingArchiveDataset(JSON.stringify({ version: 1, archives: [abandonedArchive] })).archives[0]?.abandoned === true,
     },
     {
       name: "caps-played-archive-at-five",
