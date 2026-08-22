@@ -4,6 +4,7 @@ import type { TrainingArchive } from "../game/trainingArchive";
 interface TrainingArchiveLibraryProps {
   archives: TrainingArchive[];
   language: Language;
+  variant?: "training" | "played";
   onSelect: (archiveId: string) => void;
   onDelete: (archiveId: string) => void;
   onClear: () => void;
@@ -30,6 +31,24 @@ const copy = {
   },
 } as const;
 
+const playedCopy = {
+  zh: {
+    eyebrow: "人机对战记录馆", title: "最近五盘人机对战", total: "已保存", red: "红方胜", black: "黑方胜", draw: "和棋",
+    plies: "手", replay: "查看回放", remove: "删除", clear: "清空对战记录", emptyTitle: "还没有人机对战记录", empty: "完成一盘人机对战后，棋谱会自动保存到这里，最多保留最近五盘。",
+    clearConfirm: "确定清空最近的人机对战记录吗？此操作无法撤销。", removeConfirm: "确定删除这盘人机对战记录吗？", close: "返回棋局",
+  },
+  en: {
+    eyebrow: "MATCH ARCHIVE", title: "Recent AI matches", total: "Saved", red: "Red wins", black: "Black wins", draw: "Draw",
+    plies: "plies", replay: "Watch replay", remove: "Delete", clear: "Clear match records", emptyTitle: "No AI matches yet", empty: "Finished AI matches are saved here automatically; only the five most recent are kept.",
+    clearConfirm: "Clear the recent AI match records? This cannot be undone.", removeConfirm: "Delete this AI match record?", close: "Back to game",
+  },
+  ko: {
+    eyebrow: "AI 대국 기록관", title: "최근 AI 대국 5국", total: "저장됨", red: "홍 승리", black: "흑 승리", draw: "무승부",
+    plies: "수", replay: "리플레이 보기", remove: "삭제", clear: "대국 기록 삭제", emptyTitle: "AI 대국 기록이 없습니다", empty: "AI 대국이 끝나면 자동 저장되며 최근 5국만 보관합니다.",
+    clearConfirm: "최근 AI 대국 기록을 모두 삭제할까요? 되돌릴 수 없습니다.", removeConfirm: "이 AI 대국 기록을 삭제할까요?", close: "대국으로 돌아가기",
+  },
+} as const;
+
 function resultLabel(archive: TrainingArchive, language: Language) {
   const t = copy[language];
   return archive.winner === "red" ? t.red : archive.winner === "black" ? t.black : t.draw;
@@ -44,8 +63,8 @@ function archiveDate(timestamp: number, language: Language) {
   }).format(new Date(timestamp));
 }
 
-export function TrainingArchiveLibrary({ archives, language, onSelect, onDelete, onClear, onClose }: TrainingArchiveLibraryProps) {
-  const t = copy[language];
+export function TrainingArchiveLibrary({ archives, language, variant = "training", onSelect, onDelete, onClear, onClose }: TrainingArchiveLibraryProps) {
+  const t = variant === "played" ? playedCopy[language] : copy[language];
   const newestFirst = [...archives].sort((first, second) => second.finishedAt - first.finishedAt);
   const redWins = archives.filter((archive) => archive.winner === "red").length;
   const blackWins = archives.filter((archive) => archive.winner === "black").length;
@@ -69,7 +88,9 @@ export function TrainingArchiveLibrary({ archives, language, onSelect, onDelete,
         {newestFirst.map((archive, index) => <article className="training-archive-card" key={archive.id}>
           <button className="training-archive-card__main" type="button" onClick={() => onSelect(archive.id)}>
             <span className={`training-archive-result training-archive-result--${archive.winner ?? "draw"}`}>{resultLabel(archive, language)}</span>
-            <strong>{language === "zh" ? `训练棋局 ${String(newestFirst.length - index).padStart(2, "0")}` : language === "ko" ? `훈련 대국 ${String(newestFirst.length - index).padStart(2, "0")}` : `Training game ${String(newestFirst.length - index).padStart(2, "0")}`}</strong>
+            <strong>{variant === "played"
+              ? language === "zh" ? `人机对战 ${String(newestFirst.length - index).padStart(2, "0")}` : language === "ko" ? `AI 대국 ${String(newestFirst.length - index).padStart(2, "0")}` : `AI match ${String(newestFirst.length - index).padStart(2, "0")}`
+              : language === "zh" ? `训练棋局 ${String(newestFirst.length - index).padStart(2, "0")}` : language === "ko" ? `훈련 대국 ${String(newestFirst.length - index).padStart(2, "0")}` : `Training game ${String(newestFirst.length - index).padStart(2, "0")}`}</strong>
             <small>{archiveDate(archive.finishedAt, language)} · {archive.moves.length} {t.plies}</small>
             <i>{t.replay} →</i>
           </button>

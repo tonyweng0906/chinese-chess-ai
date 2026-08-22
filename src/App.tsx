@@ -14,7 +14,8 @@ import { getUndoSnapshotIndex } from "./game/undo";
 import { compactPreviousGameBackup, hasGameProgress, minimalPreviousGameBackup, parsePreviousGameBackup, PREVIOUS_GAME_KEY, RESTORE_UNDO_KEY, type GameEndReason, type GameSnapshot, type PreviousGameBackup } from "./game/backup";
 import { buildLearningGame, createLearningDataset, getLearningGameId, getLearningMoveHints, getLearningStats, LEARNING_STORAGE_KEY, parseLearningDataset, recordLearningGame, removeLearningGame } from "./game/learning";
 import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayPreviewMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
-import { createTrainingArchiveDataset, parseTrainingArchiveDataset, recordTrainingArchive, reconstructTrainingMoves, removeTrainingArchive, TRAINING_ARCHIVE_STORAGE_KEY } from "./game/trainingArchive";
+import { buildTrainingArchive, createTrainingArchiveDataset, parseTrainingArchiveDataset, recordTrainingArchive, reconstructTrainingMoves, removeTrainingArchive, TRAINING_ARCHIVE_STORAGE_KEY } from "./game/trainingArchive";
+import { createPlayedArchiveDataset, parsePlayedArchiveDataset, PLAYED_ARCHIVE_STORAGE_KEY, recordPlayedArchive, removePlayedArchive } from "./game/playedArchive";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copyBase = {
@@ -138,6 +139,9 @@ function App() {
   const [trainingArchives, setTrainingArchives] = useState(() => parseTrainingArchiveDataset(localStorage.getItem(TRAINING_ARCHIVE_STORAGE_KEY)));
   const [trainingArchiveOpen, setTrainingArchiveOpen] = useState(false);
   const [selectedTrainingArchiveId, setSelectedTrainingArchiveId] = useState<string | null>(null);
+  const [playedArchives, setPlayedArchives] = useState(() => parsePlayedArchiveDataset(localStorage.getItem(PLAYED_ARCHIVE_STORAGE_KEY)));
+  const [playedArchiveOpen, setPlayedArchiveOpen] = useState(false);
+  const [selectedPlayedArchiveId, setSelectedPlayedArchiveId] = useState<string | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
@@ -190,9 +194,14 @@ function App() {
   );
   const trainingBoard = selfPlayStatus === "running" ? selfPlayPreview : null;
   const selectedTrainingArchive = trainingArchives.archives.find((archive) => archive.id === selectedTrainingArchiveId) ?? null;
+  const selectedPlayedArchive = playedArchives.archives.find((archive) => archive.id === selectedPlayedArchiveId) ?? null;
   const selectedTrainingMoves = useMemo(
     () => selectedTrainingArchive ? reconstructTrainingMoves(selectedTrainingArchive) : [],
     [selectedTrainingArchive],
+  );
+  const selectedPlayedMoves = useMemo(
+    () => selectedPlayedArchive ? reconstructTrainingMoves(selectedPlayedArchive) : [],
+    [selectedPlayedArchive],
   );
 
   const setupNames: Record<PieceType, string> = language === "zh"
@@ -467,6 +476,14 @@ function App() {
     }
   }, [trainingArchives]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(PLAYED_ARCHIVE_STORAGE_KEY, JSON.stringify(playedArchives));
+    } catch {
+      // Match archives are optional; the current game remains usable if storage is full.
+    }
+  }, [playedArchives]);
+
   useEffect(() => () => {
     selfPlayWorkerRef.current?.terminate();
     selfPlayWorkerRef.current = null;
@@ -494,6 +511,14 @@ function App() {
     const learnedGame = buildLearningGame(gameStartPieces, gameMoves, aiColor, outcome);
     if (learnedGame) setLearningDataset((current) => recordLearningGame(current, learnedGame));
   }, [mode, winner, draw, gameMoves, gameStartPieces, aiColor, learningEnabled]);
+
+  useEffect(() => {
+    if (mode !== "ai" || (!winner && !draw)) return;
+    const gameId = getLearningGameId(gameMoves);
+    if (!gameId) return;
+    const archive = buildTrainingArchive(`played-${gameId}`, gameMoves, winner, draw);
+    setPlayedArchives((current) => recordPlayedArchive(current, archive));
+  }, [mode, winner, draw, gameMoves]);
 
   function undoMove() {
     const previous = history[undoSnapshotIndex];
@@ -605,6 +630,17 @@ function App() {
     setTrainingArchiveOpen(true);
   }
 
+  function openPlayedArchives() {
+    if (selfPlayWorkerRef.current) stopSelfPlayTraining();
+    else setSelfPlayPreview(null);
+    setTutorialOpen(false);
+    setReviewOpen(false);
+    setTrainingArchiveOpen(false);
+    setSelectedTrainingArchiveId(null);
+    setSelectedPlayedArchiveId(null);
+    setPlayedArchiveOpen(true);
+  }
+
   function saveCurrentGameAsPrevious() {
     const hasProgress = hasGameProgress(pieces, turn, Math.max(gameMoves.length, moveHistory.length), initialPieces);
     if (!hasProgress || mode === "setup") return;
@@ -707,7 +743,7 @@ function App() {
     function handleShortcut(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.tagName === "SELECT") return;
-      if (tutorialOpen || reviewOpen || trainingArchiveOpen || mode === "setup") return;
+      if (tutorialOpen || reviewOpen || trainingArchiveOpen || playedArchiveOpen || mode === "setup") return;
       const key = event.key.toLowerCase();
       const commandKey = event.ctrlKey || event.metaKey;
       if (commandKey && event.shiftKey && key === "z") {
@@ -722,7 +758,7 @@ function App() {
     }
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [mode, reviewOpen, restoreUndoBackup, trainingArchiveOpen, tutorialOpen, undoSnapshotIndex]);
+  }, [mode, playedArchiveOpen, reviewOpen, restoreUndoBackup, trainingArchiveOpen, tutorialOpen, undoSnapshotIndex]);
 
   function resetGame(savePrevious = true) {
     if (savePrevious) saveCurrentGameAsPrevious();
@@ -818,7 +854,7 @@ function App() {
   }
 
   const moveCount = moveHistory.length;
-  const fullScreenPanelOpen = tutorialOpen || reviewOpen || trainingArchiveOpen || Boolean(selectedTrainingArchive);
+  const fullScreenPanelOpen = tutorialOpen || reviewOpen || trainingArchiveOpen || playedArchiveOpen || Boolean(selectedTrainingArchive) || Boolean(selectedPlayedArchive);
 
   useEffect(() => {
     const saved = localStorage.getItem("chinese-chess-ai-game");
@@ -876,8 +912,10 @@ function App() {
         </div>}
       </header>
 
-      {selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedTrainingArchiveId(null)} />
-        : trainingArchiveOpen ? <TrainingArchiveLibrary archives={trainingArchives.archives} language={language} onSelect={setSelectedTrainingArchiveId} onDelete={(archiveId) => setTrainingArchives((current) => removeTrainingArchive(current, archiveId))} onClear={() => setTrainingArchives(createTrainingArchiveDataset())} onClose={() => setTrainingArchiveOpen(false)} />
+      {selectedPlayedArchive ? <GameReview startPieces={initialPieces} moves={selectedPlayedMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode archiveVariant="played" soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedPlayedArchiveId(null)} />
+        : playedArchiveOpen ? <TrainingArchiveLibrary archives={playedArchives.archives} language={language} variant="played" onSelect={setSelectedPlayedArchiveId} onDelete={(archiveId) => setPlayedArchives((current) => removePlayedArchive(current, archiveId))} onClear={() => setPlayedArchives(createPlayedArchiveDataset())} onClose={() => setPlayedArchiveOpen(false)} />
+          : selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedTrainingArchiveId(null)} />
+        : trainingArchiveOpen ? <TrainingArchiveLibrary archives={trainingArchives.archives} language={language} variant="training" onSelect={setSelectedTrainingArchiveId} onDelete={(archiveId) => setTrainingArchives((current) => removeTrainingArchive(current, archiveId))} onClear={() => setTrainingArchives(createTrainingArchiveDataset())} onClose={() => setTrainingArchiveOpen(false)} />
           : reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setReviewOpen(false)} />
             : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
         <div className={`board-area ${trainingBoard ? "board-area--training" : ""}`}>
@@ -1060,6 +1098,9 @@ function App() {
           <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
           <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : language === "ko" ? "한 수 이상 둔 후 복기할 수 있습니다" : "Make at least one move to start a review") : undefined}>
             <span>{language === "zh" ? "AI 复盘讲解" : language === "ko" ? "AI 복기 해설" : "AI game review"}</span><i>→</i>
+          </button>
+          <button className="review-open-button" type="button" onClick={openPlayedArchives} disabled={playedArchives.archives.length === 0} title={playedArchives.archives.length === 0 ? (language === "zh" ? "完成一盘人机对战后即可查看" : language === "ko" ? "AI 대국을 한 판 완료하면 확인할 수 있습니다" : "Finish an AI match to view saved games") : undefined}>
+            <span>{language === "zh" ? "最近五盘人机对战" : language === "ko" ? "최근 AI 대국 5국" : "Recent AI matches"}</span><i>{playedArchives.archives.length}/5 →</i>
           </button>
           <button className="settings-reset" type="button" onClick={resetAllSettings}>{t.resetSettings}</button>
           <div className="move-log" aria-label="走棋记录">

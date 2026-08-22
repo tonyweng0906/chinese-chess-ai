@@ -20,6 +20,7 @@ import {
   reconstructTrainingMoves,
   removeTrainingArchive,
 } from "./trainingArchive";
+import { createPlayedArchiveDataset, MAX_PLAYED_ARCHIVES, recordPlayedArchive } from "./playedArchive";
 
 export interface LearningBenchmarkResult {
   name: string;
@@ -97,6 +98,10 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
   for (let index = 0; index < MAX_TRAINING_ARCHIVES + 3; index += 1) {
     cappedArchives = recordTrainingArchive(cappedArchives, { ...archive, id: `archive-${index}`, finishedAt: index });
   }
+  let cappedPlayedArchives = createPlayedArchiveDataset();
+  for (let index = 0; index < MAX_PLAYED_ARCHIVES + 2; index += 1) {
+    cappedPlayedArchives = recordPlayedArchive(cappedPlayedArchives, { ...archive, id: `played-${index}`, finishedAt: index });
+  }
 
   return [
     { name: "records-only-ai-decisions", passed: game.decisions.length === 1 && game.decisions[0].ply === 1 },
@@ -146,6 +151,10 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
     {
       name: "removes-training-archive",
       passed: removeTrainingArchive(archiveDataset, archive.id).archives.length === 0,
+    },
+    {
+      name: "caps-played-archive-at-five",
+      passed: cappedPlayedArchives.archives.length === MAX_PLAYED_ARCHIVES && cappedPlayedArchives.archives[0]?.id === "played-2",
     },
   ];
 }

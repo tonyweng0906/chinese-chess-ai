@@ -14,6 +14,7 @@ interface GameReviewProps {
   flipped: boolean;
   analysisDepth: number;
   archiveMode?: boolean;
+  archiveVariant?: "training" | "played";
   soundEnabled?: boolean;
   soundVolume?: number;
   onClose: () => void;
@@ -123,10 +124,12 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
   </div>;
 }
 
-export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, soundEnabled = true, soundVolume = 0.58, onClose }: GameReviewProps) {
+export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, archiveVariant = "training", soundEnabled = true, soundVolume = 0.58, onClose }: GameReviewProps) {
   const t = copy[language];
   const heading = archiveMode
-    ? language === "zh" ? { eyebrow: "AI 训练档案", title: "训练棋局回放", close: "返回存档" } : language === "ko" ? { eyebrow: "AI 훈련 보관함", title: "훈련 대국 리플레이", close: "보관함으로" } : { eyebrow: "AI TRAINING ARCHIVE", title: "Training game replay", close: "Back to archives" }
+    ? archiveVariant === "played"
+      ? language === "zh" ? { eyebrow: "人机对战记录", title: "人机对战回放", close: "返回记录" } : language === "ko" ? { eyebrow: "AI 대국 기록", title: "AI 대국 리플레이", close: "기록으로" } : { eyebrow: "AI MATCH ARCHIVE", title: "AI match replay", close: "Back to matches" }
+      : language === "zh" ? { eyebrow: "AI 训练档案", title: "训练棋局回放", close: "返回存档" } : language === "ko" ? { eyebrow: "AI 훈련 보관함", title: "훈련 대국 리플레이", close: "보관함으로" } : { eyebrow: "AI TRAINING ARCHIVE", title: "Training game replay", close: "Back to archives" }
     : { eyebrow: t.eyebrow, title: t.title, close: t.close };
   const [step, setStep] = useState(moves.length);
   const [playing, setPlaying] = useState(false);
