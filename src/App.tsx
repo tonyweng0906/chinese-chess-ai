@@ -1032,6 +1032,23 @@ function App() {
             <button className="finish-setup-button" type="button" onClick={finishSetup} disabled={!setupReady}>{t.finishSetup}</button>
             {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
           </div>}
+          {mode !== "setup" && <details className="panel-disclosure panel-disclosure--tools">
+            <summary><span>{t.tools}</span><b>{language === "zh" ? "展开" : language === "ko" ? "열기" : "Open"}</b></summary>
+            <div className="panel-disclosure__body">
+          <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
+          <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : language === "ko" ? "한 수 이상 둔 후 복기할 수 있습니다" : "Make at least one move to start a review") : undefined}>
+            <span>{language === "zh" ? "AI 复盘讲解" : language === "ko" ? "AI 복기 해설" : "AI game review"}</span><i>→</i>
+          </button>
+          <button className="review-open-button" type="button" onClick={openPlayedArchives} disabled={playedArchives.archives.length === 0} title={playedArchives.archives.length === 0 ? (language === "zh" ? "完成一盘人机对战后即可查看" : language === "ko" ? "AI 대국을 한 판 완료하면 확인할 수 있습니다" : "Finish an AI match to view saved games") : undefined}>
+            <span>{language === "zh" ? "最近五盘人机对战" : language === "ko" ? "최근 AI 대국 5국" : "Recent AI matches"}</span><i>{playedArchives.archives.length}/5 →</i>
+          </button>
+          <button className="settings-reset" type="button" onClick={resetAllSettings}>{t.resetSettings}</button>
+          <div className="move-log" aria-label="走棋记录">
+            <p>{t.log}</p>
+            {moveHistory.length === 0 ? <span>{t.noLog}</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
+          </div>
+            </div>
+          </details>}
           </div>
           <div className="game-panel-column game-panel-column--right">
           {mode !== "setup" && <>
@@ -1092,23 +1109,6 @@ function App() {
             <button className="undo-button" type="button" onClick={undoMove} disabled={undoSnapshotIndex < 0}>{t.undo}</button>
             <small className="restore-shortcut-hint">{t.restoreUndoShortcut}</small>
           </div>
-          <details className="panel-disclosure panel-disclosure--tools">
-            <summary><span>{t.tools}</span><b>{language === "zh" ? "展开" : language === "ko" ? "열기" : "Open"}</b></summary>
-            <div className="panel-disclosure__body">
-          <button className="export-button" type="button" onClick={exportRecord}>{t.export}</button>
-          <button className="review-open-button" type="button" onClick={() => setReviewOpen(true)} disabled={gameMoves.length === 0} title={gameMoves.length === 0 ? (language === "zh" ? "至少完成一步后即可复盘" : language === "ko" ? "한 수 이상 둔 후 복기할 수 있습니다" : "Make at least one move to start a review") : undefined}>
-            <span>{language === "zh" ? "AI 复盘讲解" : language === "ko" ? "AI 복기 해설" : "AI game review"}</span><i>→</i>
-          </button>
-          <button className="review-open-button" type="button" onClick={openPlayedArchives} disabled={playedArchives.archives.length === 0} title={playedArchives.archives.length === 0 ? (language === "zh" ? "完成一盘人机对战后即可查看" : language === "ko" ? "AI 대국을 한 판 완료하면 확인할 수 있습니다" : "Finish an AI match to view saved games") : undefined}>
-            <span>{language === "zh" ? "最近五盘人机对战" : language === "ko" ? "최근 AI 대국 5국" : "Recent AI matches"}</span><i>{playedArchives.archives.length}/5 →</i>
-          </button>
-          <button className="settings-reset" type="button" onClick={resetAllSettings}>{t.resetSettings}</button>
-          <div className="move-log" aria-label="走棋记录">
-            <p>{t.log}</p>
-            {moveHistory.length === 0 ? <span>{t.noLog}</span> : moveHistory.slice(-6).map((move, index) => <span key={`${move}-${index}`}>{move}</span>)}
-          </div>
-            </div>
-          </details>
           <p className="coming-soon">已支持基础走法与将军限制</p>
           </>}
           </div>
