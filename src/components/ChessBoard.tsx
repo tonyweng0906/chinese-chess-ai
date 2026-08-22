@@ -147,11 +147,11 @@ export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], 
       {reviewComparison && (
         <svg className="review-comparison-overlay" viewBox="0 0 800 890" aria-hidden="true">
           <defs>
-            <marker id={actualMarkerId} markerWidth="17" markerHeight="17" refX="15" refY="8.5" orient="auto" markerUnits="userSpaceOnUse">
-              <path className="review-arrowhead review-arrowhead--actual" d="M 1.5 1.5 L 15.5 8.5 L 1.5 15.5 z" />
+            <marker id={actualMarkerId} markerWidth="22" markerHeight="22" refX="19" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+              <path className="review-arrowhead review-arrowhead--actual" d="M 2 2 L 20 11 L 2 20 z" />
             </marker>
-            <marker id={recommendedMarkerId} markerWidth="17" markerHeight="17" refX="15" refY="8.5" orient="auto" markerUnits="userSpaceOnUse">
-              <path className="review-arrowhead review-arrowhead--recommended" d="M 1.5 1.5 L 15.5 8.5 L 1.5 15.5 z" />
+            <marker id={recommendedMarkerId} markerWidth="22" markerHeight="22" refX="19" refY="11" orient="auto" markerUnits="userSpaceOnUse">
+              <path className="review-arrowhead review-arrowhead--recommended" d="M 2 2 L 20 11 L 2 20 z" />
             </marker>
           </defs>
           <path className="review-route-backdrop" d={actualRoute} />

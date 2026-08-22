@@ -230,9 +230,9 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
           <div className="review-move-list__heading"><span>{t.record}</span><b>{moves.length}</b></div>
           <button className={step === 0 ? "is-active" : ""} type="button" onClick={() => chooseStep(0)}><i>00</i><span>{t.opening}</span></button>
           {moves.map((move, index) => {
-            const moveAnalysis = analysisCache.current.get(`${index + 1}:${analysisDepth}`);
+            const moveAnalysis = analysisCache.current.get(`${move.id}:${analysisDepth}`);
             const isBadMove = moveAnalysis?.quality === "questionable" || moveAnalysis?.quality === "mistake";
-            return <button className={`${step === index + 1 ? "is-active" : ""} ${isBadMove ? "has-review-warning" : ""}`} type="button" key={move.id} onClick={() => chooseStep(index + 1)}>
+            return <button className={`${step === index + 1 ? "is-active" : ""} ${isBadMove ? "has-review-warning" : ""} ${moveAnalysis?.quality === "mistake" ? "has-review-mistake" : moveAnalysis?.quality === "questionable" ? "has-review-questionable" : ""}`} type="button" key={move.id} onClick={() => chooseStep(index + 1)}>
               <i>{String(index + 1).padStart(2, "0")}</i>
               <span>{moveLabel(move, language)}</span>
               {isBadMove ? <b className="review-move-warning" aria-label={t.badMove} title={t.badMove}>×</b> : move.gaveCheck && <b>!</b>}
