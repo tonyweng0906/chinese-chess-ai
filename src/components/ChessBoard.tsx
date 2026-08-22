@@ -49,7 +49,7 @@ function pieceName(piece: ChessPiece, language: Language) {
 const x = (col: number) => 40 + col * 90;
 const y = (row: number) => 40 + row * 90;
 
-function routePath(from: Position, to: Position) {
+function routePath(from: Position, to: Position, offset = 0) {
   const x1 = x(from.col);
   const y1 = y(from.row);
   const x2 = x(to.col);
@@ -57,12 +57,14 @@ function routePath(from: Position, to: Position) {
   const distance = Math.hypot(x2 - x1, y2 - y1) || 1;
   const directionX = (x2 - x1) / distance;
   const directionY = (y2 - y1) / distance;
+  const normalX = -directionY;
+  const normalY = directionX;
   const startInset = Math.min(34, distance * 0.24);
   const endInset = Math.min(28, distance * 0.2);
-  const startX = x1 + directionX * startInset;
-  const startY = y1 + directionY * startInset;
-  const endX = x2 - directionX * endInset;
-  const endY = y2 - directionY * endInset;
+  const startX = x1 + directionX * startInset + normalX * offset;
+  const startY = y1 + directionY * startInset + normalY * offset;
+  const endX = x2 - directionX * endInset + normalX * offset;
+  const endY = y2 - directionY * endInset + normalY * offset;
   return `M ${startX} ${startY} L ${endX} ${endY}`;
 }
 
@@ -120,8 +122,13 @@ interface ChessBoardProps {
 }
 
 export function ChessBoard({ pieces, selectedId, legalMoves, invalidMoves = [], onPieceClick, onMove, onInvalidMove, invalidMoveLabel = "尝试此步", language, pieceStyle, lastMove, pieceTheme, flipped, invalidPieceId, hintPieceIds, onInvalidAction, onBoardClick, onBoardDrop, setupMode, reviewComparison = null, disabled = false }: ChessBoardProps) {
-  const actualRoute = reviewComparison ? routePath(reviewComparison.actual.from, reviewComparison.actual.to) : "";
-  const recommendedRoute = reviewComparison ? routePath(reviewComparison.recommended.from, reviewComparison.recommended.to) : "";
+  const sharedOrigin = Boolean(
+    reviewComparison
+    && reviewComparison.actual.from.row === reviewComparison.recommended.from.row
+    && reviewComparison.actual.from.col === reviewComparison.recommended.from.col
+  );
+  const actualRoute = reviewComparison ? routePath(reviewComparison.actual.from, reviewComparison.actual.to, sharedOrigin ? -8 : 0) : "";
+  const recommendedRoute = reviewComparison ? routePath(reviewComparison.recommended.from, reviewComparison.recommended.to, sharedOrigin ? 8 : 0) : "";
   return (
     <div className={`board-shell board-shell--${pieceTheme} ${flipped ? "board-shell--flipped" : ""} ${setupMode ? "board-shell--setup" : ""}`} aria-label="中国象棋初始棋盘" onClick={disabled ? undefined : onBoardClick} onDragOver={disabled ? undefined : (event) => event.preventDefault()} onDrop={disabled ? undefined : onBoardDrop}>
       <BoardLines />
