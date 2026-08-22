@@ -3,6 +3,7 @@ import { getPositionKey, type RuleMoveRecord } from "./adjudication";
 import type { Position } from "./rules";
 
 export const PREVIOUS_GAME_KEY = "chinese-chess-ai-previous-game";
+export const RESTORE_UNDO_KEY = "chinese-chess-ai-restore-undo";
 
 export type GameEndReason = "general-captured" | "checkmate" | "stalemate" | "repetition" | "perpetual-check" | "perpetual-chase" | "no-capture-limit";
 

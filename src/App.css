@@ -346,9 +346,13 @@
 .restore-game-button { width: 100%; margin-top: 0; padding: 10px 14px; border: 1px solid #554633; border-radius: 3px; color: #b9a17d; background: rgba(185,132,61,.04); cursor: pointer; font-size: 11px; letter-spacing: .05em; }
 .restore-game-button:hover:not(:disabled) { border-color: #9a7a4f; color: #e0c28f; background: rgba(185,132,61,.12); }
 .restore-game-button:disabled { cursor: not-allowed; opacity: .3; }
+.restore-undo-button { width: 100%; margin-top: 0; padding: 10px 14px; border: 1px solid #76552f; border-radius: 3px; color: #d7b878; background: rgba(185,132,61,.08); cursor: pointer; font-size: 11px; letter-spacing: .05em; }
+.restore-undo-button:hover:not(:disabled) { border-color: #c0924d; color: #f0d39a; background: rgba(185,132,61,.16); }
+.restore-undo-button:disabled { cursor: not-allowed; opacity: .3; }
 .undo-button { width: 100%; margin-top: 0; padding: 10px 14px; border: 1px solid #3f362c; border-radius: 3px; color: #9e927f; background: transparent; cursor: pointer; font-size: 12px; }
 .undo-button:hover:not(:disabled) { border-color: #806748; color: #d6bd91; }
 .undo-button:disabled { cursor: not-allowed; opacity: 0.35; }
+.restore-shortcut-hint { color: #665b4d; font-size: 9px; line-height: 1.5; text-align: center; }
 .move-log { display: flex; flex-direction: column; gap: 6px; margin-top: 23px; color: #756a5c; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; }
 .move-log p { margin: 0 0 3px; color: #9b876a; font-family: "Noto Serif SC", serif; font-size: 11px; letter-spacing: 0.12em; }
 .move-log span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
