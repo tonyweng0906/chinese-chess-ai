@@ -1029,6 +1029,7 @@ function App() {
         {!fullScreenPanelOpen && <div className="hero-mobile-actions">
           <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : language === "ko" ? "초보자 안내" : "Beginner guide"}</button>
           <button className={`sound-mobile-toggle ${soundEnabled ? "is-active" : ""}`} type="button" aria-label={`${t.sound}：${soundEnabled ? t.soundOn : t.soundOff}`} aria-pressed={soundEnabled} onClick={toggleSound}><span aria-hidden="true">♪</span>{soundEnabled ? t.soundOn : t.soundOff}</button>
+          {mode !== "setup" && <button className="hint-mobile-toggle" type="button" onClick={requestAiHint} disabled={Boolean(winner || draw || aiThinking || hintThinking)}>{hintThinking ? actionText.hintThinking : actionText.hint}</button>}
         </div>}
       </header>
 

@@ -713,9 +713,11 @@
   .hero { margin-bottom: 24px; }
   .language-switcher { top: -8px; right: 0; }
   .hero-mobile-actions { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 15px; }
-  .tutorial-mobile-entry, .sound-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 31px; padding: 7px 12px; border: 1px solid #55432f; border-radius: 3px; color: #a98f68; background: rgba(185,132,61,.07); font-size: 10px; }
+  .tutorial-mobile-entry, .sound-mobile-toggle, .hint-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 31px; padding: 7px 12px; border: 1px solid #55432f; border-radius: 3px; color: #a98f68; background: rgba(185,132,61,.07); font-size: 10px; }
   .sound-mobile-toggle { gap: 5px; border-color: #3c3329; color: #756b5d; }
   .sound-mobile-toggle.is-active { border-color: #806342; color: #d3b57f; background: rgba(185,132,61,.12); }
+  .hint-mobile-toggle { border-color: #5d806b; color: #b7e4c7; background: rgba(76,157,111,.12); }
+  .hint-mobile-toggle:disabled { cursor: not-allowed; opacity: .42; }
   .tutorial-intro { grid-template-columns: 1fr; }
   .tutorial-emblem { display: none; }
   .tutorial-path { grid-template-columns: 1fr; }
