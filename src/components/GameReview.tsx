@@ -18,6 +18,7 @@ interface GameReviewProps {
   soundEnabled?: boolean;
   soundVolume?: number;
   onClose: () => void;
+  onContinueFromPosition?: (pieces: ChessPiece[], turn: PieceColor) => void;
 }
 
 const copyBase = {
@@ -35,6 +36,7 @@ const copyBase = {
     actualRoute: "问题着法", recommendedRoute: "AI 建议", comparisonHint: "当前回放局面：红色 × 为错误落点",
     badMove: "问题着法",
     localNote: "分析由本地有限深度搜索完成，不上传棋局；“AI 首选”不等同于理论最优解。",
+    continueFromHere: "从此处继续下棋", continueHint: "选择当前回放局面，作为新的残局开始。", continueUnavailable: "该局面缺少将/帅，无法继续。",
   },
   en: {
     eyebrow: "AI REVIEW ROOM", title: "Replay and move-by-move analysis", close: "Back to game", opening: "Starting position", move: "Move", moveUnit: "", red: "Red", black: "Black",
@@ -50,6 +52,7 @@ const copyBase = {
     actualRoute: "Problem move", recommendedRoute: "AI suggestion", comparisonHint: "Current replay position: the red × marks the wrong destination",
     badMove: "Problem move",
     localNote: "Analysis uses a limited-depth local search; “AI top choice” does not mean a proven theoretical best move.",
+    continueFromHere: "Continue from here", continueHint: "Use the current replay position as a new endgame.", continueUnavailable: "Both generals are required to continue.",
   },
 } as const;
 const copy = {
@@ -66,7 +69,7 @@ const copy = {
       "missed-check": "상대에게 응수를 강요할 장군 기회를 놓쳐 주도권이 줄었습니다.", position: "상대의 최선 응수까지 계산하면 이 국면은 AI 추천보다 평가가 낮습니다.",
     },
     same: "현재 탐색 깊이에서 AI의 추천 수와 같습니다. 이 설명은 이론상 절대 최선이라는 뜻은 아닙니다.", scoreGap: "추천 수와 차이", decisive: "결정적", confidenceLabel: "신뢰도", confidence: { low: "낮음", medium: "중간", high: "높음" },
-    actualRoute: "문제 수", recommendedRoute: "AI 제안", comparisonHint: "현재 리플레이 국면: 빨간 ×는 잘못된 도착점", badMove: "문제 수", localNote: "해설은 제한된 깊이의 로컬 검색으로 계산됩니다.",
+    actualRoute: "문제 수", recommendedRoute: "AI 제안", comparisonHint: "현재 리플레이 국면: 빨간 ×는 잘못된 도착점", badMove: "문제 수", localNote: "해설은 제한된 깊이의 로컬 검색으로 계산됩니다.", continueFromHere: "여기서 계속 두기", continueHint: "현재 리플레이 국면을 새로운 종료 국면으로 시작합니다.", continueUnavailable: "계속하려면 양쪽 장군이 필요합니다.",
   },
 } as const;
 
@@ -78,6 +81,10 @@ const pieceNames: Record<Language, Record<PieceType, string>> = {
 
 function coordinate(position: { row: number; col: number }) {
   return `(${position.row},${position.col})`;
+}
+
+function opposite(color: PieceColor): PieceColor {
+  return color === "red" ? "black" : "red";
 }
 
 function moveLabel(move: RecordedMove, language: Language) {
@@ -128,7 +135,7 @@ function AnalysisCard({ analysis, move, language, loading }: { analysis: MoveAna
   </div>;
 }
 
-export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, archiveVariant = "training", soundEnabled = true, soundVolume = 0.58, onClose }: GameReviewProps) {
+export function GameReview({ startPieces, moves, language, pieceStyle, pieceTheme, flipped, analysisDepth, archiveMode = false, archiveVariant = "training", soundEnabled = true, soundVolume = 0.58, onClose, onContinueFromPosition }: GameReviewProps) {
   const t = copy[language];
   const heading = archiveMode
     ? archiveVariant === "played"
@@ -145,6 +152,9 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
   const activeMove = step > 0 ? moves[step - 1] : null;
   const boardPieces = step > 0 ? moves[step - 1].boardAfter : startPieces;
   const piecesBefore = step <= 1 ? startPieces : moves[step - 2].boardAfter;
+  const continueTurn = activeMove ? opposite(activeMove.mover) : moves[0]?.mover ?? "red";
+  const canContinue = boardPieces.some((piece) => piece.type === "general" && piece.color === "red")
+    && boardPieces.some((piece) => piece.type === "general" && piece.color === "black");
 
   useEffect(() => {
     if (!playing) return;
@@ -267,6 +277,10 @@ export function GameReview({ startPieces, moves, language, pieceStyle, pieceThem
           <button type="button" aria-label={t.last} title={t.last} onClick={() => chooseStep(moves.length)} disabled={step === moves.length}>›|</button>
         </div>
         <div className="review-progress" style={timelineStyle}><i /></div>
+        {archiveMode && archiveVariant === "training" && onContinueFromPosition && <div className="review-continue-card">
+          <button className="review-continue-button" type="button" onClick={() => onContinueFromPosition(boardPieces.map((piece) => ({ ...piece })), continueTurn)} disabled={!canContinue}>{t.continueFromHere}</button>
+          <small>{canContinue ? t.continueHint : t.continueUnavailable}</small>
+        </div>}
       </div>
       <aside className="review-sidebar">
         <AnalysisCard analysis={analysis} move={activeMove} language={language} loading={loading} />

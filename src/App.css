@@ -473,6 +473,11 @@
 .review-player-controls button:hover:not(:disabled) { border-color: #806849; color: #dac092; }
 .review-player-controls button:disabled { cursor: not-allowed; opacity: .28; }
 .review-player-controls .review-play { color: #dec18c; border-color: #765a38; background: rgba(185,132,61,.1); font-size: 10px; letter-spacing: .08em; }
+.review-continue-card { display: grid; gap: 7px; margin-top: 13px; padding: 11px 12px; border: 1px solid #554633; border-radius: 4px; background: rgba(185,132,61,.045); }
+.review-continue-button { min-height: 36px; padding: 8px 12px; border: 1px solid #8e6b41; border-radius: 3px; color: #e1c18d; background: rgba(185,132,61,.12); cursor: pointer; font-size: 10px; letter-spacing: .06em; }
+.review-continue-button:hover:not(:disabled) { border-color: #c0924d; background: rgba(185,132,61,.2); }
+.review-continue-button:disabled { cursor: not-allowed; opacity: .35; }
+.review-continue-card small { color: #806f5d; font-size: 9px; line-height: 1.45; }
 .review-progress { height: 3px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #2b251f; }
 .review-progress i { display: block; width: var(--review-progress); height: 100%; background: linear-gradient(90deg,#795a36,#c69a5c); transition: width 260ms ease; }
 .review-sidebar { min-width: 0; }

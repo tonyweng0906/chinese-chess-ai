@@ -874,6 +874,35 @@ function App() {
     setPlayedArchiveOpen(true);
   }
 
+  function continueFromTrainingPosition(nextPieces: ChessPiece[], nextTurn: PieceColor) {
+    saveCurrentGameAsPrevious();
+    cancelAiCalculation();
+    cancelHintCalculation();
+    setHintMove(null);
+    setHintScore(null);
+    setSelectedTrainingArchiveId(null);
+    setTrainingArchiveOpen(false);
+    setMode("local");
+    setPieces(nextPieces.map((piece) => ({ ...piece })));
+    setTurn(nextTurn);
+    setSelectedId(null);
+    setWinner(null);
+    setDraw(false);
+    setHistory([]);
+    setMoveHistory([]);
+    setGameStartPieces(nextPieces.map((piece) => ({ ...piece })));
+    setGameMoves([]);
+    setPositionHistory([getPositionKey(nextPieces, nextTurn)]);
+    setRuleMoves([]);
+    setNoCapturePlyCount(0);
+    setEndReason(null);
+    setLastMove(null);
+    setInvalidPieceId(null);
+    setInvalidNotice(false);
+    setInvalidAttempts(0);
+    setSelfCheckWarning(false);
+  }
+
   function saveCurrentGameAsPrevious() {
     const hasProgress = hasGameProgress(pieces, turn, Math.max(gameMoves.length, moveHistory.length), initialPieces);
     if (!hasProgress || mode === "setup") return;
@@ -1162,7 +1191,7 @@ function App() {
 
       {selectedPlayedArchive ? <GameReview startPieces={initialPieces} moves={selectedPlayedMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode archiveVariant="played" soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedPlayedArchiveId(null)} />
         : playedArchiveOpen ? <TrainingArchiveLibrary archives={playedArchives.archives} language={language} variant="played" onSelect={setSelectedPlayedArchiveId} onDelete={(archiveId) => setPlayedArchives((current) => removePlayedArchive(current, archiveId))} onClear={() => setPlayedArchives(createPlayedArchiveDataset())} onClose={() => setPlayedArchiveOpen(false)} />
-          : selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedTrainingArchiveId(null)} />
+          : selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedTrainingArchiveId(null)} onContinueFromPosition={continueFromTrainingPosition} />
         : trainingArchiveOpen ? <TrainingArchiveLibrary archives={trainingArchives.archives} language={language} variant="training" onSelect={setSelectedTrainingArchiveId} onDelete={(archiveId) => setTrainingArchives((current) => removeTrainingArchive(current, archiveId))} onClear={() => setTrainingArchives(createTrainingArchiveDataset())} onClose={() => setTrainingArchiveOpen(false)} />
           : reviewOpen ? <GameReview startPieces={gameStartPieces} moves={gameMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={flipped} analysisDepth={depth} soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setReviewOpen(false)} />
             : tutorialOpen ? <Tutorial language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} onPieceStyleChange={setPieceStyle} onPieceThemeChange={setPieceTheme} onClose={() => setTutorialOpen(false)} /> : <section className="game-layout">
