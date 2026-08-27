@@ -69,6 +69,8 @@ interface SearchContext {
   cacheHits: number;
   cutoffs: number;
   table: Map<string, TranspositionEntry>;
+  legalMoveCache: Map<string, AiChoice[]>;
+  evaluationCache: Map<string, number>;
   killerMoves: Map<number, string[]>;
   historyScores: Map<string, number>;
   positionHistory: string[];
@@ -145,7 +147,27 @@ export function getRecentMovePenalty(
 function checkTime(context: SearchContext, quiescence = false) {
   if (quiescence) context.quiescenceNodes += 1;
   else context.nodes += 1;
+  const visited = context.nodes + context.quiescenceNodes;
+  if ((visited & 31) !== 0) return;
   if (performance.now() >= context.deadline) throw TIMEOUT;
+}
+
+function getCachedLegalMoves(pieces: ChessPiece[], turn: PieceColor, context: SearchContext) {
+  const key = getPositionKey(pieces, turn);
+  const cached = context.legalMoveCache.get(key);
+  if (cached) return cached;
+  const legalMoves = getAllLegalMoves(turn, pieces);
+  if (context.legalMoveCache.size < 60_000) context.legalMoveCache.set(key, legalMoves);
+  return legalMoves;
+}
+
+function evaluateCached(pieces: ChessPiece[], color: PieceColor, context: SearchContext) {
+  const key = getPositionKey(pieces, color);
+  const cached = context.evaluationCache.get(key);
+  if (cached !== undefined) return cached;
+  const score = evaluate(pieces, color);
+  if (context.evaluationCache.size < 80_000) context.evaluationCache.set(key, score);
+  return score;
 }
 
 function strategicPieceBonus(piece: ChessPiece, pieces: ChessPiece[], enemyGeneral: ChessPiece | undefined) {
@@ -240,7 +262,7 @@ function orderMoves(
           .filter((move) => pieces.some((target) => target.color !== turn && target.row === move.row && target.col === move.col))
           .filter((move) => !isInCheck(turn, applyAiMove(pieces, piece.id, move.row, move.col)))
           .map((move) => ({ piece, move })))
-    : getAllLegalMoves(turn, pieces);
+    : getCachedLegalMoves(pieces, turn, context);
   return legalMoves.flatMap(({ piece, move }): OrderedMove[] => {
     const captured = pieces.find((item) => item.row === move.row && item.col === move.col) ?? null;
     if (capturesOnly && !captured) return [];
@@ -272,7 +294,7 @@ function quiescence(
 ): number {
   checkTime(context, true);
   const inCheck = isInCheck(turn, pieces);
-  const standPat = evaluate(pieces, turn);
+  const standPat = evaluateCached(pieces, turn, context);
   if (depthLeft <= 0) return standPat;
 
   const moves = orderMoves(pieces, turn, context, ply, null, false, !inCheck);
@@ -465,6 +487,8 @@ export function searchBestMove(
     cacheHits: 0,
     cutoffs: 0,
     table: new Map(),
+    legalMoveCache: new Map(),
+    evaluationCache: new Map(),
     killerMoves: new Map(),
     historyScores: new Map(),
     positionHistory: searchHistory.positionHistory,
