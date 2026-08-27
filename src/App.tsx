@@ -39,9 +39,9 @@ const copy = {
 } as const;
 
 const actionCopy = {
-  zh: { offerDraw: "求和", resign: "认输", offerDrawConfirm: "确定向对方提出和棋吗？确认后本局将结束。", resignConfirm: "确定认输吗？本局将判负。", agreedDraw: "双方同意和棋", resignation: "认输结束", hint: "AI提示", hintThinking: "AI计算中...", hintReady: "已标出推荐着法" },
-  en: { offerDraw: "Offer draw", resign: "Resign", offerDrawConfirm: "Offer a draw and end this game?", resignConfirm: "Resign this game? It will count as a loss.", agreedDraw: "Draw by agreement", resignation: "Resignation", hint: "AI hint", hintThinking: "AI is calculating...", hintReady: "Recommended move is highlighted" },
-  ko: { offerDraw: "무승부 제안", resign: "기권", offerDrawConfirm: "무승부로 대국을 끝낼까요?", resignConfirm: "기권할까요? 이 대국은 패배로 기록됩니다.", agreedDraw: "합의 무승부", resignation: "기권 종료", hint: "AI 추천", hintThinking: "AI 계산 중...", hintReady: "추천 수가 강조되었습니다" },
+  zh: { offerDraw: "求和", resign: "认输", offerDrawConfirm: "确定向对方提出和棋吗？确认后本局将结束。", resignConfirm: "确定认输吗？本局将判负。", agreedDraw: "双方同意和棋", resignation: "认输结束", hint: "AI提示", hintThinking: "AI计算中...", hintReady: "已标出推荐着法", hintMove: "推荐着法", hintReason: "推荐理由", hintEvaluation: "局面评价", hintCapture: "可以直接吃子", hintCheck: "形成将军，争取主动", hintRespond: "当前被将军，优先应将", hintImprove: "改善棋子位置并保持主动", hintDecisive: "明显优势", hintAdvantage: "略有优势", hintEqual: "局面均衡", hintDisadvantage: "略处下风", hintDanger: "局面危险", hintNoMove: "当前没有可推荐的着法" },
+  en: { offerDraw: "Offer draw", resign: "Resign", offerDrawConfirm: "Offer a draw and end this game?", resignConfirm: "Resign this game? It will count as a loss.", agreedDraw: "Draw by agreement", resignation: "Resignation", hint: "AI hint", hintThinking: "AI is calculating...", hintReady: "Recommended move is highlighted", hintMove: "Recommended move", hintReason: "Why this move", hintEvaluation: "Position", hintCapture: "Wins material immediately", hintCheck: "Gives check and takes the initiative", hintRespond: "Answers the current check", hintImprove: "Improves piece activity and keeps the initiative", hintDecisive: "Decisive advantage", hintAdvantage: "Slight advantage", hintEqual: "Balanced", hintDisadvantage: "Slight disadvantage", hintDanger: "Dangerous position", hintNoMove: "No legal move is available" },
+  ko: { offerDraw: "무승부 제안", resign: "기권", offerDrawConfirm: "무승부로 대국을 끝낼까요?", resignConfirm: "기권할까요? 이 대국은 패배로 기록됩니다.", agreedDraw: "합의 무승부", resignation: "기권 종료", hint: "AI 추천", hintThinking: "AI 계산 중...", hintReady: "추천 수가 강조되었습니다", hintMove: "추천 수", hintReason: "추천 이유", hintEvaluation: "국면 평가", hintCapture: "기물을 바로 잡습니다", hintCheck: "장군으로 주도권을 잡습니다", hintRespond: "현재 장군에 대응합니다", hintImprove: "기물의 활동성과 주도권을 높입니다", hintDecisive: "결정적 우세", hintAdvantage: "약간 우세", hintEqual: "균형", hintDisadvantage: "약간 열세", hintDanger: "위험한 국면", hintNoMove: "추천할 합법적인 수가 없습니다" },
 } as const;
 
 const trainingCopyBase = {
@@ -116,6 +116,15 @@ const koreanSetupGlyphs: Record<PieceColor, Record<PieceType, string>> = {
 };
 
 const englishBoardMarks: Record<PieceType, string> = { general: "K", advisor: "G", elephant: "B", horse: "N", rook: "R", cannon: "C", soldier: "P" };
+const hintPieceNames: Record<Language, Record<PieceType, string>> = {
+  zh: { general: "将/帅", advisor: "士/仕", elephant: "象/相", horse: "马", rook: "车", cannon: "炮", soldier: "兵/卒" },
+  en: { general: "King", advisor: "Guard", elephant: "Bishop", horse: "Knight", rook: "Rook", cannon: "Cannon", soldier: "Pawn" },
+  ko: { general: "장", advisor: "사", elephant: "상", horse: "마", rook: "차", cannon: "포", soldier: "병/졸" },
+};
+
+function oppositeColor(color: PieceColor): PieceColor {
+  return color === "red" ? "black" : "red";
+}
 
 function App() {
   const [pieces, setPieces] = useState<ChessPiece[]>(initialPieces);
@@ -130,6 +139,7 @@ function App() {
   const aiWorkerRef = useRef<Worker | null>(null);
   const aiTimerRef = useRef<number | null>(null);
   const [hintMove, setHintMove] = useState<AiChoice | null>(null);
+  const [hintScore, setHintScore] = useState<number | null>(null);
   const [hintThinking, setHintThinking] = useState(false);
   const hintWorkerRef = useRef<Worker | null>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
@@ -206,6 +216,27 @@ function App() {
     () => learningEnabled ? getLearningMoveHints(learningDataset, getPositionKey(pieces, aiColor)) : [],
     [learningEnabled, learningDataset, pieces, aiColor],
   );
+  const hintDetails = useMemo(() => {
+    if (!hintMove) return null;
+    const captured = pieces.find((piece) => piece.row === hintMove.move.row && piece.col === hintMove.move.col) ?? null;
+    const nextPieces = pieces
+      .filter((piece) => !(piece.row === hintMove.move.row && piece.col === hintMove.move.col))
+      .map((piece) => piece.id === hintMove.piece.id ? { ...piece, ...hintMove.move } : piece);
+    const givesCheck = isInCheck(oppositeColor(turn), nextPieces);
+    const isResponse = isInCheck(turn, pieces);
+    const reason = captured ? actionText.hintCapture : givesCheck ? actionText.hintCheck : isResponse ? actionText.hintRespond : actionText.hintImprove;
+    const evaluation = hintScore === null
+      ? actionText.hintEqual
+      : hintScore >= 50_000
+        ? actionText.hintDecisive
+        : hintScore >= 120
+          ? actionText.hintAdvantage
+          : hintScore <= -120
+            ? actionText.hintDanger
+            : hintScore < 0 ? actionText.hintDisadvantage : actionText.hintEqual;
+    const moveText = `${hintPieceNames[language][hintMove.piece.type]} (${hintMove.piece.row},${hintMove.piece.col}) → (${hintMove.move.row},${hintMove.move.col})`;
+    return { moveText, reason, evaluation };
+  }, [actionText, hintMove, hintScore, language, pieces, turn]);
   const trainingBoard = selfPlayStatus === "running" ? selfPlayPreview : null;
   const selectedTrainingArchive = trainingArchives.archives.find((archive) => archive.id === selectedTrainingArchiveId) ?? null;
   const selectedPlayedArchive = playedArchives.archives.find((archive) => archive.id === selectedPlayedArchiveId) ?? null;
@@ -258,6 +289,7 @@ function App() {
   function applyMove(piece: ChessPiece, position: Position) {
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     const capturedPiece = pieces.find((item) => item.row === position.row && item.col === position.col);
     const nextPieces = pieces
       .filter((piece) => !(piece.row === position.row && piece.col === position.col))
@@ -411,6 +443,7 @@ function App() {
     cancelAiCalculation();
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     localStorage.removeItem(RESTORE_UNDO_KEY);
     setRestoreUndoBackup(null);
     setMode("setup");
@@ -432,6 +465,7 @@ function App() {
     if (!setupReady) return;
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     setMode("local");
     setSelectedId(null);
     setWinner(null);
@@ -564,6 +598,7 @@ function App() {
     if (!window.confirm(actionText.offerDrawConfirm)) return;
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     setWinner(null);
     setDraw(true);
     setEndReason("agreed-draw");
@@ -579,6 +614,7 @@ function App() {
     if (!window.confirm(actionText.resignConfirm)) return;
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     const resigningColor = mode === "ai" ? playerColor : turn;
     setWinner(resigningColor === "red" ? "black" : "red");
     setDraw(false);
@@ -596,6 +632,7 @@ function App() {
     cancelAiCalculation();
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     setPieces(previous.pieces);
     setHistory((current) => current.slice(0, undoSnapshotIndex));
     setMoveHistory(previous.moveHistory);
@@ -641,6 +678,7 @@ function App() {
       hintWorkerRef.current = null;
       worker.terminate();
       setHintMove(event.data.choice);
+      setHintScore(event.data.choice ? event.data.score : null);
       setHintThinking(false);
     };
     worker.onerror = () => {
@@ -648,6 +686,7 @@ function App() {
       hintWorkerRef.current = null;
       worker.terminate();
       setHintMove(null);
+      setHintScore(null);
       setHintThinking(false);
     };
     worker.postMessage({
@@ -801,6 +840,7 @@ function App() {
     cancelAiCalculation();
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     setPieces(backup.pieces);
     setTurn(backup.turn);
     setMoveHistory(backup.moveHistory);
@@ -883,6 +923,7 @@ function App() {
     cancelAiCalculation();
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     setPieces(initialPieces);
     setTurn("red");
     setSelectedId(null);
@@ -940,6 +981,7 @@ function App() {
     cancelAiCalculation();
     cancelHintCalculation();
     setHintMove(null);
+    setHintScore(null);
     setMode("ai");
     setPlayerColor(color);
     setPieces(initialPieces);
@@ -1030,6 +1072,7 @@ function App() {
           <button className="tutorial-mobile-entry" type="button" onClick={() => setTutorialOpen(true)}>{language === "zh" ? "新手教程" : language === "ko" ? "초보자 안내" : "Beginner guide"}</button>
           <button className={`sound-mobile-toggle ${soundEnabled ? "is-active" : ""}`} type="button" aria-label={`${t.sound}：${soundEnabled ? t.soundOn : t.soundOff}`} aria-pressed={soundEnabled} onClick={toggleSound}><span aria-hidden="true">♪</span>{soundEnabled ? t.soundOn : t.soundOff}</button>
           {mode !== "setup" && <button className="hint-mobile-toggle" type="button" onClick={requestAiHint} disabled={Boolean(winner || draw || aiThinking || hintThinking)}>{hintThinking ? actionText.hintThinking : actionText.hint}</button>}
+          {hintDetails && <span className="hint-mobile-note">{hintDetails.moveText}</span>}
         </div>}
       </header>
 
@@ -1067,7 +1110,7 @@ function App() {
           <div className="game-panel-column game-panel-column--left">
           <div className="settings-row">
             <span>{t.mode}</span>
-            <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => { cancelAiCalculation(); cancelHintCalculation(); setHintMove(null); setMode("local"); }}>{t.local}</button>
+            <button className={mode === "local" ? "is-active" : ""} type="button" onClick={() => { cancelAiCalculation(); cancelHintCalculation(); setHintMove(null); setHintScore(null); setMode("local"); }}>{t.local}</button>
             <button className={mode === "ai" ? "is-active" : ""} type="button" onClick={() => startAiGame(playerColor)}>{t.ai}</button>
             <button className={mode === "setup" ? "is-active" : ""} type="button" onClick={startSetupMode}>{t.setup}</button>
           </div>
@@ -1233,7 +1276,12 @@ function App() {
           <button className="hint-button" type="button" onClick={requestAiHint} disabled={Boolean(winner || draw || aiThinking || hintThinking)}>
             {hintThinking ? actionText.hintThinking : actionText.hint}
           </button>
-          {hintMove && <p className="hint-note" role="status">{actionText.hintReady}</p>}
+          {hintDetails && <div className="hint-details" role="status">
+            <span>{actionText.hintMove}</span>
+            <strong>{hintDetails.moveText}</strong>
+            <p><b>{actionText.hintReason}</b>{hintDetails.reason}</p>
+            <p><b>{actionText.hintEvaluation}</b>{hintDetails.evaluation}</p>
+          </div>}
           <div className="game-concession-group">
             <button className="offer-draw-button" type="button" onClick={offerDraw} disabled={Boolean(winner || draw || aiThinking)}>{actionText.offerDraw}</button>
             <button className="resign-button" type="button" onClick={resignGame} disabled={Boolean(winner || draw || aiThinking)}>{actionText.resign}</button>
