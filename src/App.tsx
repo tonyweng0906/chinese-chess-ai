@@ -19,8 +19,8 @@ import { createPlayedArchiveDataset, parsePlayedArchiveDataset, PLAYED_ARCHIVE_S
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copyBase = {
-  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", restoreConfirm: "确定恢复上一局吗？当前棋盘会被暂时覆盖，之后可用“撤销恢复”找回。", restoreUndo: "撤销恢复", restoreUndoShortcut: "撤销恢复：Ctrl+Shift+Z；悔棋：Ctrl+Z", undo: "悔棋", historyActions: "局面操作", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", appearance: "外观与音效", tools: "工具与记录", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "学习中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "同一局面至少 3 个样本后才小幅影响 AI；吃子、将军和应将不受干扰。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？" },
-  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", restoreConfirm: "Restore the previous game? Your current board will be replaced temporarily, and you can undo the restore afterward.", restoreUndo: "Undo restore", restoreUndoShortcut: "Undo restore: Ctrl+Shift+Z · Undo move: Ctrl+Z", undo: "Undo", historyActions: "Position actions", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", appearance: "Appearance & sound", tools: "Tools & records", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Learning", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "A position needs at least 3 samples before it gently affects AI; captures, checks, and check responses stay protected.", clearLearningConfirm: "Clear all AI learning data?" },
+  zh: { black: "黑方", red: "红方", current: "当前对局", waiting: "等待落子", choose: "请选择一枚", chooseTarget: "请选择落点", marker: "棋盘上的金色标记是可走位置", check: "正在被将军", finished: "对局结束", captured: "对方已无合法应对", draw: "当前局面无合法着法", turn: "回合", moves: "已行棋", status: "状态", playing: "进行中", checkShort: "将军", ended: "已结束", reset: "重新开始", restorePrevious: "恢复上一局", restoreConfirm: "确定恢复上一局吗？当前棋盘会被暂时覆盖，之后可用“撤销恢复”找回。", restoreUndo: "撤销恢复", restoreUndoShortcut: "撤销恢复：Ctrl+Shift+Z；悔棋：Ctrl+Z", undo: "悔棋", historyActions: "局面操作", log: "走棋记录", noLog: "暂无记录", chinese: "汉字棋子", symbols: "图形棋子", language: "语言", appearance: "外观与音效", tools: "工具与记录", redWin: "红方获胜", blackWin: "黑方获胜", drawTitle: "和棋", mode: "模式", local: "双人", ai: "人机", setup: "残局编辑", thinking: "AI 思考中...", difficulty: "难度", easy: "简单", normal: "普通", hard: "困难", player: "玩家", save: "已自动保存", export: "导出棋谱", theme: "棋子主题", wood: "木质", jade: "玉石", flat: "扁平", upload: "上传棋子图片", redSide: "执红", blackSide: "执黑", resetSettings: "重置所有设置", selfCheck: "注意：危险落点会让自己被将军", editorHelp: "把下方棋子拖到棋盘；拖动已有棋子换位，点击可移除", clearAll: "清空全部棋子", finishSetup: "完成编辑并开始", needsGenerals: "双方都需要一枚将/帅", firstMove: "先行", redFirst: "红方先行", blackFirst: "黑方先行", sound: "棋局音效", soundOn: "开启", soundOff: "关闭", volume: "音量", soundHint: "落子、吃子、将军与将死使用不同声音", learning: "经验学习", learningOn: "学习中", learningOff: "已暂停", learnedGames: "已学习对局", learnedMoves: "AI 样本着法", clearLearning: "清除学习数据", learningHint: "同一局面至少 3 个样本后才小幅影响 AI；吃子、将军和应将不受干扰。", clearLearningConfirm: "确定清除所有 AI 学习数据吗？", winRate: "实时胜率", analyzingWinRate: "正在分析局面...", winRateHint: "基于本地引擎的快速估算，不代表绝对结果" },
+  en: { black: "Black", red: "Red", current: "Game", waiting: "Your move", choose: "Select a", chooseTarget: "Choose a destination", marker: "Gold marks show legal moves", check: "In check", finished: "Game over", captured: "No legal response", draw: "No legal moves available", turn: "Turn", moves: "Moves", status: "Status", playing: "Playing", checkShort: "Check", ended: "Ended", reset: "Restart", restorePrevious: "Restore previous game", restoreConfirm: "Restore the previous game? Your current board will be replaced temporarily, and you can undo the restore afterward.", restoreUndo: "Undo restore", restoreUndoShortcut: "Undo restore: Ctrl+Shift+Z · Undo move: Ctrl+Z", undo: "Undo", historyActions: "Position actions", log: "Move history", noLog: "No moves yet", chinese: "Chinese", symbols: "Symbols", language: "Language", appearance: "Appearance & sound", tools: "Tools & records", redWin: "Red wins", blackWin: "Black wins", drawTitle: "Draw", mode: "Mode", local: "Two players", ai: "vs AI", setup: "Endgame editor", thinking: "AI is thinking...", difficulty: "Difficulty", easy: "Easy", normal: "Normal", hard: "Hard", player: "Player", save: "Auto-saved", export: "Export record", theme: "Piece theme", wood: "Wood", jade: "Jade", flat: "Flat", upload: "Upload piece image", redSide: "Red side", blackSide: "Black side", resetSettings: "Reset all settings", selfCheck: "Warning: this move would expose your general", editorHelp: "Drag pieces below onto the board; drag placed pieces to move, click to remove", clearAll: "Clear all pieces", finishSetup: "Finish and play", needsGenerals: "Both sides need a general", firstMove: "First", redFirst: "Red first", blackFirst: "Black first", sound: "Game sound", soundOn: "On", soundOff: "Off", volume: "Volume", soundHint: "Distinct sounds for moves, captures, check, and checkmate", learning: "Experience learning", learningOn: "Learning", learningOff: "Paused", learnedGames: "Learned games", learnedMoves: "AI move samples", clearLearning: "Clear learning data", learningHint: "A position needs at least 3 samples before it gently affects AI; captures, checks, and check responses stay protected.", clearLearningConfirm: "Clear all AI learning data?", winRate: "Live win rate", analyzingWinRate: "Analyzing position...", winRateHint: "A quick local-engine estimate, not a guaranteed result" },
 } as const;
 
 const copy = {
@@ -34,7 +34,7 @@ const copy = {
     mode: "모드", local: "2인 대국", ai: "AI 대국", setup: "종료 상태 편집", thinking: "AI가 생각 중...", difficulty: "난이도", easy: "쉬움", normal: "보통", hard: "어려움", player: "플레이어", save: "자동 저장됨", export: "기보 내보내기", restoreConfirm: "이전 대국을 복원할까요? 현재 보드는 잠시 덮어쓰며, 이후 복원을 취소할 수 있습니다.", restoreUndo: "복원 취소", restoreUndoShortcut: "복원 취소: Ctrl+Shift+Z · 무르기: Ctrl+Z",
     theme: "기물 테마", wood: "나무", jade: "옥", flat: "플랫", redSide: "홍 진영", blackSide: "흑 진영", resetSettings: "모든 설정 초기화", selfCheck: "주의: 이 수는 자신의 장군을 노출합니다",
     clearAll: "모든 기물 비우기", finishSetup: "편집 완료 후 시작", needsGenerals: "양쪽 모두 장군이 필요합니다", firstMove: "선공", redFirst: "홍 선공", blackFirst: "흑 선공", sound: "대국 소리", soundOn: "켜짐", soundOff: "꺼짐", volume: "볼륨", editorHelp: "아래 기물을 보드로 드래그하세요. 놓인 기물은 드래그해 이동하거나 클릭해 제거할 수 있습니다.",
-    soundHint: "착수, 포획, 장군, 외통수마다 다른 소리를 냅니다.", learning: "경험 학습", learningOn: "학습 중", learningOff: "일시정지", learnedGames: "학습 대국", learnedMoves: "AI 샘플 수", clearLearning: "학습 데이터 삭제", learningHint: "같은 국면에서 최소 3개의 샘플이 쌓여야 AI에 조금씩 반영됩니다.", clearLearningConfirm: "모든 AI 학습 데이터를 삭제할까요?",
+    soundHint: "착수, 포획, 장군, 외통수마다 다른 소리를 냅니다.", learning: "경험 학습", learningOn: "학습 중", learningOff: "일시정지", learnedGames: "학습 대국", learnedMoves: "AI 샘플 수", clearLearning: "학습 데이터 삭제", learningHint: "같은 국면에서 최소 3개의 샘플이 쌓여야 AI에 조금씩 반영됩니다.", clearLearningConfirm: "모든 AI 학습 데이터를 삭제할까요?", winRate: "실시간 승률", analyzingWinRate: "국면 분석 중...", winRateHint: "로컬 엔진의 빠른 추정치이며 절대적인 결과는 아닙니다.",
   },
 } as const;
 
@@ -126,6 +126,13 @@ function oppositeColor(color: PieceColor): PieceColor {
   return color === "red" ? "black" : "red";
 }
 
+function scoreToWinRate(score: number) {
+  if (score >= 900_000) return 100;
+  if (score <= -900_000) return 0;
+  const normalized = Math.max(-900, Math.min(900, score));
+  return Math.round((1 / (1 + Math.exp(-normalized / 240))) * 100);
+}
+
 function App() {
   const [pieces, setPieces] = useState<ChessPiece[]>(initialPieces);
   const [turn, setTurn] = useState<PieceColor>("red");
@@ -142,6 +149,10 @@ function App() {
   const [hintScore, setHintScore] = useState<number | null>(null);
   const [hintThinking, setHintThinking] = useState(false);
   const hintWorkerRef = useRef<Worker | null>(null);
+  const [winRate, setWinRate] = useState<{ red: number; black: number; depth: number } | null>(null);
+  const [winRateThinking, setWinRateThinking] = useState(false);
+  const analysisWorkerRef = useRef<Worker | null>(null);
+  const analysisTimerRef = useRef<number | null>(null);
   const [difficulty, setDifficulty] = useState<"easy" | "normal" | "hard">("normal");
   const [playerColor, setPlayerColor] = useState<PieceColor>("red");
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>("wood");
@@ -514,6 +525,66 @@ function App() {
       if (aiWorkerRef.current === worker) aiWorkerRef.current = null;
     };
   }, [mode, turn, pieces, winner, draw, aiColor, depth, aiTimeLimit, positionHistory, ruleMoves, gameMoves, learningHints]);
+
+  useEffect(() => {
+    if (analysisTimerRef.current !== null) window.clearTimeout(analysisTimerRef.current);
+    analysisTimerRef.current = null;
+    analysisWorkerRef.current?.terminate();
+    analysisWorkerRef.current = null;
+    setWinRateThinking(false);
+    if (mode === "setup") {
+      setWinRate(null);
+      return;
+    }
+    if (winner) {
+      setWinRate({ red: winner === "red" ? 100 : 0, black: winner === "black" ? 100 : 0, depth: 0 });
+      return;
+    }
+    if (draw) {
+      setWinRate({ red: 50, black: 50, depth: 0 });
+      return;
+    }
+    setWinRateThinking(true);
+    const timer = window.setTimeout(() => {
+      analysisTimerRef.current = null;
+      const worker = new Worker(new URL("./game/ai.worker.ts", import.meta.url), { type: "module" });
+      analysisWorkerRef.current = worker;
+      worker.onmessage = (event: MessageEvent<AiSearchResult>) => {
+        if (analysisWorkerRef.current !== worker) return;
+        analysisWorkerRef.current = null;
+        worker.terminate();
+        const redScore = turn === "red" ? event.data.score : -event.data.score;
+        const red = scoreToWinRate(redScore);
+        setWinRate({ red, black: 100 - red, depth: event.data.stats.completedDepth });
+        setWinRateThinking(false);
+      };
+      worker.onerror = () => {
+        if (analysisWorkerRef.current !== worker) return;
+        analysisWorkerRef.current = null;
+        worker.terminate();
+        setWinRateThinking(false);
+      };
+      worker.postMessage({
+        pieces,
+        color: turn,
+        maxDepth: Math.min(depth, 3),
+        timeLimit: Math.min(aiTimeLimit, 420),
+        positionHistory,
+        ruleMoves,
+        moves: gameMoves,
+        learningHints,
+      });
+    }, 180);
+    analysisTimerRef.current = timer;
+    return () => {
+      window.clearTimeout(timer);
+      if (analysisTimerRef.current === timer) analysisTimerRef.current = null;
+      if (analysisWorkerRef.current) {
+        analysisWorkerRef.current.terminate();
+        analysisWorkerRef.current = null;
+      }
+    };
+  }, [mode, pieces, turn, winner, draw, depth, aiTimeLimit, positionHistory, ruleMoves, gameMoves, learningHints]);
 
   useEffect(() => {
     try {
@@ -1073,6 +1144,7 @@ function App() {
           <button className={`sound-mobile-toggle ${soundEnabled ? "is-active" : ""}`} type="button" aria-label={`${t.sound}：${soundEnabled ? t.soundOn : t.soundOff}`} aria-pressed={soundEnabled} onClick={toggleSound}><span aria-hidden="true">♪</span>{soundEnabled ? t.soundOn : t.soundOff}</button>
           {mode !== "setup" && <button className="hint-mobile-toggle" type="button" onClick={requestAiHint} disabled={Boolean(winner || draw || aiThinking || hintThinking)}>{hintThinking ? actionText.hintThinking : actionText.hint}</button>}
           {hintDetails && <span className="hint-mobile-note">{hintDetails.moveText}</span>}
+          {mode !== "setup" && <span className="win-rate-mobile">{t.winRate}：{winRateThinking ? "…" : winRate ? `${winRate.red}% / ${winRate.black}%` : "—"}</span>}
         </div>}
       </header>
 
@@ -1251,14 +1323,23 @@ function App() {
           </details>
           <p className="panel-kicker">{t.current}</p>
           <h2>{winner ? (winner === "red" ? t.redWin : t.blackWin) : draw ? t.drawTitle : `${turnName} ${t.turn}`}</h2>
-          <div className="turn-card">
+           <div className="turn-card">
             <span className={`turn-piece turn-piece--${turn} ${pieceStyle === "symbols" ? "turn-piece--symbols" : ""}`}>{pieceStyle === "symbols" ? <PieceIcon type="general" /> : turn === "red" ? (language === "zh" ? "帅" : language === "ko" ? "장" : "K") : (language === "zh" ? "将" : language === "ko" ? "장" : "K")}</span>
             <div>
               <strong>{winner || draw ? t.finished : invalidAttempts >= 3 ? (language === "zh" ? "可解除将军的棋子已高亮" : language === "ko" ? "장군을 풀 수 있는 기물이 강조되었습니다" : "Escape pieces are highlighted") : invalidNotice ? (language === "zh" ? "这枚棋子无法解将" : language === "ko" ? "이 기물로는 장군을 풀 수 없습니다" : "This piece cannot answer check") : selfCheckWarning ? t.selfCheck : isInCheck(turn, pieces) ? t.check : ruleWarning ?? (aiThinking ? t.thinking : selectedPiece ? t.chooseTarget : t.waiting)}</strong>
               <p>{winner || draw ? endReasonText ?? t.finished : selectedPiece ? t.marker : `${t.choose} ${turnName}`}</p>
-            </div>
-          </div>
-          <div className="divider" />
+             </div>
+           </div>
+           <section className="win-rate-card" aria-live="polite">
+             <div className="win-rate-card__header">
+               <span>{t.winRate}</span>
+               <strong>{winRateThinking ? t.analyzingWinRate : winRate ? `${winRate.red}% / ${winRate.black}%` : "—"}</strong>
+             </div>
+             <div className="win-rate-bar" aria-hidden="true"><i style={{ width: `${winRate?.red ?? 50}%` }} /></div>
+             <div className="win-rate-card__labels"><span>{t.red} {winRate?.red ?? "—"}%</span><span>{t.black} {winRate?.black ?? "—"}%</span></div>
+             <small>{t.winRateHint}{winRate && winRate.depth > 0 ? ` · ${language === "zh" ? "深度" : language === "ko" ? "깊이" : "depth"} ${winRate.depth}` : ""}</small>
+           </section>
+           <div className="divider" />
           <dl className="game-stats">
             <div><dt>{t.turn}</dt><dd>{String(Math.floor(moveCount / 2) + 1).padStart(2, "0")}</dd></div>
             <div><dt>{t.moves}</dt><dd>{moveCount}</dd></div>
