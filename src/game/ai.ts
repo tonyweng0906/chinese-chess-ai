@@ -24,6 +24,11 @@ export interface AiChoice {
   move: Position;
 }
 
+export interface AiCandidate {
+  choice: AiChoice;
+  score: number;
+}
+
 export interface AiSearchStats {
   completedDepth: number;
   nodes: number;
@@ -37,6 +42,7 @@ export interface AiSearchStats {
 export interface AiSearchResult {
   choice: AiChoice | null;
   score: number;
+  candidates?: AiCandidate[];
   stats: AiSearchStats;
 }
 
@@ -376,11 +382,12 @@ function negamax(
 function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, context: SearchContext, preferredMoveKey: string | null) {
   checkTime(context);
   const moves = orderMoves(pieces, color, context, 0, preferredMoveKey);
-  if (moves.length === 0) return { choice: null, score: -MATE_SCORE, bestMoveKey: null };
+  if (moves.length === 0) return { choice: null, score: -MATE_SCORE, bestMoveKey: null, candidates: [] };
   let alpha = -Infinity;
   const beta = Infinity;
   let best = moves[0];
   let bestScore = -Infinity;
+  const candidates: AiCandidate[] = [];
   const rootKey = getPositionKey(pieces, color);
   const canUseLearning = !isInCheck(color, pieces)
     && !moves.some((candidate) => candidate.captured || candidate.givesCheck);
@@ -414,10 +421,12 @@ function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, cont
       const learningKey = getLearningMoveKey(candidate.piece.type, candidate.piece, candidate.move);
       score += context.learningBonuses.get(learningKey) ?? 0;
     }
+    candidates.push({ choice: { piece: candidate.piece, move: candidate.move }, score });
     if (score > bestScore) { bestScore = score; best = candidate; }
     if (score > alpha) alpha = score;
   }
-  return { choice: { piece: best.piece, move: best.move }, score: bestScore, bestMoveKey: best.key };
+  candidates.sort((first, second) => second.score - first.score);
+  return { choice: { piece: best.piece, move: best.move }, score: bestScore, bestMoveKey: best.key, candidates };
 }
 
 export function searchBestMove(
@@ -499,6 +508,7 @@ export function searchBestMove(
   };
   let choice: AiChoice = openingBookChoice ?? fallback;
   let score = evaluate(applyAiMove(pieces, fallback.piece.id, fallback.move.row, fallback.move.col), color);
+  let candidates: AiCandidate[] = [{ choice: { piece: fallback.piece, move: fallback.move }, score }];
   let completedDepth = 0;
   let preferredMoveKey: string | null = null;
   let timedOut = false;
@@ -509,6 +519,7 @@ export function searchBestMove(
       if (iteration.choice) {
         choice = iteration.choice;
         score = iteration.score;
+        candidates = iteration.candidates;
         preferredMoveKey = iteration.bestMoveKey;
         completedDepth = depth;
       }
@@ -522,11 +533,16 @@ export function searchBestMove(
   if (openingBookChoice) {
     choice = openingBookChoice;
     score = evaluate(applyAiMove(pieces, openingBookChoice.piece.id, openingBookChoice.move.row, openingBookChoice.move.col), color);
+    candidates = [
+      { choice: openingBookChoice, score },
+      ...candidates.filter((candidate) => moveKey(candidate.choice.piece.id, candidate.choice.move) !== moveKey(openingBookChoice.piece.id, openingBookChoice.move)),
+    ];
   }
 
   return {
     choice,
     score,
+    candidates,
     stats: {
       completedDepth,
       nodes: context.nodes,
