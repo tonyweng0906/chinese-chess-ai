@@ -22,6 +22,7 @@ export interface TrainingArchive {
   draw: boolean;
   endReason?: GameEndReason;
   abandoned?: boolean;
+  startPieces?: ChessPiece[];
   moves: ArchivedTrainingMove[];
 }
 
@@ -42,6 +43,7 @@ export function buildTrainingArchive(
   finishedAt = Date.now(),
   endReason?: GameEndReason,
   abandoned = false,
+  startPieces?: ChessPiece[],
 ): TrainingArchive {
   return {
     id,
@@ -50,6 +52,7 @@ export function buildTrainingArchive(
     draw,
     ...(endReason ? { endReason } : {}),
     ...(abandoned ? { abandoned: true } : {}),
+    ...(startPieces ? { startPieces: startPieces.map((piece) => ({ ...piece })) } : {}),
     moves: moves.map((move) => ({
       mover: move.mover,
       pieceId: move.pieceId,
@@ -96,7 +99,7 @@ function applyArchivedMove(pieces: ChessPiece[], move: ArchivedTrainingMove) {
     .map((piece) => piece.id === move.pieceId ? { ...piece, row: move.to.row, col: move.to.col } : piece);
 }
 
-export function reconstructTrainingMoves(archive: TrainingArchive, startPieces: ChessPiece[] = initialPieces): RecordedMove[] {
+export function reconstructTrainingMoves(archive: TrainingArchive, startPieces: ChessPiece[] = archive.startPieces ?? initialPieces): RecordedMove[] {
   let board = startPieces.map((piece) => ({ ...piece }));
   return archive.moves.map((move, index) => {
     const capturedPiece = board.find((piece) => piece.row === move.to.row && piece.col === move.to.col) ?? null;
@@ -130,6 +133,12 @@ export function parseTrainingArchiveDataset(value: string | null): TrainingArchi
       && typeof archive.draw === "boolean"
       && (archive.endReason === undefined || typeof archive.endReason === "string")
       && (archive.abandoned === undefined || typeof archive.abandoned === "boolean")
+      && (archive.startPieces === undefined || Array.isArray(archive.startPieces) && archive.startPieces.every((piece) => piece
+        && typeof piece.id === "string"
+        && isPieceType(piece.type)
+        && (piece.color === "red" || piece.color === "black")
+        && Number.isInteger(piece.row) && piece.row >= 0 && piece.row <= 9
+        && Number.isInteger(piece.col) && piece.col >= 0 && piece.col <= 8))
       && Array.isArray(archive.moves)
       && archive.moves.every((move) => move
         && (move.mover === "red" || move.mover === "black")

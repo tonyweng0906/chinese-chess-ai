@@ -311,6 +311,10 @@
 .finish-setup-button { width: 100%; padding: 10px; border: 1px solid #8b6b42; border-radius: 3px; color: #e0c38f; background: rgba(185, 132, 61, 0.14); cursor: pointer; font-size: 11px; letter-spacing: 0.08em; }
 .finish-setup-button:hover:not(:disabled) { border-color: #c39a5d; background: rgba(185, 132, 61, 0.24); }
 .finish-setup-button:disabled { cursor: not-allowed; opacity: 0.36; }
+.setup-ai-option { margin-top: 7px; }
+.setup-start-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
+.finish-setup-button--ai { border-color: #52745f; color: #c4ddcc; background: rgba(62,119,81,.14); }
+.finish-setup-button--ai:hover:not(:disabled) { border-color: #7ca089; background: rgba(62,119,81,.23); }
 .setup-validation { margin: 8px 0 0; color: #9b665e; font-size: 9px; text-align: center; }
 .endgame-solver { margin: 16px 0; padding: 14px; border: 1px solid #3d4d43; border-radius: 4px; background: linear-gradient(145deg, rgba(51,83,65,.12), rgba(18,25,21,.34)); }
 .endgame-solver__heading { display: flex; align-items: center; gap: 10px; }

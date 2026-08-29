@@ -92,7 +92,9 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
   }
   const archive = buildTrainingArchive("archive-1", [redMove, blackMove], "black", false, 30);
   const abandonedArchive = buildTrainingArchive("archive-abandoned", [redMove], null, false, 31, undefined, true);
+  const customStartArchive = buildTrainingArchive("archive-custom", [redMove, blackMove], "black", false, 32, undefined, false, startPieces);
   const restoredMoves = reconstructTrainingMoves(archive, startPieces);
+  const restoredCustomMoves = reconstructTrainingMoves(customStartArchive);
   const archiveDataset = recordTrainingArchive(createTrainingArchiveDataset(), archive);
   const parsedArchives = parseTrainingArchiveDataset(JSON.stringify(archiveDataset));
   let cappedArchives = createTrainingArchiveDataset();
@@ -145,6 +147,11 @@ export function runLearningBenchmarks(): LearningBenchmarkResult[] {
         && restoredMoves[1].boardAfter.some((piece) => piece.id === "br" && piece.row === 1 && piece.col === 0),
     },
     { name: "round-trips-training-archive", passed: parsedArchives.archives[0]?.id === archive.id },
+    {
+      name: "preserves-custom-start-position",
+      passed: customStartArchive.startPieces?.length === startPieces.length
+        && restoredCustomMoves[1]?.boardAfter.some((piece) => piece.id === "br" && piece.row === 1 && piece.col === 0),
+    },
     {
       name: "caps-training-archives",
       passed: cappedArchives.archives.length === MAX_TRAINING_ARCHIVES && cappedArchives.archives[0]?.id === "archive-3",

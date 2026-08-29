@@ -52,7 +52,7 @@ const solverCopy = {
     solved: "已证明强制胜利", notProven: "当前深度内尚未证明胜法", timeout: "达到时间上限，尚未完成证明",
     exact: "“已证明”表示最顽强防守下仍然必胜；“尚未证明”不代表一定无法取胜。",
     nodes: "已检查局面", reached: "完成深度", line: "最顽强防守路线", plies: "步",
-    invalid: "局面不合法：双方不能同时处于被将军状态。", side: "求解方", simulate: "模拟破解路线", play: "播放", pause: "暂停", previous: "上一步", next: "下一步", exit: "退出演示", step: "演示进度",
+    invalid: "局面不合法：双方不能同时处于被将军状态。", side: "求解方", simulate: "模拟破解路线", play: "播放", pause: "暂停", previous: "上一步", next: "下一步", exit: "退出演示", step: "演示进度", playLocal: "开始双人残局", playAi: "与 AI 下残局",
   },
   en: {
     title: "Exact endgame solver", intro: "Exhaustively proves a win for the side to move and only claims success after every legal defense is verified.",
@@ -60,7 +60,7 @@ const solverCopy = {
     solved: "Forced win proven", notProven: "No win proven within this depth", timeout: "Time limit reached before a proof",
     exact: "Proven means every defense still loses. Not proven does not mean the position is unwinnable.",
     nodes: "Positions checked", reached: "Completed depth", line: "Best-defense line", plies: "plies",
-    invalid: "Invalid position: both kings cannot be in check at once.", side: "Solving for", simulate: "Simulate solution", play: "Play", pause: "Pause", previous: "Previous", next: "Next", exit: "Exit", step: "Progress",
+    invalid: "Invalid position: both kings cannot be in check at once.", side: "Solving for", simulate: "Simulate solution", play: "Play", pause: "Pause", previous: "Previous", next: "Next", exit: "Exit", step: "Progress", playLocal: "Start two-player endgame", playAi: "Play endgame vs AI",
   },
   ko: {
     title: "AI 종반 해법", intro: "현재 선공 측의 승리를 완전 탐색하며 모든 합법적 방어를 검증한 경우에만 해법으로 표시합니다.",
@@ -68,7 +68,7 @@ const solverCopy = {
     solved: "강제 승리 증명 완료", notProven: "현재 깊이에서는 승리를 증명하지 못했습니다", timeout: "시간 제한 안에 증명을 완료하지 못했습니다",
     exact: "증명 완료는 모든 방어에도 승리한다는 뜻입니다. 미증명은 승리 불가능을 뜻하지 않습니다.",
     nodes: "검사한 국면", reached: "완료 깊이", line: "최선 방어 진행", plies: "수",
-    invalid: "잘못된 국면입니다. 양쪽 장군이 동시에 장군 상태일 수 없습니다.", side: "해법 진영", simulate: "해법 진행 재생", play: "재생", pause: "일시정지", previous: "이전", next: "다음", exit: "종료", step: "진행",
+    invalid: "잘못된 국면입니다. 양쪽 장군이 동시에 장군 상태일 수 없습니다.", side: "해법 진영", simulate: "해법 진행 재생", play: "재생", pause: "일시정지", previous: "이전", next: "다음", exit: "종료", step: "진행", playLocal: "2인 종반 시작", playAi: "AI와 종반 대국",
   },
 } as const;
 
@@ -552,14 +552,18 @@ function App() {
     setLastMove(null);
   }
 
-  function finishSetup() {
+  function finishSetup(nextMode: "local" | "ai" = "local") {
     if (!setupReady) return;
+    if (isInCheck("red", pieces) && isInCheck("black", pieces)) {
+      setSolverError(solverText.invalid);
+      return;
+    }
     cancelHintCalculation();
     cancelEndgameSolver(true);
     setHintMove(null);
     setHintScore(null);
-    setMode("local");
-    setEndgamePractice(false);
+    setMode(nextMode);
+    setEndgamePractice(true);
     setEndgameViewBlack(false);
     setSelectedId(null);
     setWinner(null);
@@ -760,6 +764,7 @@ function App() {
       Date.now(),
       abandoned ? undefined : endReason ?? undefined,
       abandoned,
+      gameStartPieces,
     );
     setPlayedArchives((current) => recordPlayedArchive(current, archive));
   }
@@ -1379,7 +1384,7 @@ function App() {
         </div>}
       </header>
 
-      {selectedPlayedArchive ? <GameReview startPieces={initialPieces} moves={selectedPlayedMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode archiveVariant="played" soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedPlayedArchiveId(null)} />
+      {selectedPlayedArchive ? <GameReview startPieces={selectedPlayedArchive.startPieces ?? initialPieces} moves={selectedPlayedMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode archiveVariant="played" soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedPlayedArchiveId(null)} />
         : playedArchiveOpen ? <TrainingArchiveLibrary archives={playedArchives.archives} language={language} variant="played" onSelect={setSelectedPlayedArchiveId} onDelete={(archiveId) => setPlayedArchives((current) => removePlayedArchive(current, archiveId))} onClear={() => setPlayedArchives(createPlayedArchiveDataset())} onClose={() => setPlayedArchiveOpen(false)} />
           : selectedTrainingArchive ? <GameReview startPieces={initialPieces} moves={selectedTrainingMoves} language={language} pieceStyle={pieceStyle} pieceTheme={pieceTheme} flipped={false} analysisDepth={depth} archiveMode soundEnabled={soundEnabled} soundVolume={soundVolume} onClose={() => setSelectedTrainingArchiveId(null)} onContinueFromPosition={continueFromTrainingPosition} />
         : trainingArchiveOpen ? <TrainingArchiveLibrary archives={trainingArchives.archives} language={language} variant="training" onSelect={setSelectedTrainingArchiveId} onDelete={(archiveId) => setTrainingArchives((current) => removeTrainingArchive(current, archiveId))} onClear={() => setTrainingArchives(createTrainingArchiveDataset())} onClose={() => setTrainingArchiveOpen(false)} />
@@ -1496,6 +1501,17 @@ function App() {
               <button className={turn === "red" ? "is-active" : ""} type="button" onClick={() => { cancelEndgameSolver(true); setTurn("red"); }}>{t.redFirst}</button>
               <button className={turn === "black" ? "is-active" : ""} type="button" onClick={() => { cancelEndgameSolver(true); setTurn("black"); }}>{t.blackFirst}</button>
             </div>
+            <div className="settings-row setup-ai-option">
+              <span>{t.player}</span>
+              <button className={playerColor === "red" ? "is-active" : ""} type="button" onClick={() => setPlayerColor("red")}>{t.redSide}</button>
+              <button className={playerColor === "black" ? "is-active" : ""} type="button" onClick={() => setPlayerColor("black")}>{t.blackSide}</button>
+            </div>
+            <div className="settings-row setup-ai-option">
+              <span>{t.difficulty}</span>
+              <button className={difficulty === "easy" ? "is-active" : ""} type="button" onClick={() => setDifficulty("easy")}>{t.easy}</button>
+              <button className={difficulty === "normal" ? "is-active" : ""} type="button" onClick={() => setDifficulty("normal")}>{t.normal}</button>
+              <button className={difficulty === "hard" ? "is-active" : ""} type="button" onClick={() => setDifficulty("hard")}>{t.hard}</button>
+            </div>
             <section className={`endgame-solver endgame-solver--${solverResult?.status ?? (solverThinking ? "thinking" : "idle")}`}>
               <div className="endgame-solver__heading">
                 <span>⌁</span>
@@ -1537,7 +1553,10 @@ function App() {
               {solverError && <p className="endgame-solver__error" role="alert">{solverError}</p>}
             </section>
             <button className="clear-board-button" type="button" onClick={clearSetupBoard}>{t.clearAll}</button>
-            <button className="finish-setup-button" type="button" onClick={finishSetup} disabled={!setupReady}>{t.finishSetup}</button>
+            <div className="setup-start-actions">
+              <button className="finish-setup-button" type="button" onClick={() => finishSetup("local")} disabled={!setupReady}>{solverText.playLocal}</button>
+              <button className="finish-setup-button finish-setup-button--ai" type="button" onClick={() => finishSetup("ai")} disabled={!setupReady}>{solverText.playAi}</button>
+            </div>
             {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
           </div>}
           {mode !== "setup" && <details className="panel-disclosure panel-disclosure--tools">
