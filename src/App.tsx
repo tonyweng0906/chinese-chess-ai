@@ -16,7 +16,7 @@ import { buildLearningGame, createLearningDataset, getLearningGameId, getLearnin
 import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayPreviewMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
 import { buildTrainingArchive, createTrainingArchiveDataset, parseTrainingArchiveDataset, recordTrainingArchive, reconstructTrainingMoves, removeTrainingArchive, TRAINING_ARCHIVE_STORAGE_KEY } from "./game/trainingArchive";
 import { createPlayedArchiveDataset, parsePlayedArchiveDataset, PLAYED_ARCHIVE_STORAGE_KEY, recordPlayedArchive, removePlayedArchive } from "./game/playedArchive";
-import type { EndgameSolverProgress, EndgameSolverResult } from "./game/endgameSolver";
+import type { EndgameSolverMove, EndgameSolverProgress, EndgameSolverResult } from "./game/endgameSolver";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copyBase = {
@@ -48,27 +48,27 @@ const actionCopy = {
 const solverCopy = {
   zh: {
     title: "AI 残局破解", intro: "严格穷举当前先行方的胜法；只有验证对手全部合法应对后才会宣告破解。",
-    depth: "计算层数", solve: "开始严格求解", stop: "停止计算", thinking: "正在穷举所有变化…",
+    depth: "最大层数（自动加深）", solve: "开始严格求解", stop: "停止计算", thinking: "正在穷举所有变化…",
     solved: "已证明强制胜利", notProven: "当前深度内尚未证明胜法", timeout: "达到时间上限，尚未完成证明",
     exact: "“已证明”表示最顽强防守下仍然必胜；“尚未证明”不代表一定无法取胜。",
     nodes: "已检查局面", reached: "完成深度", line: "最顽强防守路线", plies: "步",
-    invalid: "局面不合法：双方不能同时处于被将军状态。", side: "求解方",
+    invalid: "局面不合法：双方不能同时处于被将军状态。", side: "求解方", simulate: "模拟破解路线", play: "播放", pause: "暂停", previous: "上一步", next: "下一步", exit: "退出演示", step: "演示进度",
   },
   en: {
     title: "Exact endgame solver", intro: "Exhaustively proves a win for the side to move and only claims success after every legal defense is verified.",
-    depth: "Search plies", solve: "Start exact solve", stop: "Stop", thinking: "Checking every variation…",
+    depth: "Maximum plies (iterative)", solve: "Start exact solve", stop: "Stop", thinking: "Checking every variation…",
     solved: "Forced win proven", notProven: "No win proven within this depth", timeout: "Time limit reached before a proof",
     exact: "Proven means every defense still loses. Not proven does not mean the position is unwinnable.",
     nodes: "Positions checked", reached: "Completed depth", line: "Best-defense line", plies: "plies",
-    invalid: "Invalid position: both kings cannot be in check at once.", side: "Solving for",
+    invalid: "Invalid position: both kings cannot be in check at once.", side: "Solving for", simulate: "Simulate solution", play: "Play", pause: "Pause", previous: "Previous", next: "Next", exit: "Exit", step: "Progress",
   },
   ko: {
     title: "AI 종반 해법", intro: "현재 선공 측의 승리를 완전 탐색하며 모든 합법적 방어를 검증한 경우에만 해법으로 표시합니다.",
-    depth: "탐색 수", solve: "정밀 해법 시작", stop: "중지", thinking: "모든 변화를 탐색 중…",
+    depth: "최대 탐색 수 (자동 심화)", solve: "정밀 해법 시작", stop: "중지", thinking: "모든 변화를 탐색 중…",
     solved: "강제 승리 증명 완료", notProven: "현재 깊이에서는 승리를 증명하지 못했습니다", timeout: "시간 제한 안에 증명을 완료하지 못했습니다",
     exact: "증명 완료는 모든 방어에도 승리한다는 뜻입니다. 미증명은 승리 불가능을 뜻하지 않습니다.",
     nodes: "검사한 국면", reached: "완료 깊이", line: "최선 방어 진행", plies: "수",
-    invalid: "잘못된 국면입니다. 양쪽 장군이 동시에 장군 상태일 수 없습니다.", side: "해법 진영",
+    invalid: "잘못된 국면입니다. 양쪽 장군이 동시에 장군 상태일 수 없습니다.", side: "해법 진영", simulate: "해법 진행 재생", play: "재생", pause: "일시정지", previous: "이전", next: "다음", exit: "종료", step: "진행",
   },
 } as const;
 
@@ -161,6 +161,20 @@ function scoreToWinRate(score: number) {
   return Math.round((1 / (1 + Math.exp(-normalized / 240))) * 100);
 }
 
+function buildSolverPreview(startPieces: ChessPiece[], line: EndgameSolverMove[], moveCount: number) {
+  let board = startPieces.map((piece) => ({ ...piece }));
+  for (const move of line.slice(0, moveCount)) {
+    board = board
+      .filter((piece) => piece.row !== move.to.row || piece.col !== move.to.col)
+      .map((piece) => piece.id === move.pieceId ? { ...piece, ...move.to } : piece);
+  }
+  const move = moveCount > 0 ? line[moveCount - 1] : null;
+  return {
+    pieces: board,
+    lastMove: move ? { from: move.from, to: move.to } : null,
+  };
+}
+
 function App() {
   const [pieces, setPieces] = useState<ChessPiece[]>(initialPieces);
   const [turn, setTurn] = useState<PieceColor>("red");
@@ -180,12 +194,15 @@ function App() {
   const [hintCandidates, setHintCandidates] = useState<AiCandidate[]>([]);
   const [hintThinking, setHintThinking] = useState(false);
   const hintWorkerRef = useRef<Worker | null>(null);
-  const [solverDepth, setSolverDepth] = useState<8 | 12 | 16>(12);
+  const [solverDepth, setSolverDepth] = useState<12 | 20 | 32>(20);
   const [solverThinking, setSolverThinking] = useState(false);
   const [solverProgress, setSolverProgress] = useState<EndgameSolverProgress | null>(null);
   const [solverResult, setSolverResult] = useState<EndgameSolverResult | null>(null);
   const [solverError, setSolverError] = useState("");
   const solverWorkerRef = useRef<Worker | null>(null);
+  const [solverStartPieces, setSolverStartPieces] = useState<ChessPiece[]>([]);
+  const [solverPreviewIndex, setSolverPreviewIndex] = useState<number | null>(null);
+  const [solverAutoPlaying, setSolverAutoPlaying] = useState(false);
   const [winRate, setWinRate] = useState<{ red: number; black: number; depth: number } | null>(null);
   const [winRateThinking, setWinRateThinking] = useState(false);
   const analysisWorkerRef = useRef<Worker | null>(null);
@@ -299,6 +316,10 @@ function App() {
     color: move.color === "red" ? t.red : t.black,
     text: `${hintPieceNames[language][move.pieceType]} (${move.from.row},${move.from.col}) → (${move.to.row},${move.to.col})${move.captured ? ` × ${hintPieceNames[language][move.captured]}` : ""}${move.givesCheck ? ` ${t.checkShort}` : ""}`,
   })), [language, solverResult, t.black, t.checkShort, t.red]);
+  const solverPreviewBoard = useMemo(() => solverPreviewIndex === null || !solverResult
+    ? null
+    : buildSolverPreview(solverStartPieces, solverResult.line, solverPreviewIndex),
+  [solverPreviewIndex, solverResult, solverStartPieces]);
   const trainingBoard = selfPlayStatus === "running" ? selfPlayPreview : null;
   const selectedTrainingArchive = trainingArchives.archives.find((archive) => archive.id === selectedTrainingArchiveId) ?? null;
   const selectedPlayedArchive = playedArchives.archives.find((archive) => archive.id === selectedPlayedArchiveId) ?? null;
@@ -688,6 +709,18 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!solverAutoPlaying || solverPreviewIndex === null || !solverResult) return;
+    if (solverPreviewIndex >= solverResult.line.length) {
+      setSolverAutoPlaying(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setSolverPreviewIndex((current) => current === null ? null : Math.min(solverResult.line.length, current + 1));
+    }, 850);
+    return () => window.clearTimeout(timer);
+  }, [solverAutoPlaying, solverPreviewIndex, solverResult]);
+
+  useEffect(() => {
     if ((!learningEnabled || aiThinking || mode !== "ai") && selfPlayWorkerRef.current) {
       selfPlayWorkerRef.current.terminate();
       selfPlayWorkerRef.current = null;
@@ -808,10 +841,13 @@ function App() {
     solverWorkerRef.current?.terminate();
     solverWorkerRef.current = null;
     setSolverThinking(false);
+    setSolverAutoPlaying(false);
+    setSolverPreviewIndex(null);
     if (clearResult) {
       setSolverProgress(null);
       setSolverResult(null);
       setSolverError("");
+      setSolverStartPieces([]);
       setHintMove(null);
     }
   }
@@ -824,6 +860,7 @@ function App() {
       return;
     }
     setSolverThinking(true);
+    setSolverStartPieces(pieces.map((piece) => ({ ...piece })));
     const worker = new Worker(new URL("./game/endgameSolver.worker.ts", import.meta.url), { type: "module" });
     solverWorkerRef.current = worker;
     worker.onmessage = (event: MessageEvent<EndgameSolverProgress | EndgameSolverResult>) => {
@@ -848,8 +885,21 @@ function App() {
       setSolverThinking(false);
       setSolverError(language === "zh" ? "求解器运行失败，请减少棋子或降低计算层数后重试。" : language === "ko" ? "해법 계산에 실패했습니다. 기물 또는 탐색 깊이를 줄여 다시 시도하세요." : "The solver failed. Reduce the pieces or search depth and try again.");
     };
-    const timeLimit = solverDepth === 8 ? 6_000 : solverDepth === 12 ? 18_000 : 35_000;
+    const timeLimit = solverDepth === 12 ? 20_000 : solverDepth === 20 ? 60_000 : 180_000;
     worker.postMessage({ pieces, attacker: turn, maxDepth: solverDepth, timeLimit });
+  }
+
+  function startSolverSimulation() {
+    if (!solverResult || solverResult.status !== "solved" || solverResult.line.length === 0) return;
+    setSelectedId(null);
+    setSolverPreviewIndex(0);
+    setSolverAutoPlaying(true);
+  }
+
+  function changeSolverPreview(step: number) {
+    if (!solverResult || solverPreviewIndex === null) return;
+    setSolverAutoPlaying(false);
+    setSolverPreviewIndex(Math.max(0, Math.min(solverResult.line.length, solverPreviewIndex + step)));
   }
 
   function requestAiHint() {
@@ -1345,7 +1395,7 @@ function App() {
             <strong>{trainingText.watching}</strong>
             <span>{trainingText.game} {trainingBoard.gameNumber}/{trainingBoard.targetGames} {trainingText.gameUnit} · {trainingBoard.ply} {trainingText.ply} · {trainingBoard.turn === "red" ? t.red : t.black} {trainingText.toMove}</span>
           </div>}
-          <ChessBoard pieces={trainingBoard?.pieces ?? pieces} selectedId={trainingBoard ? null : selectedId} legalMoves={trainingBoard ? [] : legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={trainingBoard?.lastMove ?? lastMove} hintMove={trainingBoard ? null : hintMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={trainingBoard ? null : invalidPieceId} hintPieceIds={trainingBoard ? new Set<string>() : hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup" && !trainingBoard} disabled={Boolean(trainingBoard)} />
+          <ChessBoard pieces={trainingBoard?.pieces ?? solverPreviewBoard?.pieces ?? pieces} selectedId={trainingBoard || solverPreviewBoard ? null : selectedId} legalMoves={trainingBoard || solverPreviewBoard ? [] : legalMoves} onPieceClick={handlePieceClick} onMove={handleMove} language={language} pieceStyle={pieceStyle} lastMove={trainingBoard?.lastMove ?? solverPreviewBoard?.lastMove ?? lastMove} hintMove={trainingBoard || solverPreviewBoard ? null : hintMove} pieceTheme={pieceTheme} flipped={flipped} invalidPieceId={trainingBoard || solverPreviewBoard ? null : invalidPieceId} hintPieceIds={trainingBoard || solverPreviewBoard ? new Set<string>() : hintPieceIds} onInvalidAction={registerInvalidAction} onBoardClick={handleBoardClick} onBoardDrop={handleBoardDrop} setupMode={mode === "setup" && !trainingBoard && !solverPreviewBoard} disabled={Boolean(trainingBoard || solverPreviewBoard)} />
           {!trainingBoard && mode !== "setup" && (winner || draw) && (
             <div className={`result-banner ${winner ? "result-banner--win" : "result-banner--draw"}`} role="status">
               <span className="result-spark">{winner ? "✦" : "—"}</span>
@@ -1454,7 +1504,7 @@ function App() {
               <p>{solverText.intro}</p>
               <div className="endgame-solver__depth">
                 <span>{solverText.depth}</span>
-                {([8, 12, 16] as const).map((value) => <button className={solverDepth === value ? "is-active" : ""} type="button" disabled={solverThinking} key={value} onClick={() => { cancelEndgameSolver(true); setSolverDepth(value); }}>{value}</button>)}
+                {([12, 20, 32] as const).map((value) => <button className={solverDepth === value ? "is-active" : ""} type="button" disabled={solverThinking} key={value} onClick={() => { cancelEndgameSolver(true); setSolverDepth(value); }}>{value}</button>)}
               </div>
               {solverThinking
                 ? <button className="endgame-solver__action is-stop" type="button" onClick={() => cancelEndgameSolver(false)}>{solverText.stop}</button>
@@ -1469,6 +1519,16 @@ function App() {
                 <strong>{solverResult.status === "solved" ? solverText.solved : solverResult.status === "timeout" ? solverText.timeout : solverText.notProven}</strong>
                 {solverResult.status === "solved" && <span>{solverResult.line.length} {solverText.plies}</span>}
                 <small>{solverText.exact}</small>
+              </div>}
+              {solverResult?.status === "solved" && solverResult.line.length > 0 && solverPreviewIndex === null && <button className="endgame-solver__simulate" type="button" onClick={startSolverSimulation}>▶ {solverText.simulate}</button>}
+              {solverPreviewIndex !== null && solverResult && <div className="endgame-solver__playback">
+                <div><span>{solverText.step}</span><b>{solverPreviewIndex} / {solverResult.line.length}</b></div>
+                <section>
+                  <button type="button" onClick={() => changeSolverPreview(-1)} disabled={solverPreviewIndex === 0} title={solverText.previous}>‹</button>
+                  <button className="is-play" type="button" onClick={() => setSolverAutoPlaying((current) => !current)} disabled={solverPreviewIndex >= solverResult.line.length && !solverAutoPlaying}>{solverAutoPlaying ? `Ⅱ ${solverText.pause}` : `▶ ${solverText.play}`}</button>
+                  <button type="button" onClick={() => changeSolverPreview(1)} disabled={solverPreviewIndex >= solverResult.line.length} title={solverText.next}>›</button>
+                  <button className="is-exit" type="button" onClick={() => { setSolverAutoPlaying(false); setSolverPreviewIndex(null); }}>{solverText.exit}</button>
+                </section>
               </div>}
               {solverLineRows.length > 0 && <div className="endgame-solver__line">
                 <strong>{solverText.line}</strong>

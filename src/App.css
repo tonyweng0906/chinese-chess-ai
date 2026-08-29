@@ -341,6 +341,17 @@
 .endgame-solver__result.is-solved { border-color: #68a478; background: rgba(62,131,80,.1); }
 .endgame-solver__result.is-solved strong { color: #bfe0c7; }
 .endgame-solver__result.is-timeout { border-color: #9b7853; }
+.endgame-solver__simulate { width: 100%; margin-top: 9px; padding: 9px; border: 1px solid #75977f; border-radius: 3px; color: #c6dfcd; background: rgba(75,126,91,.13); cursor: pointer; font-size: 9px; letter-spacing: .05em; }
+.endgame-solver__simulate:hover { border-color: #9abca3; background: rgba(75,126,91,.22); }
+.endgame-solver__playback { margin-top: 10px; padding: 9px; border: 1px solid #425a4b; border-radius: 3px; background: rgba(22,39,29,.3); }
+.endgame-solver__playback > div { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: #74877b; font-size: 8px; }
+.endgame-solver__playback > div b { color: #b0c9b7; font: 9px ui-monospace, monospace; }
+.endgame-solver__playback section { display: grid; grid-template-columns: 30px 1fr 30px auto; gap: 5px; }
+.endgame-solver__playback button { min-height: 29px; border: 1px solid #485f50; border-radius: 3px; color: #9eb5a5; background: rgba(255,255,255,.025); cursor: pointer; font-size: 9px; }
+.endgame-solver__playback button:hover:not(:disabled) { border-color: #789982; color: #d0e3d4; }
+.endgame-solver__playback button.is-play { color: #bfe0c7; background: rgba(70,124,87,.13); }
+.endgame-solver__playback button.is-exit { padding-inline: 8px; border-color: #665448; color: #a88d79; }
+.endgame-solver__playback button:disabled { cursor: not-allowed; opacity: .3; }
 .endgame-solver__line { max-height: 190px; margin-top: 10px; padding-right: 3px; display: grid; gap: 5px; overflow-y: auto; }
 .endgame-solver__line > strong { margin-bottom: 2px; color: #8ca696; font-size: 8px; font-weight: 500; letter-spacing: .08em; }
 .endgame-solver__line span { min-width: 0; display: grid; grid-template-columns: 19px 27px 1fr; gap: 5px; align-items: center; color: #9aaa9f; font-size: 8px; line-height: 1.45; }
