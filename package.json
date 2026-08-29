@@ -12,6 +12,7 @@
     "test:backup": "node scripts/backup-benchmark.mjs",
     "test:learning": "node scripts/learning-benchmark.mjs",
     "test:self-play": "node scripts/selfplay-benchmark.mjs",
+    "test:solver": "node scripts/endgame-solver-benchmark.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

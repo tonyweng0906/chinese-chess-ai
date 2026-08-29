@@ -16,6 +16,7 @@ import { buildLearningGame, createLearningDataset, getLearningGameId, getLearnin
 import type { SelfPlayCompleteMessage, SelfPlayErrorMessage, SelfPlayPreviewMessage, SelfPlayProgressMessage } from "./game/selfPlay.worker";
 import { buildTrainingArchive, createTrainingArchiveDataset, parseTrainingArchiveDataset, recordTrainingArchive, reconstructTrainingMoves, removeTrainingArchive, TRAINING_ARCHIVE_STORAGE_KEY } from "./game/trainingArchive";
 import { createPlayedArchiveDataset, parsePlayedArchiveDataset, PLAYED_ARCHIVE_STORAGE_KEY, recordPlayedArchive, removePlayedArchive } from "./game/playedArchive";
+import type { EndgameSolverProgress, EndgameSolverResult } from "./game/endgameSolver";
 import type { ChessPiece, PieceColor, Language, PieceStyle, PieceTheme, PieceType, RecordedMove } from "./types";
 
 const copyBase = {
@@ -42,6 +43,33 @@ const actionCopy = {
   zh: { offerDraw: "求和", resign: "认输", offerDrawConfirm: "确定向对方提出和棋吗？确认后本局将结束。", resignConfirm: "确定认输吗？本局将判负。", agreedDraw: "双方同意和棋", resignation: "认输结束", hint: "AI提示", hintThinking: "AI计算中...", hintReady: "已标出推荐着法", hintMove: "推荐着法", hintCandidates: "候选着法", hintWinRate: "红方 / 黑方胜率", hintReason: "推荐理由", hintEvaluation: "局面评价", hintCapture: "可以直接吃子", hintCheck: "形成将军，争取主动", hintRespond: "当前被将军，优先应将", hintImprove: "改善棋子位置并保持主动", hintDecisive: "明显优势", hintAdvantage: "略有优势", hintEqual: "局面均衡", hintDisadvantage: "略处下风", hintDanger: "局面危险", hintNoMove: "当前没有可推荐的着法" },
   en: { offerDraw: "Offer draw", resign: "Resign", offerDrawConfirm: "Offer a draw and end this game?", resignConfirm: "Resign this game? It will count as a loss.", agreedDraw: "Draw by agreement", resignation: "Resignation", hint: "AI hint", hintThinking: "AI is calculating...", hintReady: "Recommended move is highlighted", hintMove: "Recommended move", hintCandidates: "Candidate moves", hintWinRate: "Red / Black win rate", hintReason: "Why this move", hintEvaluation: "Position", hintCapture: "Wins material immediately", hintCheck: "Gives check and takes the initiative", hintRespond: "Answers the current check", hintImprove: "Improves piece activity and keeps the initiative", hintDecisive: "Decisive advantage", hintAdvantage: "Slight advantage", hintEqual: "Balanced", hintDisadvantage: "Slight disadvantage", hintDanger: "Dangerous position", hintNoMove: "No legal move is available" },
   ko: { offerDraw: "무승부 제안", resign: "기권", offerDrawConfirm: "무승부로 대국을 끝낼까요?", resignConfirm: "기권할까요? 이 대국은 패배로 기록됩니다.", agreedDraw: "합의 무승부", resignation: "기권 종료", hint: "AI 추천", hintThinking: "AI 계산 중...", hintReady: "추천 수가 강조되었습니다", hintMove: "추천 수", hintCandidates: "후보 수", hintWinRate: "홍 / 흑 승률", hintReason: "추천 이유", hintEvaluation: "국면 평가", hintCapture: "기물을 바로 잡습니다", hintCheck: "장군으로 주도권을 잡습니다", hintRespond: "현재 장군에 대응합니다", hintImprove: "기물의 활동성과 주도권을 높입니다", hintDecisive: "결정적 우세", hintAdvantage: "약간 우세", hintEqual: "균형", hintDisadvantage: "약간 열세", hintDanger: "위험한 국면", hintNoMove: "추천할 합법적인 수가 없습니다" },
+} as const;
+
+const solverCopy = {
+  zh: {
+    title: "AI 残局破解", intro: "严格穷举当前先行方的胜法；只有验证对手全部合法应对后才会宣告破解。",
+    depth: "计算层数", solve: "开始严格求解", stop: "停止计算", thinking: "正在穷举所有变化…",
+    solved: "已证明强制胜利", notProven: "当前深度内尚未证明胜法", timeout: "达到时间上限，尚未完成证明",
+    exact: "“已证明”表示最顽强防守下仍然必胜；“尚未证明”不代表一定无法取胜。",
+    nodes: "已检查局面", reached: "完成深度", line: "最顽强防守路线", plies: "步",
+    invalid: "局面不合法：双方不能同时处于被将军状态。", side: "求解方",
+  },
+  en: {
+    title: "Exact endgame solver", intro: "Exhaustively proves a win for the side to move and only claims success after every legal defense is verified.",
+    depth: "Search plies", solve: "Start exact solve", stop: "Stop", thinking: "Checking every variation…",
+    solved: "Forced win proven", notProven: "No win proven within this depth", timeout: "Time limit reached before a proof",
+    exact: "Proven means every defense still loses. Not proven does not mean the position is unwinnable.",
+    nodes: "Positions checked", reached: "Completed depth", line: "Best-defense line", plies: "plies",
+    invalid: "Invalid position: both kings cannot be in check at once.", side: "Solving for",
+  },
+  ko: {
+    title: "AI 종반 해법", intro: "현재 선공 측의 승리를 완전 탐색하며 모든 합법적 방어를 검증한 경우에만 해법으로 표시합니다.",
+    depth: "탐색 수", solve: "정밀 해법 시작", stop: "중지", thinking: "모든 변화를 탐색 중…",
+    solved: "강제 승리 증명 완료", notProven: "현재 깊이에서는 승리를 증명하지 못했습니다", timeout: "시간 제한 안에 증명을 완료하지 못했습니다",
+    exact: "증명 완료는 모든 방어에도 승리한다는 뜻입니다. 미증명은 승리 불가능을 뜻하지 않습니다.",
+    nodes: "검사한 국면", reached: "완료 깊이", line: "최선 방어 진행", plies: "수",
+    invalid: "잘못된 국면입니다. 양쪽 장군이 동시에 장군 상태일 수 없습니다.", side: "해법 진영",
+  },
 } as const;
 
 const trainingCopyBase = {
@@ -152,6 +180,12 @@ function App() {
   const [hintCandidates, setHintCandidates] = useState<AiCandidate[]>([]);
   const [hintThinking, setHintThinking] = useState(false);
   const hintWorkerRef = useRef<Worker | null>(null);
+  const [solverDepth, setSolverDepth] = useState<8 | 12 | 16>(12);
+  const [solverThinking, setSolverThinking] = useState(false);
+  const [solverProgress, setSolverProgress] = useState<EndgameSolverProgress | null>(null);
+  const [solverResult, setSolverResult] = useState<EndgameSolverResult | null>(null);
+  const [solverError, setSolverError] = useState("");
+  const solverWorkerRef = useRef<Worker | null>(null);
   const [winRate, setWinRate] = useState<{ red: number; black: number; depth: number } | null>(null);
   const [winRateThinking, setWinRateThinking] = useState(false);
   const analysisWorkerRef = useRef<Worker | null>(null);
@@ -180,6 +214,7 @@ function App() {
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const t = copy[language];
   const actionText = actionCopy[language];
+  const solverText = solverCopy[language];
   const trainingText = trainingCopy[language];
   const selfPlayStatusText = selfPlayStatus === "running" ? trainingText.running
     : selfPlayStatus === "paused" ? trainingText.paused
@@ -259,6 +294,11 @@ function App() {
       blackWinRate: 100 - redWinRate,
     };
   }), [hintCandidates, language, turn]);
+  const solverLineRows = useMemo(() => (solverResult?.line ?? []).map((move, index) => ({
+    number: index + 1,
+    color: move.color === "red" ? t.red : t.black,
+    text: `${hintPieceNames[language][move.pieceType]} (${move.from.row},${move.from.col}) → (${move.to.row},${move.to.col})${move.captured ? ` × ${hintPieceNames[language][move.captured]}` : ""}${move.givesCheck ? ` ${t.checkShort}` : ""}`,
+  })), [language, solverResult, t.black, t.checkShort, t.red]);
   const trainingBoard = selfPlayStatus === "running" ? selfPlayPreview : null;
   const selectedTrainingArchive = trainingArchives.archives.find((archive) => archive.id === selectedTrainingArchiveId) ?? null;
   const selectedPlayedArchive = playedArchives.archives.find((archive) => archive.id === selectedPlayedArchiveId) ?? null;
@@ -286,6 +326,7 @@ function App() {
 
   function handlePieceClick(piece: ChessPiece) {
     if (mode === "setup") {
+      cancelEndgameSolver(true);
       setPieces((current) => current.filter((item) => item.id !== piece.id));
       return;
     }
@@ -409,6 +450,7 @@ function App() {
     if (!setupPositionAllowed(type, color, row, col) || pieces.some((piece) => piece.row === row && piece.col === col)) return;
     const limits: Record<PieceType, number> = { general: 1, advisor: 2, elephant: 2, horse: 2, rook: 2, cannon: 2, soldier: 5 };
     if (pieces.filter((piece) => piece.color === color && piece.type === type).length >= limits[type]) return;
+    cancelEndgameSolver(true);
     setPieces((current) => [...current, { id: `setup-${Date.now()}-${Math.random()}`, type, color, row, col }]);
   }
 
@@ -434,6 +476,7 @@ function App() {
         const moving = pieces.find((piece) => piece.id === payload.id);
         if (!moving || !setupPositionAllowed(moving.type, moving.color, row, col)) return;
         if (pieces.some((piece) => piece.id !== moving.id && piece.row === row && piece.col === col)) return;
+        cancelEndgameSolver(true);
         setPieces((current) => current.map((piece) => piece.id === moving.id ? { ...piece, row, col } : piece));
       } else if (payload.type && payload.color) {
         placeSetupPiece(payload.type as PieceType, payload.color as PieceColor, row, col);
@@ -442,6 +485,7 @@ function App() {
   }
 
   function clearSetupBoard() {
+    cancelEndgameSolver(true);
     const clearedPieces: ChessPiece[] = [
       { id: "setup-black-general", type: "general", color: "black", row: 0, col: 4 },
       { id: "setup-red-general", type: "general", color: "red", row: 9, col: 4 },
@@ -465,6 +509,7 @@ function App() {
     saveCurrentGameAsPrevious();
     cancelAiCalculation();
     cancelHintCalculation();
+    cancelEndgameSolver(true);
     setHintMove(null);
     setHintScore(null);
     localStorage.removeItem(RESTORE_UNDO_KEY);
@@ -489,6 +534,7 @@ function App() {
   function finishSetup() {
     if (!setupReady) return;
     cancelHintCalculation();
+    cancelEndgameSolver(true);
     setHintMove(null);
     setHintScore(null);
     setMode("local");
@@ -636,6 +682,11 @@ function App() {
     hintWorkerRef.current = null;
   }, []);
 
+  useEffect(() => () => {
+    solverWorkerRef.current?.terminate();
+    solverWorkerRef.current = null;
+  }, []);
+
   useEffect(() => {
     if ((!learningEnabled || aiThinking || mode !== "ai") && selfPlayWorkerRef.current) {
       selfPlayWorkerRef.current.terminate();
@@ -751,6 +802,54 @@ function App() {
     hintWorkerRef.current?.terminate();
     hintWorkerRef.current = null;
     setHintThinking(false);
+  }
+
+  function cancelEndgameSolver(clearResult = false) {
+    solverWorkerRef.current?.terminate();
+    solverWorkerRef.current = null;
+    setSolverThinking(false);
+    if (clearResult) {
+      setSolverProgress(null);
+      setSolverResult(null);
+      setSolverError("");
+      setHintMove(null);
+    }
+  }
+
+  function requestEndgameSolve() {
+    if (mode !== "setup" || !setupReady || solverThinking) return;
+    cancelEndgameSolver(true);
+    if (isInCheck("red", pieces) && isInCheck("black", pieces)) {
+      setSolverError(solverText.invalid);
+      return;
+    }
+    setSolverThinking(true);
+    const worker = new Worker(new URL("./game/endgameSolver.worker.ts", import.meta.url), { type: "module" });
+    solverWorkerRef.current = worker;
+    worker.onmessage = (event: MessageEvent<EndgameSolverProgress | EndgameSolverResult>) => {
+      if (solverWorkerRef.current !== worker) return;
+      if (event.data.type === "progress") {
+        setSolverProgress(event.data);
+        return;
+      }
+      solverWorkerRef.current = null;
+      worker.terminate();
+      setSolverThinking(false);
+      setSolverResult(event.data);
+      setSolverProgress({ type: "progress", depth: event.data.completedDepth, nodes: event.data.nodes, elapsedMs: event.data.elapsedMs });
+      const firstMove = event.data.line[0];
+      const source = firstMove ? pieces.find((piece) => piece.id === firstMove.pieceId) : null;
+      setHintMove(source && firstMove ? { piece: source, move: firstMove.to } : null);
+    };
+    worker.onerror = () => {
+      if (solverWorkerRef.current !== worker) return;
+      solverWorkerRef.current = null;
+      worker.terminate();
+      setSolverThinking(false);
+      setSolverError(language === "zh" ? "求解器运行失败，请减少棋子或降低计算层数后重试。" : language === "ko" ? "해법 계산에 실패했습니다. 기물 또는 탐색 깊이를 줄여 다시 시도하세요." : "The solver failed. Reduce the pieces or search depth and try again.");
+    };
+    const timeLimit = solverDepth === 8 ? 6_000 : solverDepth === 12 ? 18_000 : 35_000;
+    worker.postMessage({ pieces, attacker: turn, maxDepth: solverDepth, timeLimit });
   }
 
   function requestAiHint() {
@@ -1344,9 +1443,39 @@ function App() {
             </section>)}
             <div className="settings-row setup-first-move">
               <span>{t.firstMove}</span>
-              <button className={turn === "red" ? "is-active" : ""} type="button" onClick={() => setTurn("red")}>{t.redFirst}</button>
-              <button className={turn === "black" ? "is-active" : ""} type="button" onClick={() => setTurn("black")}>{t.blackFirst}</button>
+              <button className={turn === "red" ? "is-active" : ""} type="button" onClick={() => { cancelEndgameSolver(true); setTurn("red"); }}>{t.redFirst}</button>
+              <button className={turn === "black" ? "is-active" : ""} type="button" onClick={() => { cancelEndgameSolver(true); setTurn("black"); }}>{t.blackFirst}</button>
             </div>
+            <section className={`endgame-solver endgame-solver--${solverResult?.status ?? (solverThinking ? "thinking" : "idle")}`}>
+              <div className="endgame-solver__heading">
+                <span>⌁</span>
+                <div><strong>{solverText.title}</strong><small>{solverText.side}：{turn === "red" ? t.red : t.black}</small></div>
+              </div>
+              <p>{solverText.intro}</p>
+              <div className="endgame-solver__depth">
+                <span>{solverText.depth}</span>
+                {([8, 12, 16] as const).map((value) => <button className={solverDepth === value ? "is-active" : ""} type="button" disabled={solverThinking} key={value} onClick={() => { cancelEndgameSolver(true); setSolverDepth(value); }}>{value}</button>)}
+              </div>
+              {solverThinking
+                ? <button className="endgame-solver__action is-stop" type="button" onClick={() => cancelEndgameSolver(false)}>{solverText.stop}</button>
+                : <button className="endgame-solver__action" type="button" onClick={requestEndgameSolve} disabled={!setupReady}>{solverText.solve}</button>}
+              {solverThinking && <div className="endgame-solver__thinking" role="status"><i /><span>{solverText.thinking}</span></div>}
+              {solverProgress && <div className="endgame-solver__stats">
+                <span>{solverText.nodes}<b>{solverProgress.nodes.toLocaleString()}</b></span>
+                <span>{solverText.reached}<b>{solverProgress.depth} / {solverDepth}</b></span>
+                <span>{Math.max(0.1, solverProgress.elapsedMs / 1000).toFixed(1)}s</span>
+              </div>}
+              {solverResult && <div className={`endgame-solver__result is-${solverResult.status}`} role="status">
+                <strong>{solverResult.status === "solved" ? solverText.solved : solverResult.status === "timeout" ? solverText.timeout : solverText.notProven}</strong>
+                {solverResult.status === "solved" && <span>{solverResult.line.length} {solverText.plies}</span>}
+                <small>{solverText.exact}</small>
+              </div>}
+              {solverLineRows.length > 0 && <div className="endgame-solver__line">
+                <strong>{solverText.line}</strong>
+                {solverLineRows.map((row) => <span key={`${row.number}-${row.text}`}><b>{row.number}</b><em>{row.color}</em>{row.text}</span>)}
+              </div>}
+              {solverError && <p className="endgame-solver__error" role="alert">{solverError}</p>}
+            </section>
             <button className="clear-board-button" type="button" onClick={clearSetupBoard}>{t.clearAll}</button>
             <button className="finish-setup-button" type="button" onClick={finishSetup} disabled={!setupReady}>{t.finishSetup}</button>
             {!setupReady && <p className="setup-validation">{t.needsGenerals}</p>}
