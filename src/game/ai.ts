@@ -14,6 +14,26 @@ const pieceValues: Record<PieceType, number> = {
   soldier: 100,
 };
 
+/**
+ * The value of a piece is deliberately dynamic.  Rooks become more valuable
+ * as the board opens, while cannons lose some of their screen-dependent power.
+ * Advanced soldiers also become more important in sparse endgames.
+ */
+export function getPieceValue(piece: ChessPiece, pieces: ChessPiece[] = []) {
+  const nonGenerals = pieces.length > 0
+    ? pieces.filter((item) => item.type !== "general").length
+    : 32;
+  const endgame = nonGenerals <= 6 ? 2 : nonGenerals <= 10 ? 1 : 0;
+  const progress = piece.color === "red" ? 9 - piece.row : piece.row;
+  const crossed = piece.color === "red" ? piece.row <= 4 : piece.row >= 5;
+  switch (piece.type) {
+    case "rook": return pieceValues.rook + endgame * 42;
+    case "cannon": return pieceValues.cannon - endgame * 28;
+    case "soldier": return pieceValues.soldier + endgame * 18 + progress * 2 + (crossed ? 18 + endgame * 8 : 0);
+    default: return pieceValues[piece.type];
+  }
+}
+
 const MATE_SCORE = 1_000_000;
 const MAX_QUIESCENCE_DEPTH = 4;
 const OPENING_PLY_LIMIT = 20;
@@ -104,9 +124,142 @@ function samePosition(first: Position, second: Position) {
   return first.row === second.row && first.col === second.col;
 }
 
+interface EvaluationSignals {
+  attackers: Map<string, ChessPiece[]>;
+  defenders: Map<string, ChessPiece[]>;
+  forks: Map<string, number>;
+  skewers: Map<string, number>;
+  pinned: Set<string>;
+}
+
+function insidePalace(color: PieceColor, row: number, col: number) {
+  return row >= (color === "red" ? 7 : 0)
+    && row <= (color === "red" ? 9 : 2)
+    && col >= 3
+    && col <= 5;
+}
+
+function pathIsClear(pieces: ChessPiece[], from: ChessPiece, to: Position) {
+  const rowStep = Math.sign(to.row - from.row);
+  const colStep = Math.sign(to.col - from.col);
+  let row = from.row + rowStep;
+  let col = from.col + colStep;
+  while (row !== to.row || col !== to.col) {
+    if (pieces.some((piece) => piece.row === row && piece.col === col)) return false;
+    row += rowStep;
+    col += colStep;
+  }
+  return true;
+}
+
+/** Attack geometry that also counts an occupied friendly square as defended. */
+function attacksSquare(attacker: ChessPiece, target: Position, pieces: ChessPiece[]) {
+  const rowDelta = target.row - attacker.row;
+  const colDelta = target.col - attacker.col;
+  const absRow = Math.abs(rowDelta);
+  const absCol = Math.abs(colDelta);
+  switch (attacker.type) {
+    case "general":
+      return absRow + absCol === 1 && insidePalace(attacker.color, target.row, target.col);
+    case "advisor":
+      return absRow === 1 && absCol === 1 && insidePalace(attacker.color, target.row, target.col);
+    case "elephant":
+      return absRow === 2 && absCol === 2
+        && (attacker.color === "red" ? target.row >= 5 : target.row <= 4)
+        && !pieces.some((piece) => piece.row === attacker.row + rowDelta / 2 && piece.col === attacker.col + colDelta / 2);
+    case "horse":
+      if (!((absRow === 2 && absCol === 1) || (absRow === 1 && absCol === 2))) return false;
+      return !pieces.some((piece) => piece.row === attacker.row + (absRow === 2 ? Math.sign(rowDelta) : 0)
+        && piece.col === attacker.col + (absCol === 2 ? Math.sign(colDelta) : 0));
+    case "rook":
+      return (rowDelta === 0 || colDelta === 0) && (rowDelta !== 0 || colDelta !== 0) && pathIsClear(pieces, attacker, target);
+    case "cannon": {
+      if (!((rowDelta === 0 || colDelta === 0) && (rowDelta !== 0 || colDelta !== 0))) return false;
+      const rowStep = Math.sign(rowDelta);
+      const colStep = Math.sign(colDelta);
+      let row = attacker.row + rowStep;
+      let col = attacker.col + colStep;
+      let blockers = 0;
+      while (row !== target.row || col !== target.col) {
+        if (pieces.some((piece) => piece.row === row && piece.col === col)) blockers += 1;
+        row += rowStep;
+        col += colStep;
+      }
+      return blockers === 1;
+    }
+    case "soldier": {
+      const forward = attacker.color === "red" ? -1 : 1;
+      const crossed = attacker.color === "red" ? attacker.row <= 4 : attacker.row >= 5;
+      return rowDelta === forward && colDelta === 0 || crossed && rowDelta === 0 && absCol === 1;
+    }
+  }
+}
+
+function lineSkewerCount(piece: ChessPiece, pieces: ChessPiece[]) {
+  if (piece.type !== "rook" && piece.type !== "cannon") return 0;
+  const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let count = 0;
+  for (const [rowStep, colStep] of directions) {
+    const line: ChessPiece[] = [];
+    let row = piece.row + rowStep;
+    let col = piece.col + colStep;
+    while (row >= 0 && row < 10 && col >= 0 && col < 9) {
+      const occupant = pieces.find((item) => item.row === row && item.col === col);
+      if (occupant) line.push(occupant);
+      row += rowStep;
+      col += colStep;
+    }
+    if (piece.type === "rook") {
+      if (line.length >= 2 && line[0].color !== piece.color && line[1].color !== piece.color) count += 1;
+    } else if (line.length >= 2 && line[0].color !== piece.color && line[1].color !== piece.color) {
+      // A cannon can use the first enemy as a screen to pressure the second.
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function buildEvaluationSignals(pieces: ChessPiece[]): EvaluationSignals {
+  const attackers = new Map<string, ChessPiece[]>();
+  const defenders = new Map<string, ChessPiece[]>();
+  const forks = new Map<string, number>();
+  const skewers = new Map<string, number>();
+  const pinned = new Set<string>();
+  for (const target of pieces) {
+    const enemy: ChessPiece[] = [];
+    const friendly: ChessPiece[] = [];
+    for (const attacker of pieces) {
+      if (attacker.id === target.id || !attacksSquare(attacker, target, pieces)) continue;
+      if (attacker.color === target.color) friendly.push(attacker);
+      else enemy.push(attacker);
+    }
+    attackers.set(target.id, enemy);
+    defenders.set(target.id, friendly);
+  }
+  for (const attacker of pieces) {
+    const targets = pieces.filter((target) => target.color !== attacker.color && attacksSquare(attacker, target, pieces));
+    if (targets.length >= 2) forks.set(attacker.id, targets.length);
+    const skewersForPiece = lineSkewerCount(attacker, pieces);
+    if (skewersForPiece > 0) skewers.set(attacker.id, skewersForPiece);
+  }
+  const generals = new Map<PieceColor, ChessPiece>();
+  for (const piece of pieces) {
+    if (piece.type === "general") generals.set(piece.color, piece);
+  }
+  for (const piece of pieces) {
+    if (piece.type === "general") continue;
+    const general = generals.get(piece.color);
+    if (!general) continue;
+    const aligned = piece.row === general.row || piece.col === general.col;
+    if (!aligned) continue;
+    const withoutPiece = pieces.filter((item) => item.id !== piece.id);
+    if (!isInCheck(piece.color, pieces) && isInCheck(piece.color, withoutPiece)) pinned.add(piece.id);
+  }
+  return { attackers, defenders, forks, skewers, pinned };
+}
+
 function isPieceUnderAttack(pieces: ChessPiece[], piece: ChessPiece) {
-  return getAllLegalMoves(opposite(piece.color), pieces)
-    .some(({ move }) => move.row === piece.row && move.col === piece.col);
+  return pieces.some((attacker) => attacker.color !== piece.color && attacksSquare(attacker, piece, pieces));
 }
 
 export function getRecentMovePenalty(
@@ -229,11 +382,53 @@ function strategicPieceBonus(piece: ChessPiece, pieces: ChessPiece[], enemyGener
   return bonus;
 }
 
-function evaluateSide(pieces: ChessPiece[], color: PieceColor) {
+function tacticalPieceBonus(piece: ChessPiece, pieces: ChessPiece[], signals: EvaluationSignals) {
+  const attackers = signals.attackers.get(piece.id) ?? [];
+  const defenders = signals.defenders.get(piece.id) ?? [];
+  const value = getPieceValue(piece, pieces);
+  let bonus = 0;
+  if (piece.type !== "general") {
+    if (attackers.length === 0) {
+      bonus += Math.min(18, defenders.length * 6);
+    } else if (defenders.length === 0) {
+      // An attacked and undefended piece is a likely hanging piece.  Scale the
+      // penalty by its value so losing a rook is treated more seriously than a pawn.
+      bonus -= Math.min(115, Math.round(value * 0.2));
+      if (attackers.some((attacker) => getPieceValue(attacker, pieces) < value)) bonus -= 24;
+    } else if (attackers.length > defenders.length) {
+      bonus -= Math.min(54, 12 + (attackers.length - defenders.length) * 14);
+    } else {
+      bonus += Math.min(16, defenders.length * 5);
+    }
+  }
+  if (signals.pinned.has(piece.id)) bonus -= piece.type === "general" ? 0 : 30;
+  const forkTargets = signals.forks.get(piece.id) ?? 0;
+  if (forkTargets >= 2) bonus += Math.min(72, 26 + (forkTargets - 2) * 18);
+  const skewerTargets = signals.skewers.get(piece.id) ?? 0;
+  if (skewerTargets > 0) bonus += Math.min(48, skewerTargets * 24);
+  return bonus;
+}
+
+function generalSafetyBonus(pieces: ChessPiece[], color: PieceColor, signals: EvaluationSignals) {
+  const general = pieces.find((piece) => piece.type === "general" && piece.color === color);
+  if (!general) return -MATE_SCORE;
+  const defenders = signals.defenders.get(general.id)?.length ?? 0;
+  const attackers = signals.attackers.get(general.id)?.length ?? 0;
+  const guards = pieces.filter((piece) => piece.color === color && (piece.type === "advisor" || piece.type === "elephant")).length;
+  let bonus = Math.min(24, defenders * 8) + Math.min(18, guards * 6);
+  if (attackers > 0 || isInCheck(color, pieces)) bonus -= 220 + Math.min(60, attackers * 16);
+  else if (defenders === 0) bonus -= 16;
+  return bonus;
+}
+
+function evaluateSide(pieces: ChessPiece[], color: PieceColor, signals: EvaluationSignals) {
   const enemyGeneral = pieces.find((piece) => piece.type === "general" && piece.color !== color);
   return pieces
     .filter((piece) => piece.color === color)
-    .reduce((total, piece) => total + pieceValues[piece.type] + strategicPieceBonus(piece, pieces, enemyGeneral), 0);
+    .reduce((total, piece) => total
+      + getPieceValue(piece, pieces)
+      + strategicPieceBonus(piece, pieces, enemyGeneral)
+      + tacticalPieceBonus(piece, pieces, signals), generalSafetyBonus(pieces, color, signals));
 }
 
 function evaluate(pieces: ChessPiece[], color: PieceColor) {
@@ -242,7 +437,8 @@ function evaluate(pieces: ChessPiece[], color: PieceColor) {
   const enemyGeneral = pieces.some((piece) => piece.type === "general" && piece.color === opponent);
   if (!ownGeneral) return -MATE_SCORE;
   if (!enemyGeneral) return MATE_SCORE;
-  return evaluateSide(pieces, color) - evaluateSide(pieces, opponent);
+  const signals = buildEvaluationSignals(pieces);
+  return evaluateSide(pieces, color, signals) - evaluateSide(pieces, opponent, signals);
 }
 
 function rememberKiller(context: SearchContext, ply: number, key: string) {
@@ -277,7 +473,7 @@ function orderMoves(
     const key = moveKey(piece.id, move);
     let orderScore = context.historyScores.get(key) ?? 0;
     if (key === preferredMoveKey) orderScore += 2_000_000;
-    if (captured) orderScore += 1_000_000 + pieceValues[captured.type] * 16 - pieceValues[piece.type];
+    if (captured) orderScore += 1_000_000 + getPieceValue(captured, pieces) * 16 - getPieceValue(piece, pieces);
     if (givesCheck) orderScore += 500_000;
     const previousOccurrences = context.positionCounts.get(getPositionKey(nextPieces, opponent)) ?? 0;
     if (previousOccurrences === 1) orderScore -= 250_000;
