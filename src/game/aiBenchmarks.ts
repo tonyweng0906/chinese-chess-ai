@@ -196,6 +196,23 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
     ruleMoves: [],
   });
 
+  const perpetualCheckPosition = [
+    piece("bg", "general", "black", 0, 4),
+    piece("rg", "general", "red", 9, 4),
+    piece("block", "soldier", "black", 5, 4),
+    piece("rr", "rook", "red", 2, 0),
+    piece("rs", "soldier", "red", 6, 8),
+  ];
+  const repeatedCheckingBoard = applyAiMove(perpetualCheckPosition, "rr", 2, 4);
+  const repeatedCheckingKey = getPositionKey(repeatedCheckingBoard, "black");
+  const perpetualCheckAware = searchBestMove(perpetualCheckPosition, "red", 2, 300, {
+    positionHistory: [repeatedCheckingKey, getPositionKey(perpetualCheckPosition, "red")],
+    ruleMoves: [{ mover: "black", gaveCheck: false, chasingPieceId: null, chasedPieceIds: null }],
+  });
+  const repeatsCheckingPosition = perpetualCheckAware.choice?.piece.id === "rr"
+    && perpetualCheckAware.choice.move.row === 2
+    && perpetualCheckAware.choice.move.col === 4;
+
   const learningPosition = [
     piece("bg", "general", "black", 0, 4),
     piece("rg", "general", "red", 9, 4),
@@ -346,6 +363,11 @@ export function runAiBenchmarks(): AiBenchmarkResult[] {
       "allow-forced-repeat",
       forcedRepeat,
       Boolean(forcedRepeat.choice),
+    ),
+    result(
+      "avoid-perpetual-check-cycle",
+      perpetualCheckAware,
+      Boolean(perpetualCheckAware.choice) && !repeatsCheckingPosition,
     ),
     result(
       "trusted-experience-guides-quiet-move",

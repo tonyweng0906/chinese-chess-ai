@@ -106,6 +106,11 @@ interface SearchContext {
   learningBonuses: Map<string, number>;
 }
 
+interface SearchLineMove {
+  mover: PieceColor;
+  pieces: ChessPiece[];
+}
+
 function opposite(color: PieceColor): PieceColor {
   return color === "red" ? "black" : "red";
 }
@@ -122,6 +127,31 @@ function moveKey(pieceId: string, move: Position) {
 
 function samePosition(first: Position, second: Position) {
   return first.row === second.row && first.col === second.col;
+}
+
+function describeSearchMove(mover: PieceColor, nextPieces: ChessPiece[]): RuleMoveRecord {
+  return {
+    mover,
+    gaveCheck: isInCheck(opposite(mover), nextPieces),
+    chasingPieceId: null,
+    chasedPieceIds: null,
+  };
+}
+
+function adjudicateSearchLine(
+  context: SearchContext,
+  linePositionKeys: string[],
+  lineMoves: SearchLineMove[],
+) {
+  const currentKey = linePositionKeys.at(-1);
+  if (!currentKey) return null;
+  const occurrences = (context.positionCounts.get(currentKey) ?? 0)
+    + linePositionKeys.filter((key) => key === currentKey).length;
+  if (occurrences < 3) return null;
+  return adjudicateRepetition(
+    [...context.positionHistory, ...linePositionKeys],
+    [...context.ruleMoves, ...lineMoves.map((move) => describeSearchMove(move.mover, move.pieces))],
+  );
 }
 
 interface EvaluationSignals {
@@ -493,8 +523,15 @@ function quiescence(
   ply: number,
   depthLeft: number,
   context: SearchContext,
+  linePositionKeys: string[],
+  lineMoves: SearchLineMove[],
 ): number {
   checkTime(context, true);
+  const repetition = adjudicateSearchLine(context, linePositionKeys, lineMoves);
+  if (repetition?.result === "draw") return 0;
+  if (repetition?.result === "loss") {
+    return repetition.offender === turn ? -MATE_SCORE + ply : MATE_SCORE - ply;
+  }
   const inCheck = isInCheck(turn, pieces);
   const standPat = evaluateCached(pieces, turn, context);
   if (depthLeft <= 0) return standPat;
@@ -508,7 +545,19 @@ function quiescence(
   if (moves.length === 0) return alpha;
 
   for (const candidate of moves) {
-    const score = -quiescence(candidate.nextPieces, opposite(turn), -beta, -alpha, ply + 1, depthLeft - 1, context);
+    const nextTurn = opposite(turn);
+    const nextKey = getPositionKey(candidate.nextPieces, nextTurn);
+    const score = -quiescence(
+      candidate.nextPieces,
+      nextTurn,
+      -beta,
+      -alpha,
+      ply + 1,
+      depthLeft - 1,
+      context,
+      [...linePositionKeys, nextKey],
+      [...lineMoves, { mover: turn, pieces: candidate.nextPieces }],
+    );
     if (score >= beta) { context.cutoffs += 1; return beta; }
     if (score > alpha) alpha = score;
   }
@@ -523,13 +572,29 @@ function negamax(
   beta: number,
   ply: number,
   context: SearchContext,
-  lineKeys: string[],
+  linePositionKeys: string[],
+  lineMoves: SearchLineMove[],
 ): number {
   checkTime(context);
   const key = getPositionKey(pieces, turn);
-  if (lineKeys.includes(key)) return 0;
-  const nextLineKeys = [...lineKeys, key];
-  if (depth <= 0) return quiescence(pieces, turn, alpha, beta, ply, MAX_QUIESCENCE_DEPTH, context);
+  const repetition = adjudicateSearchLine(context, linePositionKeys, lineMoves);
+  if (repetition?.result === "draw") return 0;
+  if (repetition?.result === "loss") {
+    return repetition.offender === turn ? -MATE_SCORE + ply : MATE_SCORE - ply;
+  }
+  if (depth <= 0) {
+    return quiescence(
+      pieces,
+      turn,
+      alpha,
+      beta,
+      ply,
+      MAX_QUIESCENCE_DEPTH,
+      context,
+      linePositionKeys,
+      lineMoves,
+    );
+  }
 
   const originalAlpha = alpha;
   const originalBeta = beta;
@@ -549,13 +614,17 @@ function negamax(
   let bestMoveKey: string | null = null;
   for (let index = 0; index < moves.length; index += 1) {
     const candidate = moves[index];
+    const nextTurn = opposite(turn);
+    const nextKey = getPositionKey(candidate.nextPieces, nextTurn);
+    const nextPositionKeys = [...linePositionKeys, nextKey];
+    const nextLineMoves = [...lineMoves, { mover: turn, pieces: candidate.nextPieces }];
     let score: number;
     if (index === 0 || !Number.isFinite(alpha)) {
-      score = -negamax(candidate.nextPieces, opposite(turn), depth - 1, -beta, -alpha, ply + 1, context, nextLineKeys);
+      score = -negamax(candidate.nextPieces, nextTurn, depth - 1, -beta, -alpha, ply + 1, context, nextPositionKeys, nextLineMoves);
     } else {
-      score = -negamax(candidate.nextPieces, opposite(turn), depth - 1, -alpha - 1, -alpha, ply + 1, context, nextLineKeys);
+      score = -negamax(candidate.nextPieces, nextTurn, depth - 1, -alpha - 1, -alpha, ply + 1, context, nextPositionKeys, nextLineMoves);
       if (score > alpha && score < beta) {
-        score = -negamax(candidate.nextPieces, opposite(turn), depth - 1, -beta, -alpha, ply + 1, context, nextLineKeys);
+        score = -negamax(candidate.nextPieces, nextTurn, depth - 1, -beta, -alpha, ply + 1, context, nextPositionKeys, nextLineMoves);
       }
     }
     if (score > bestScore) { bestScore = score; bestMoveKey = candidate.key; }
@@ -584,33 +653,34 @@ function searchRoot(pieces: ChessPiece[], color: PieceColor, depth: number, cont
   let best = moves[0];
   let bestScore = -Infinity;
   const candidates: AiCandidate[] = [];
-  const rootKey = getPositionKey(pieces, color);
   const canUseLearning = !isInCheck(color, pieces)
     && !moves.some((candidate) => candidate.captured || candidate.givesCheck);
   const hasFreshMove = moves.some((candidate) =>
     (context.positionCounts.get(getPositionKey(candidate.nextPieces, opposite(color))) ?? 0) === 0);
   for (let index = 0; index < moves.length; index += 1) {
     const candidate = moves[index];
+    const nextPositionKey = getPositionKey(candidate.nextPieces, opposite(color));
+    const nextRuleMove = describeMoveForRules(candidate.piece.id, color, candidate.nextPieces);
+    const firstLineMove: SearchLineMove = { mover: color, pieces: candidate.nextPieces };
     let score: number;
     if (index === 0 || !Number.isFinite(alpha)) {
-      score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -beta, -alpha, 1, context, [rootKey]);
+      score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -beta, -alpha, 1, context, [nextPositionKey], [firstLineMove]);
     } else {
-      score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -alpha - 1, -alpha, 1, context, [rootKey]);
+      score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -alpha - 1, -alpha, 1, context, [nextPositionKey], [firstLineMove]);
       if (score > alpha && score < beta) {
-        score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -beta, -alpha, 1, context, [rootKey]);
+        score = -negamax(candidate.nextPieces, opposite(color), depth - 1, -beta, -alpha, 1, context, [nextPositionKey], [firstLineMove]);
       }
     }
-    const nextPositionKey = getPositionKey(candidate.nextPieces, opposite(color));
     const previousOccurrences = context.positionCounts.get(nextPositionKey) ?? 0;
     if (previousOccurrences >= 2) {
       const decision = adjudicateRepetition(
         [...context.positionHistory, nextPositionKey],
-        [...context.ruleMoves, describeMoveForRules(candidate.piece.id, color, candidate.nextPieces)],
+        [...context.ruleMoves, nextRuleMove],
       );
       if (decision?.result === "draw") score = 0;
       if (decision?.result === "loss") score = decision.offender === color ? -MATE_SCORE + 1 : MATE_SCORE - 1;
     } else if (hasFreshMove && previousOccurrences === 1) {
-      score -= 35;
+      score -= candidate.givesCheck ? 650 : 35;
     }
     score -= getRecentMovePenalty(pieces, candidate, color, context.recentMoves);
     if (canUseLearning) {
@@ -633,6 +703,9 @@ export function searchBestMove(
   searchHistory: AiSearchHistory = { positionHistory: [], ruleMoves: [], moves: [], learningHints: [] },
 ): AiSearchResult {
   const startedAt = performance.now();
+  const basePositionHistory = searchHistory.positionHistory.length > 0
+    ? searchHistory.positionHistory
+    : [getPositionKey(pieces, color)];
   const legalMoves = getAllLegalMoves(color, pieces);
   if (legalMoves.length === 0) {
     return {
@@ -642,7 +715,7 @@ export function searchBestMove(
     };
   }
 
-  const positionCounts = searchHistory.positionHistory.reduce((counts, key) => {
+  const positionCounts = basePositionHistory.reduce((counts, key) => {
     counts.set(key, (counts.get(key) ?? 0) + 1);
     return counts;
   }, new Map<string, number>());
@@ -696,7 +769,7 @@ export function searchBestMove(
     evaluationCache: new Map(),
     killerMoves: new Map(),
     historyScores: new Map(),
-    positionHistory: searchHistory.positionHistory,
+    positionHistory: basePositionHistory,
     positionCounts,
     ruleMoves: searchHistory.ruleMoves,
     recentMoves: searchHistory.moves ?? [],
